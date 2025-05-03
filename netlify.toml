@@ -1,6 +1,7 @@
 [build]
-  functions = "functions"
+  functions = "./functions"
   publish = "."
+  command = "npm install"
 
 [dev]
   framework = "#static"
@@ -10,6 +11,7 @@
   functionsSiteTimeout = 120
   
 [functions]
+  directory = "functions"
   node_bundler = "esbuild"
   included_files = ["functions/config.js"]
   external_node_modules = ["node-fetch"]
@@ -19,6 +21,11 @@
   memory = 1024
   # Set timeout to 120 seconds for production deployment
   timeout = 120
+
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 [[redirects]]
   from = "/api/*"
@@ -31,4 +38,4 @@
     [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type" 
+    Access-Control-Allow-Headers = "Content-Type, Authorization" 

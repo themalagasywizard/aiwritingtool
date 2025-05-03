@@ -2,6 +2,25 @@
 const fetch = require('node-fetch');
 const config = require('./config');
 
+// Helper function to validate API keys
+const validateApiKeys = (modelName) => {
+    const isDeepSeekModel = modelName.includes('deepseek');
+    
+    if (isDeepSeekModel && (!process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY === '')) {
+        throw new Error('DEEPSEEK_API_KEY is not configured. Please set this environment variable.');
+    }
+    
+    if (!isDeepSeekModel && (!process.env.HF_API_KEY || process.env.HF_API_KEY === '')) {
+        throw new Error('HF_API_KEY is not configured. Please set this environment variable.');
+    }
+};
+
+// Helper function to convert words to tokens (approximate)
+const wordsToTokens = (wordCount) => {
+    // Average ratio of tokens to words is roughly 1.3
+    return Math.ceil(wordCount * 1.3);
+};
+
 // Helper function to create a timeout promise
 const timeoutPromise = (ms, message) => new Promise((_, reject) => 
     setTimeout(() => reject(new Error(message || 'Request timed out')), ms)
@@ -9,44 +28,20 @@ const timeoutPromise = (ms, message) => new Promise((_, reject) =>
 
 // Helper function to calculate dynamic timeout based on tokens
 const calculateTimeout = (maxTokens, mode, isDeepSeekModel) => {
-    // Adjust timeouts to be within Netlify's limits
     const BASE_TIMEOUT = 20000;   // 20 seconds base
-    const MAX_TIMEOUT = 110000;   // 110 seconds maximum (below Netlify's 120s limit)
+    const MAX_TIMEOUT = 110000;   // 110 seconds maximum
     const MIN_TIMEOUT = 10000;    // 10 seconds minimum
     const MS_PER_TOKEN = 75;      // 75ms per token for scaling
 
     if (mode === 'chat' && isDeepSeekModel) {
-        // Scale timeout with token length for DeepSeek chat
         const scaledTimeout = BASE_TIMEOUT + (maxTokens * MS_PER_TOKEN);
         return Math.min(MAX_TIMEOUT, Math.max(MIN_TIMEOUT, scaledTimeout));
     } else if (isDeepSeekModel) {
-        // For non-chat DeepSeek modes, use a lower scaling factor
-        const scaledTimeout = BASE_TIMEOUT + (maxTokens * 50); // 50ms per token
+        const scaledTimeout = BASE_TIMEOUT + (maxTokens * 50);
         return Math.min(90000, Math.max(MIN_TIMEOUT, scaledTimeout));
     } else {
-        // For other models, use shorter timeouts
         return mode === 'chat' ? 25000 : 45000;
     }
-};
-
-// Helper function to create error response
-const createErrorResponse = (error, isTimeout = false) => {
-    const errorMessage = isTimeout
-        ? 'The request is taking longer than expected. Please try with a shorter length or a faster model.'
-        : (error.message || 'An unexpected error occurred');
-
-    return {
-        statusCode: isTimeout ? 408 : 500, // Use proper status codes
-        headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
-        },
-        body: JSON.stringify({
-            success: false,
-            error: errorMessage,
-            model: 'error'
-        })
-    };
 };
 
 // Helper function to fetch with timeout
@@ -71,11 +66,45 @@ const fetchWithTimeout = async (url, options, timeout) => {
 };
 
 // Export using the proper format for Netlify Functions
-const handler = async (event) => {
+exports.handler = async (event) => {
+    // Enable CORS
+    const headers = {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Content-Type': 'application/json'
+    };
+
+    // Handle OPTIONS request (CORS preflight)
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 204,
+            headers
+        };
+    }
+
     try {
         // Basic validation
+        if (event.httpMethod !== 'POST') {
+            return {
+                statusCode: 405,
+                headers,
+                body: JSON.stringify({
+                    error: 'Method not allowed. Please use POST.',
+                    success: false
+                })
+            };
+        }
+
         if (!event.body) {
-            return createErrorResponse(new Error('Missing request body'));
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({
+                    error: 'Missing request body',
+                    success: false
+                })
+            };
         }
 
         // Parse request
@@ -83,7 +112,14 @@ const handler = async (event) => {
         try {
             parsedBody = JSON.parse(event.body);
         } catch (e) {
-            return createErrorResponse(new Error('Invalid JSON in request body'));
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({
+                    error: 'Invalid JSON in request body',
+                    success: false
+                })
+            };
         }
 
         const { 
@@ -95,18 +131,46 @@ const handler = async (event) => {
         } = parsedBody;
 
         if (!prompt) {
-            return createErrorResponse(new Error('Prompt is required'));
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({
+                    error: 'Prompt is required',
+                    success: false
+                })
+            };
         }
 
         const modelName = event.queryStringParameters?.model || config.DEFAULT_MODEL;
+        
+        // Validate API keys before making request
+        try {
+            validateApiKeys(modelName);
+        } catch (error) {
+            return {
+                statusCode: 401,
+                headers,
+                body: JSON.stringify({
+                    error: error.message,
+                    success: false
+                })
+            };
+        }
+
         const isDeepSeekModel = modelName.includes('deepseek');
         const apiUrl = isDeepSeekModel 
-            ? 'https://api.deepseek.com/chat/completions' 
+            ? 'https://api.deepseek.com/v1/chat/completions'
             : `https://api-inference.huggingface.co/models/${modelName}`;
 
-        // Calculate max tokens and timeout
-        const maxTokens = Math.min(parseInt(length) || 200, 800);
+        // Convert desired word length to tokens and ensure minimum/maximum bounds
+        const desiredWords = Math.min(Math.max(parseInt(length) || 200, 50), 2000);
+        const maxTokens = wordsToTokens(desiredWords);
         const timeout = calculateTimeout(maxTokens, mode, isDeepSeekModel);
+
+        // Create system message based on desired length and tone
+        const systemMessage = `You are a creative writing assistant that creates imaginative and engaging content. 
+Generate approximately ${desiredWords} words of text${tone ? ` in a ${tone} tone` : ''}.
+Ensure the response is detailed and well-structured.`;
 
         // Create request body
         const requestBody = isDeepSeekModel ? {
@@ -114,7 +178,7 @@ const handler = async (event) => {
             messages: [
                 {
                     role: "system",
-                    content: "You are a creative writing assistant that creates imaginative and engaging content."
+                    content: systemMessage
                 },
                 {
                     role: "user",
@@ -124,14 +188,19 @@ const handler = async (event) => {
             temperature: 0.7,
             top_p: 0.9,
             max_tokens: maxTokens,
-            stream: false
+            stream: false,
+            presence_penalty: 0.3,  // Encourage more diverse content
+            frequency_penalty: 0.3   // Reduce repetition
         } : {
-            inputs: prompt,
+            inputs: `${systemMessage}\n\n${prompt}`,
             parameters: {
                 temperature: 0.7,
                 top_p: 0.9,
-                max_length: maxTokens,
-                do_sample: true
+                max_new_tokens: maxTokens,
+                do_sample: true,
+                num_return_sequences: 1,
+                length_penalty: 1.2,  // Encourage longer outputs
+                repetition_penalty: 1.2  // Reduce repetition
             }
         };
 
@@ -142,7 +211,7 @@ const handler = async (event) => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${isDeepSeekModel ? config.DEEPSEEK_API_KEY : config.HF_API_KEY}`
+                    'Authorization': `Bearer ${isDeepSeekModel ? process.env.DEEPSEEK_API_KEY : process.env.HF_API_KEY}`
                 },
                 body: JSON.stringify(requestBody)
             },
@@ -150,10 +219,20 @@ const handler = async (event) => {
         );
 
         if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}`);
+            const errorText = await response.text();
+            console.error('API Error:', response.status, errorText);
+            
+            return {
+                statusCode: response.status,
+                headers,
+                body: JSON.stringify({
+                    error: `API request failed with status ${response.status}`,
+                    details: errorText,
+                    success: false
+                })
+            };
         }
 
-        // Parse response
         const result = await response.json();
         
         // Extract text and usage info
@@ -178,23 +257,31 @@ const handler = async (event) => {
         // Return success response
         return {
             statusCode: 200,
-            headers: {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
+            headers,
             body: JSON.stringify({
                 success: true,
                 text: generatedText.trim(),
                 model: modelName,
-                usage: usage || null
+                usage: usage || null,
+                requestedWords: desiredWords,
+                actualTokens: usage?.total_tokens || null
             })
         };
 
     } catch (error) {
         console.error('Error in generate-text:', error);
-        const isTimeout = error.message.includes('timed out') || error.name === 'AbortError';
-        return createErrorResponse(error, isTimeout);
-    }
-};
+        
+        const statusCode = error.message.includes('timed out') ? 408 
+            : error.message.includes('API key') ? 401 
+            : 500;
 
-module.exports = { handler }; 
+        return {
+            statusCode,
+            headers,
+            body: JSON.stringify({
+                error: error.message,
+                success: false
+            })
+        };
+    }
+}; 
