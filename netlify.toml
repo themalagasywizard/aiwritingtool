@@ -1,0 +1,34 @@
+[build]
+  functions = "functions"
+  publish = "."
+
+[dev]
+  framework = "#static"
+  targetPort = 8888
+  port = 8888
+  functionsPort = 9999
+  functionsSiteTimeout = 120
+  
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["functions/config.js"]
+  external_node_modules = ["node-fetch"]
+
+[functions.generate-text]
+  included_files = ["functions/config.js"]
+  memory = 1024
+  # Set timeout to 120 seconds for production deployment
+  timeout = 120
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Add CORS headers
+[[headers]]
+  for = "/*"
+    [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type" 

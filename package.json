@@ -1,0 +1,18 @@
+{
+  "name": "aistorycraft",
+  "version": "1.0.0",
+  "description": "An AI-powered writing tool for storytellers",
+  "main": "index.html",
+  "scripts": {
+    "dev": "start-dev.bat",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.9"
+  },
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+} 
