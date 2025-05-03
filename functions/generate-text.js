@@ -18,7 +18,32 @@ const validateApiKeys = (modelName) => {
 // Helper function to convert words to tokens (approximate)
 const wordsToTokens = (wordCount) => {
     // Average ratio of tokens to words is roughly 1.3
-    return Math.ceil(wordCount * 1.3);
+    // Add 20% buffer to ensure we don't cut off mid-sentence
+    return Math.ceil(wordCount * 1.3 * 1.2);
+};
+
+// Helper function to ensure text ends with a complete sentence
+const ensureCompleteSentence = (text) => {
+    if (!text) return text;
+    
+    // Find the last occurrence of common sentence endings
+    const endings = ['. ', '! ', '? ', '."', '!"', '?"', '.\n', '!\n', '?\n'];
+    let lastEndIndex = -1;
+    
+    endings.forEach(ending => {
+        const index = text.lastIndexOf(ending);
+        if (index > lastEndIndex) {
+            lastEndIndex = index + ending.length;
+        }
+    });
+    
+    // If we found a sentence ending, trim to that point
+    if (lastEndIndex > -1) {
+        return text.substring(0, lastEndIndex).trim();
+    }
+    
+    // If no sentence ending found, return the original text
+    return text.trim();
 };
 
 // Helper function to create a timeout promise
@@ -28,19 +53,19 @@ const timeoutPromise = (ms, message) => new Promise((_, reject) =>
 
 // Helper function to calculate dynamic timeout based on tokens
 const calculateTimeout = (maxTokens, mode, isDeepSeekModel) => {
-    const BASE_TIMEOUT = 20000;   // 20 seconds base
+    const BASE_TIMEOUT = 30000;   // 30 seconds base
     const MAX_TIMEOUT = 110000;   // 110 seconds maximum
-    const MIN_TIMEOUT = 10000;    // 10 seconds minimum
-    const MS_PER_TOKEN = 75;      // 75ms per token for scaling
+    const MIN_TIMEOUT = 15000;    // 15 seconds minimum
+    const MS_PER_TOKEN = 100;     // 100ms per token for scaling
 
     if (mode === 'chat' && isDeepSeekModel) {
         const scaledTimeout = BASE_TIMEOUT + (maxTokens * MS_PER_TOKEN);
         return Math.min(MAX_TIMEOUT, Math.max(MIN_TIMEOUT, scaledTimeout));
     } else if (isDeepSeekModel) {
-        const scaledTimeout = BASE_TIMEOUT + (maxTokens * 50);
-        return Math.min(90000, Math.max(MIN_TIMEOUT, scaledTimeout));
+        const scaledTimeout = BASE_TIMEOUT + (maxTokens * 75);
+        return Math.min(110000, Math.max(MIN_TIMEOUT, scaledTimeout));
     } else {
-        return mode === 'chat' ? 25000 : 45000;
+        return mode === 'chat' ? 45000 : 60000;
     }
 };
 
@@ -127,7 +152,7 @@ exports.handler = async (event) => {
             context = [], 
             mode = 'generate', 
             tone = '', 
-            length = '200' 
+            length = '500' 
         } = parsedBody;
 
         if (!prompt) {
@@ -163,14 +188,15 @@ exports.handler = async (event) => {
             : `https://api-inference.huggingface.co/models/${modelName}`;
 
         // Convert desired word length to tokens and ensure minimum/maximum bounds
-        const desiredWords = Math.min(Math.max(parseInt(length) || 200, 50), 2000);
+        const desiredWords = Math.min(Math.max(parseInt(length) || 500, 50), 5000);
         const maxTokens = wordsToTokens(desiredWords);
         const timeout = calculateTimeout(maxTokens, mode, isDeepSeekModel);
 
         // Create system message based on desired length and tone
         const systemMessage = `You are a creative writing assistant that creates imaginative and engaging content. 
-Generate approximately ${desiredWords} words of text${tone ? ` in a ${tone} tone` : ''}.
-Ensure the response is detailed and well-structured.`;
+Generate a detailed response of approximately ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
+Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
+Do not stop mid-sentence. If approaching the token limit, find a natural ending point.`;
 
         // Create request body
         const requestBody = isDeepSeekModel ? {
@@ -185,22 +211,25 @@ Ensure the response is detailed and well-structured.`;
                     content: prompt
                 }
             ],
-            temperature: 0.7,
-            top_p: 0.9,
+            temperature: 0.8,
+            top_p: 0.95,
             max_tokens: maxTokens,
             stream: false,
-            presence_penalty: 0.3,  // Encourage more diverse content
-            frequency_penalty: 0.3   // Reduce repetition
+            presence_penalty: 0.5,  // Increased to encourage more diverse content
+            frequency_penalty: 0.5,  // Increased to reduce repetition
+            stop: ["###"]  // Add a stop sequence to prevent mid-sentence cutoff
         } : {
-            inputs: `${systemMessage}\n\n${prompt}`,
+            inputs: `${systemMessage}\n\n${prompt}\n\nResponse:`,
             parameters: {
-                temperature: 0.7,
-                top_p: 0.9,
+                temperature: 0.8,
+                top_p: 0.95,
                 max_new_tokens: maxTokens,
                 do_sample: true,
                 num_return_sequences: 1,
-                length_penalty: 1.2,  // Encourage longer outputs
-                repetition_penalty: 1.2  // Reduce repetition
+                length_penalty: 1.5,  // Increased to encourage longer outputs
+                repetition_penalty: 1.3,  // Increased to reduce repetition
+                early_stopping: true,
+                stop: ["###"]
             }
         };
 
@@ -254,16 +283,23 @@ Ensure the response is detailed and well-structured.`;
             throw new Error('No text was generated');
         }
 
+        // Ensure the text ends with a complete sentence
+        generatedText = ensureCompleteSentence(generatedText);
+
+        // Count actual words
+        const actualWords = generatedText.trim().split(/\s+/).length;
+
         // Return success response
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
                 success: true,
-                text: generatedText.trim(),
+                text: generatedText,
                 model: modelName,
                 usage: usage || null,
                 requestedWords: desiredWords,
+                actualWords: actualWords,
                 actualTokens: usage?.total_tokens || null
             })
         };
