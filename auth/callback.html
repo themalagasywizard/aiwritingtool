@@ -11,13 +11,13 @@
 </head>
 <body>
     <script type="module">
-        import { supabase } from '../lib/supabase.js';
+        import { auth } from '../lib/supabase.js';
 
         // Handle the authentication callback
         async function handleAuthCallback() {
             try {
                 // Get the session from URL
-                const { data: { session }, error } = await supabase.auth.getSession();
+                const { data: { session }, error } = await auth.getSession();
 
                 if (error) throw error;
 

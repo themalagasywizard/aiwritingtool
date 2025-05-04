@@ -25,6 +25,17 @@ function processTemplates() {
                 // Insert the script tag after the opening head tag
                 content = content.replace('<head>', '<head>' + envScript);
                 
+                // Replace template variables in meta tags
+                content = content.replace(
+                    /<meta name="supabase-url" content="<%= process\.env\.SUPABASE_URL %>">/,
+                    `<meta name="supabase-url" content="${process.env.SUPABASE_URL || ''}">`
+                );
+                
+                content = content.replace(
+                    /<meta name="supabase-anon-key" content="<%= process\.env\.SUPABASE_ANON_KEY %>">/,
+                    `<meta name="supabase-anon-key" content="${process.env.SUPABASE_ANON_KEY || ''}">`
+                );
+                
                 fs.writeFileSync(filePath, content);
                 console.log(`Processed ${file} successfully`);
             } else {

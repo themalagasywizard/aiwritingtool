@@ -486,15 +486,23 @@
 </head>
 <body class="h-screen flex flex-col">
     <script type="module">
+        import { auth } from './lib/supabase.js';
+        
         // Initialize with a default user avatar
         const userAvatar = document.querySelector('#userAvatar');
         if (userAvatar) {
             userAvatar.src = `https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff`;
         }
 
-        // Handle sign out (just reload the page for now)
-        const handleSignOut = () => {
-            window.location.reload();
+        // Handle sign out using Supabase auth
+        const handleSignOut = async () => {
+            try {
+                await auth.signOut();
+                window.location.href = '/auth/auth.html';
+            } catch (error) {
+                console.error('Error signing out:', error);
+                window.location.reload();
+            }
         };
 
         // Add sign out handler
@@ -503,6 +511,26 @@
             if (signOutBtn) {
                 signOutBtn.addEventListener('click', handleSignOut);
             }
+            
+            // Check authentication state
+            auth.getUser().then(({ data: { user } }) => {
+                if (user) {
+                    // Update avatar with user email or name
+                    const nameInitial = user.email ? user.email.charAt(0).toUpperCase() : 'G';
+                    userAvatar.src = `https://ui-avatars.com/api/?name=${nameInitial}&background=4B5EAA&color=fff`;
+                    
+                    // Update user display name
+                    const userDisplayName = document.querySelector('#userDisplayName');
+                    if (userDisplayName) {
+                        userDisplayName.textContent = user.email || 'Signed In User';
+                    }
+                } else {
+                    // Not logged in, redirect to auth page
+                    window.location.href = '/auth/auth.html';
+                }
+            }).catch(error => {
+                console.error('Auth check error:', error);
+            });
         });
     </script>
 
@@ -530,7 +558,7 @@
                 <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
                     <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                         <i class="fas fa-user-circle text-primary mr-2"></i>
-                        <span>Guest User</span>
+                        <span id="userDisplayName">Guest User</span>
                     </div>
                     <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                         <i class="fas fa-cog text-secondary mr-2"></i>

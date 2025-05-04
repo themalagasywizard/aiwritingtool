@@ -104,7 +104,7 @@
     </div>
 
     <script type="module">
-        import { supabase } from '../lib/supabase.js';
+        import { auth } from '../lib/supabase.js';
 
         // DOM Elements
         const authTabs = document.querySelectorAll('.auth-tab');
@@ -147,10 +147,7 @@
             const password = document.getElementById('signinPassword').value;
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
+                const { data, error } = await auth.signIn(email, password);
 
                 if (error) throw error;
 
@@ -184,13 +181,7 @@
             }
 
             try {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        emailRedirectTo: window.location.origin
-                    }
-                });
+                const { data, error } = await auth.signUp(email, password);
 
                 if (error) throw error;
 
@@ -218,12 +209,12 @@
         // Check if user is already signed in
         const checkUser = async () => {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
+                const { data: { user } } = await auth.getUser();
                 if (user) {
                     window.location.href = '/index.html';
                 }
             } catch (error) {
-                console.error('Error checking auth status:', error);
+                console.error('Error checking auth state:', error);
             }
         };
 
