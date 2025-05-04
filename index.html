@@ -483,29 +483,15 @@
 </head>
 <body class="h-screen flex flex-col">
     <script type="module">
-        import { supabase } from './lib/supabase.js';
+        // Initialize with a default user avatar
+        const userAvatar = document.querySelector('#userAvatar');
+        if (userAvatar) {
+            userAvatar.src = `https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff`;
+        }
 
-        // Check authentication status
-        const checkAuth = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) {
-                window.location.href = '/auth/auth.html';
-                return;
-            }
-
-            // Update UI with user info
-            const userAvatar = document.querySelector('#userAvatar');
-            if (userAvatar) {
-                userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=4B5EAA&color=fff`;
-            }
-        };
-
-        // Handle sign out
-        const handleSignOut = async () => {
-            const { error } = await supabase.auth.signOut();
-            if (!error) {
-                window.location.href = '/auth/auth.html';
-            }
+        // Handle sign out (just reload the page for now)
+        const handleSignOut = () => {
+            window.location.reload();
         };
 
         // Add sign out handler
@@ -515,9 +501,6 @@
                 signOutBtn.addEventListener('click', handleSignOut);
             }
         });
-
-        // Check auth on page load
-        checkAuth();
     </script>
 
     <!-- Top Bar -->
@@ -538,21 +521,21 @@
                 Save
             </button>
             <div class="relative group">
-                <img id="userAvatar" src="https://ui-avatars.com/api/?name=User&background=4B5EAA&color=fff" 
+                <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
                      alt="User Avatar" 
                      class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
                 <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
                     <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                         <i class="fas fa-user-circle text-primary mr-2"></i>
-                        <span>Profile</span>
+                        <span>Guest User</span>
                     </div>
                     <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                         <i class="fas fa-cog text-secondary mr-2"></i>
                         <span>Settings</span>
                     </div>
                     <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                        <i class="fas fa-sign-out-alt mr-2"></i>
-                        <span>Sign Out</span>
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        <span>Refresh</span>
                     </div>
                 </div>
             </div>
