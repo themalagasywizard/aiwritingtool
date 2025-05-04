@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Callback - AIStoryCraft</title>
+</head>
+<body>
+    <script type="module">
+        import { supabase } from '../lib/supabase.js';
+
+        // Handle the authentication callback
+        async function handleAuthCallback() {
+            try {
+                // Get the session from URL
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (error) throw error;
+
+                if (session) {
+                    // Redirect to the main app
+                    window.location.href = '/index.html';
+                } else {
+                    // If no session, redirect to auth page
+                    window.location.href = '/auth/auth.html';
+                }
+            } catch (error) {
+                console.error('Error handling auth callback:', error);
+                // On error, redirect to auth page
+                window.location.href = '/auth/auth.html';
+            }
+        }
+
+        // Run the callback handler
+        handleAuthCallback();
+    </script>
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+        <p>Processing authentication... Please wait.</p>
+    </div>
+</body>
+</html> 

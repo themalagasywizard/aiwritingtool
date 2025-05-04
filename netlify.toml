@@ -36,6 +36,11 @@
 
 # Handle authentication redirects
 [[redirects]]
+  from = "/auth/callback"
+  to = "/auth/callback.html"
+  status = 200
+
+[[redirects]]
   from = "/auth/*"
   to = "/auth/:splat"
   status = 200
