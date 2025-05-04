@@ -34,12 +34,25 @@
   to = "/api/:splat"
   status = 200
 
-# Serve index.html for all routes
+# Handle authentication redirects
+[[redirects]]
+  from = "/auth/*"
+  to = "/auth/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/"
+  to = "/auth/auth.html"
+  status = 200
+  force = true
+  conditions = {Role = ["!user"]}
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
   force = true
+  conditions = {Role = ["user"]}
 
 # Add CORS headers
 [[headers]]
