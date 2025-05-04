@@ -156,7 +156,7 @@
 
                 // Redirect to main app
                 setTimeout(() => {
-                    window.location.href = '/';
+                    window.location.href = '/index.html';
                 }, 1000);
             } catch (error) {
                 errorMessage.textContent = error.message;
@@ -181,7 +181,10 @@
             try {
                 const { data, error } = await supabase.auth.signUp({
                     email,
-                    password
+                    password,
+                    options: {
+                        emailRedirectTo: window.location.origin
+                    }
                 });
 
                 if (error) throw error;
@@ -209,12 +212,17 @@
 
         // Check if user is already signed in
         const checkUser = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                window.location.href = '/';
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                    window.location.href = '/index.html';
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
             }
         };
 
+        // Check auth status when page loads
         checkUser();
     </script>
 </body>

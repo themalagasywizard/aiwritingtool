@@ -40,19 +40,12 @@
   to = "/auth/:splat"
   status = 200
 
+# Default redirect to auth page
 [[redirects]]
   from = "/"
   to = "/auth/auth.html"
   status = 200
   force = true
-  conditions = {Role = ["!user"]}
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = true
-  conditions = {Role = ["user"]}
 
 # Add CORS headers
 [[headers]]
