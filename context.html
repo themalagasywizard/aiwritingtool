@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Manager - AIStoryCraft</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Frappe Gantt -->
+    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4B5EAA',
+                        primaryLight: '#E6E9F0',
+                        secondary: '#6B7280',
+                        accent: '#F472B6',
+                        background: '#F9FAFB',
+                        textPrimary: '#1F2937',
+                        textSecondary: '#9CA3AF',
+                        success: '#34D399',
+                        error: '#EF4444',
+                        warning: '#FBBF24',
+                        location: '#4CAF50',
+                        event: '#EF4444',
+                        character: '#4B5EAA'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --primary: #4B5EAA;
+            --primary-light: #E6E9F0;
+            --secondary: #6B7280;
+            --accent: #F472B6;
+            --background: #F9FAFB;
+            --text-primary: #1F2937;
+            --text-secondary: #9CA3AF;
+            --success: #34D399;
+            --error: #EF4444;
+            --warning: #FBBF24;
+            --location: #4CAF50;
+            --event: #EF4444;
+            --character: #4B5EAA;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+        }
+
+        /* Gantt Chart Customization */
+        .gantt .bar {
+            fill: var(--primary);
+        }
+
+        .gantt .bar.location {
+            fill: var(--location);
+        }
+
+        .gantt .bar.event {
+            fill: var(--event);
+        }
+
+        .gantt .bar.character {
+            fill: var(--character);
+        }
+
+        .gantt .bar-label {
+            fill: white;
+            font-size: 12px;
+        }
+
+        .gantt .grid-header {
+            fill: var(--background);
+            stroke: var(--primary-light);
+        }
+
+        .gantt .grid-row {
+            fill: white;
+        }
+
+        .gantt .row-line {
+            stroke: var(--primary-light);
+        }
+
+        .gantt .lower-text, .gantt .upper-text {
+            fill: var(--text-primary);
+            font-size: 12px;
+        }
+
+        /* Character Tree Customization */
+        .character-tree {
+            position: relative;
+            min-height: 300px;
+            padding: 1rem;
+            overflow: visible;
+            z-index: 1;
+        }
+
+        .character-node {
+            position: absolute;
+            width: 100px;
+            height: 40px;
+            border-radius: 20px;
+            background-color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 2;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .character-node.protagonist {
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .character-node.antagonist {
+            border: 2px solid var(--error);
+            color: var(--error);
+        }
+
+        .character-node.supporting {
+            border: 2px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .character-link {
+            position: absolute;
+            height: 1px;
+            background-color: #ccc;
+            transform-origin: 0 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .character-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .role-badge.protagonist {
+            background-color: rgba(75, 94, 170, 0.15);
+            color: var(--primary);
+        }
+
+        .role-badge.antagonist {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+        }
+
+        .role-badge.supporting {
+            background-color: rgba(244, 114, 182, 0.15);
+            color: var(--accent);
+        }
+
+        /* Timeline Controls */
+        .timeline-controls {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background-color: white;
+            border-bottom: 1px solid var(--primary-light);
+            padding: 1rem;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--primary-light);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(75, 94, 170, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: #3F50A0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(75, 94, 170, 0.25);
+        }
+
+        /* Role badge styles */
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+
+        /* Modal overlay and container styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 32rem;
+            z-index: 51;
+            position: relative;
+        }
+
+        /* Add styles for timeline */
+        .timeline-cell {
+            min-height: 70px;
+            padding: 0.5rem;
+            vertical-align: top;
+            transition: background-color 0.2s;
+        }
+        
+        .timeline-cell:hover {
+            background-color: rgba(75, 94, 170, 0.05);
+        }
+        
+        .timeline-cell.drag-over {
+            background-color: rgba(75, 94, 170, 0.1);
+            border: 2px dashed var(--primary);
+        }
+        
+        .character-tag {
+            display: inline-block;
+            width: auto;
+            min-width: 60px;
+            margin: 2px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .character-tag:hover {
+            transform: translateY(-2px);
+        }
+        
+        .character-item {
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        
+        .character-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .character-item.dragging {
+            opacity: 0.5;
+        }
+        
+        /* Primary color based roles */
+        .bg-primary { background-color: var(--primary); }
+        .bg-error { background-color: var(--error); }
+        .bg-accent { background-color: var(--accent); }
+        
+        /* Tab styling */
+        .tab-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .tab-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .tab-content {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .tab-content.hidden {
+            display: none;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+    <!-- Header with tabs -->
+    <header class="bg-white border-b border-gray-100">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-gray-500 hover:text-primary">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="ml-2">Back to Editor</span>
+                    </a>
+                    <h1 class="text-xl font-semibold text-primary">Context Manager</h1>
+                </div>
+            </div>
+            <!-- Tabs -->
+            <div class="flex mt-6 border-b border-gray-200">
+                <button class="tab-btn px-4 py-2 border-b-2 border-primary text-primary font-medium" data-tab="timeline">
+                    <i class="fas fa-clock mr-2"></i>Story Timeline
+                </button>
+                <button class="tab-btn px-4 py-2 border-b-2 border-transparent hover:text-primary" data-tab="characters">
+                    <i class="fas fa-users mr-2"></i>Characters
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Timeline Tab View -->
+        <div class="tab-content" id="timelineTab">
+            <div class="flex h-[calc(100vh-170px)]">
+                <!-- Characters Sidebar (Left) -->
+                <div class="w-64 bg-white shadow-md border border-gray-100 rounded-l-lg overflow-y-auto">
+                    <div class="p-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-primary">Characters</h2>
+                        <p class="text-sm text-gray-500 mt-1">Drag characters to the timeline</p>
+                    </div>
+                    <div id="charactersList" class="p-4 space-y-2">
+                        <!-- Character items for dragging -->
+                        <div class="character-item bg-white border-2 border-primary text-primary p-2 rounded-lg cursor-move shadow-sm" 
+                             draggable="true" data-name="Elizabeth" data-color="blue" data-role="Protagonist">
+                            <div class="text-sm font-medium">Elizabeth</div>
+                        </div>
+                        <div class="character-item bg-white border-2 border-error text-error p-2 rounded-lg cursor-move shadow-sm" 
+                             draggable="true" data-name="James" data-color="red" data-role="Antagonist">
+                            <div class="text-sm font-medium">James</div>
+                        </div>
+                        <div class="character-item bg-white border-2 border-accent text-accent p-2 rounded-lg cursor-move shadow-sm" 
+                             draggable="true" data-name="Sarah" data-color="green" data-role="Supporting">
+                            <div class="text-sm font-medium">Sarah</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Gantt Chart (Right) -->
+                <div class="flex-1 bg-white shadow-md border border-gray-100 rounded-r-lg overflow-auto">
+                    <div class="p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                        <h2 class="text-lg font-semibold text-primary">Story Timeline</h2>
+                        <div class="flex items-center space-x-3">
+                            <button class="btn btn-primary text-xs py-1 px-2">
+                                <i class="fas fa-plus text-xs mr-1"></i>Add Location
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Grid -->
+                    <div class="p-4">
+                        <div class="timeline-grid border border-gray-200 rounded-lg overflow-x-auto">
+                            <table class="w-full min-w-max">
+                                <thead>
+                                    <tr>
+                                        <th class="w-36 border-r border-b border-gray-200 bg-gray-50 p-3 text-left">Location</th>
+                                        <th class="w-36 border-r border-b border-gray-200 bg-gray-50 p-3 text-center">Chapter 1</th>
+                                        <th class="w-36 border-r border-b border-gray-200 bg-gray-50 p-3 text-center">Chapter 2</th>
+                                        <th class="w-36 border-r border-b border-gray-200 bg-gray-50 p-3 text-center">Chapter 3</th>
+                                        <th class="w-36 border-r border-b border-gray-200 bg-gray-50 p-3 text-center">Chapter 4</th>
+                                        <th class="w-36 border-r border-b border-gray-200 bg-gray-50 p-3 text-center">Chapter 5</th>
+                                        <th class="w-36 border-b border-gray-200 bg-gray-50 p-3 text-center">Chapter 6</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border-r border-b border-gray-200 p-3 font-medium">Castle</td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="1" data-location="Castle">
+                                            <div class="character-tag bg-primary text-white p-1 m-1 text-xs rounded text-center">Elizabeth</div>
+                                        </td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="2" data-location="Castle">
+                                            <div class="character-tag bg-accent text-white p-1 m-1 text-xs rounded text-center">Sarah</div>
+                                        </td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="3" data-location="Castle">
+                                            <div class="character-tag bg-error text-white p-1 m-1 text-xs rounded text-center">James</div>
+                                        </td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="4" data-location="Castle"></td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="5" data-location="Castle"></td>
+                                        <td class="border-b border-gray-200 timeline-cell" data-chapter="6" data-location="Castle">
+                                            <div class="character-tag bg-error text-white p-1 m-1 text-xs rounded text-center">James</div>
+                                            <div class="character-tag bg-primary text-white p-1 m-1 text-xs rounded text-center">Elizabeth</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-r border-b border-gray-200 p-3 font-medium">Forest</td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="1" data-location="Forest">
+                                            <div class="character-tag bg-error text-white p-1 m-1 text-xs rounded text-center">James</div>
+                                        </td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="2" data-location="Forest">
+                                            <div class="character-tag bg-error text-white p-1 m-1 text-xs rounded text-center">James</div>
+                                        </td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="3" data-location="Forest"></td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="4" data-location="Forest"></td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="5" data-location="Forest">
+                                            <div class="character-tag bg-primary text-white p-1 m-1 text-xs rounded text-center">Elizabeth</div>
+                                            <div class="character-tag bg-accent text-white p-1 m-1 text-xs rounded text-center">Sarah</div>
+                                        </td>
+                                        <td class="border-b border-gray-200 timeline-cell" data-chapter="6" data-location="Forest"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-r border-b border-gray-200 p-3 font-medium">Village</td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="1" data-location="Village"></td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="2" data-location="Village">
+                                            <div class="character-tag bg-primary text-white p-1 m-1 text-xs rounded text-center">Elizabeth</div>
+                                        </td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="3" data-location="Village">
+                                            <div class="character-tag bg-primary text-white p-1 m-1 text-xs rounded text-center">Elizabeth</div>
+                                            <div class="character-tag bg-accent text-white p-1 m-1 text-xs rounded text-center">Sarah</div>
+                                        </td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="4" data-location="Village"></td>
+                                        <td class="border-r border-b border-gray-200 timeline-cell" data-chapter="5" data-location="Village"></td>
+                                        <td class="border-b border-gray-200 timeline-cell" data-chapter="6" data-location="Village"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border-r border-gray-200 p-3 font-medium">Beach</td>
+                                        <td class="border-r border-gray-200 timeline-cell" data-chapter="1" data-location="Beach">
+                                            <div class="character-tag bg-accent text-white p-1 m-1 text-xs rounded text-center">Sarah</div>
+                                        </td>
+                                        <td class="border-r border-gray-200 timeline-cell" data-chapter="2" data-location="Beach"></td>
+                                        <td class="border-r border-gray-200 timeline-cell" data-chapter="3" data-location="Beach"></td>
+                                        <td class="border-r border-gray-200 timeline-cell" data-chapter="4" data-location="Beach">
+                                            <div class="character-tag bg-error text-white p-1 m-1 text-xs rounded text-center">James</div>
+                                        </td>
+                                        <td class="border-r border-gray-200 timeline-cell" data-chapter="5" data-location="Beach"></td>
+                                        <td class="border-gray-200 timeline-cell" data-chapter="6" data-location="Beach"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-3">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Tip: Drag characters from the character list and drop them onto the timeline grid.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Characters Tab View -->
+        <div class="tab-content hidden" id="charactersTab">
+            <!-- Character Tree View -->
+            <div class="bg-white shadow-md border border-gray-100 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-primary">Characters Network</h2>
+                    <button class="btn btn-primary text-sm" onclick="openModal('character')">
+                        <i class="fas fa-plus text-sm mr-1"></i>
+                        New Character
+                    </button>
+                </div>
+                
+                <div class="character-tree relative p-8 min-h-[400px] border border-gray-100 rounded-lg mb-6" id="characterTreeContainer">
+                    <!-- Character nodes positioned to match reference image -->
+                    <div class="character-node protagonist" style="top: 120px; left: 50%; transform: translateX(-50%);" data-name="John Doe" data-role="Protagonist" data-traits="Brave, curious explorer" data-backstory="Survived an accident in New York">
+                        <div class="font-medium text-center">John</div>
+                    </div>
+                    <div class="character-node antagonist" style="top: 220px; left: 30%;" data-name="Mystery Figure" data-role="Antagonist" data-traits="Enigmatic, threatening" data-backstory="Unknown entity connected to the accident">
+                        <div class="font-medium text-center">Mystery</div>
+                    </div>
+                    <div class="character-node supporting" style="top: 220px; left: 70%;" data-name="Sarah" data-role="Supporting" data-traits="Supportive, knowledgeable" data-backstory="John's friend who helps him navigate his return">
+                        <div class="font-medium text-center">Sarah</div>
+                    </div>
+                    
+                    <!-- Predefined connection lines like in the reference image -->
+                    <div class="character-link" style="width: 225px; top: 140px; left: 50%; transform: rotate(45deg) translateX(-50%);"></div>
+                    <div class="character-link" style="width: 225px; top: 140px; left: 50%; transform: rotate(-45deg) translateX(-50%);"></div>
+                </div>
+                
+                <div class="flex justify-center space-x-6 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-primary mr-2"></div>
+                        <span>Protagonist</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-error mr-2"></div>
+                        <span>Antagonist</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-accent mr-2"></div>
+                        <span>Supporting</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Character Details Panel -->
+            <div id="characterDetailsPanel" class="fixed inset-y-0 right-0 w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+                <div class="h-full flex flex-col">
+                    <div class="p-6 border-b border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-primary" id="characterDetailName">Character Name</h2>
+                            <button class="text-gray-400 hover:text-gray-600" onclick="closeCharacterDetails()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm" id="characterDetailRole">
+                            Role
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-6">
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Traits</h3>
+                                <p class="text-gray-700" id="characterDetailTraits">Character traits will appear here</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Backstory</h3>
+                                <p class="text-gray-700" id="characterDetailBackstory">Character backstory will appear here</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Relationships</h3>
+                                <div class="space-y-2" id="characterDetailRelationships">
+                                    <!-- Relationships will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 border-t border-gray-100">
+                        <button class="btn btn-primary w-full" id="editCharacterBtn">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit Character
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Item Modal -->
+    <div id="addItemModal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-primary">Edit Character</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select class="w-full border border-gray-200 rounded-lg p-2">
+                        <option value="character">Character</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input type="text" class="w-full border border-gray-200 rounded-lg p-2">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea class="w-full border border-gray-200 rounded-lg p-2 h-32"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" class="w-full border border-gray-200 rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input type="date" class="w-full border border-gray-200 rounded-lg p-2">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary">Add Item</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('active', 'border-primary', 'text-primary');
+                        btn.classList.add('border-transparent');
+                    });
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active', 'border-primary', 'text-primary');
+                    button.classList.remove('border-transparent');
+                    
+                    // Hide all tab contents
+                    tabContents.forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    
+                    // Show the selected tab content
+                    const tabName = button.getAttribute('data-tab');
+                    document.getElementById(tabName + 'Tab').classList.remove('hidden');
+                });
+            });
+            
+            // Drag and drop functionality for timeline
+            const characterItems = document.querySelectorAll('.character-item');
+            const timelineCells = document.querySelectorAll('.timeline-cell');
+            let draggedItem = null;
+            
+            // Setup drag events for character items
+            characterItems.forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    draggedItem = this;
+                    this.classList.add('dragging');
+                    
+                    // Store character data in dataTransfer
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        name: this.getAttribute('data-name'),
+                        color: this.getAttribute('data-color'),
+                        role: this.getAttribute('data-role')
+                    }));
+                    
+                    // Set a custom drag image (optional)
+                    const dragIcon = document.createElement('div');
+                    dragIcon.textContent = this.textContent;
+                    dragIcon.style.color = 'white';
+                    dragIcon.style.background = getColorForRole(this.getAttribute('data-role'));
+                    dragIcon.style.padding = '5px';
+                    dragIcon.style.borderRadius = '4px';
+                    document.body.appendChild(dragIcon);
+                    e.dataTransfer.setDragImage(dragIcon, 15, 15);
+                    setTimeout(() => document.body.removeChild(dragIcon), 0);
+                });
+                
+                item.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                    draggedItem = null;
+                });
+            });
+            
+            // Setup drop events for timeline cells
+            timelineCells.forEach(cell => {
+                cell.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('drag-over');
+                });
+                
+                cell.addEventListener('dragleave', function() {
+                    this.classList.remove('drag-over');
+                });
+                
+                cell.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    
+                    // Get character data
+                    const charData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                    const { name, role } = charData;
+                    
+                    // Add character to the cell
+                    const charTag = document.createElement('div');
+                    charTag.className = `character-tag text-white p-1 m-1 text-xs rounded text-center`;
+                    charTag.textContent = name;
+                    
+                    // Set background color based on role
+                    let bgColorClass = 'bg-primary'; // default color
+                    if (role === 'Antagonist') {
+                        bgColorClass = 'bg-error';
+                    } else if (role === 'Supporting') {
+                        bgColorClass = 'bg-accent';
+                    }
+                    charTag.classList.add(bgColorClass);
+                    
+                    // Add delete functionality
+                    charTag.addEventListener('click', function(e) {
+                        if (e.ctrlKey || e.metaKey) {
+                            this.remove();
+                        }
+                    });
+                    
+                    // Add to cell
+                    this.appendChild(charTag);
+                    
+                    // Save timeline state (could be implemented with Supabase)
+                    saveTimelineState();
+                });
+            });
+            
+            // Helper function to get color for role
+            function getColorForRole(role) {
+                if (role === 'Antagonist') return 'var(--error)';
+                if (role === 'Supporting') return 'var(--accent)';
+                return 'var(--primary)'; // Default for Protagonist
+            }
+            
+            // Save timeline state (placeholder)
+            function saveTimelineState() {
+                console.log('Timeline state saved');
+                // Implement actual saving logic here
+            }
+            
+            // Initialize by showing the timeline tab
+            document.querySelector('.tab-btn[data-tab="timeline"]').click();
+
+            // Add these character tree functions
+            let currentCharacterData = null;
+            let networkClickPosition = { x: 0, y: 0 };
+
+            function showCharacterDetails(node) {
+                // Remove highlight from all nodes
+                document.querySelectorAll('.character-node').forEach(n => {
+                    n.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                });
+                
+                // Highlight the selected node
+                node.style.boxShadow = '0 0 0 2px white, 0 0 0 4px var(--primary)';
+                
+                // Rest of the existing function...
+                const panel = document.getElementById('characterDetailsPanel');
+                const name = node.getAttribute('data-name');
+                const role = node.getAttribute('data-role');
+                const traits = node.getAttribute('data-traits');
+                const backstory = node.getAttribute('data-backstory');
+                
+                // Store current character data
+                currentCharacterData = {
+                    name,
+                    role,
+                    traits,
+                    backstory
+                };
+                
+                // Update panel content
+                document.getElementById('characterDetailName').textContent = name;
+                
+                const roleElement = document.getElementById('characterDetailRole');
+                roleElement.textContent = role;
+                roleElement.className = `role-badge ${role.toLowerCase()}`;
+                
+                document.getElementById('characterDetailTraits').textContent = traits || 'No traits specified';
+                document.getElementById('characterDetailBackstory').textContent = backstory || 'No backstory available';
+                
+                // Show panel
+                panel.classList.remove('translate-x-full');
+            }
+
+            function closeCharacterDetails() {
+                // Remove highlight from all nodes
+                document.querySelectorAll('.character-node').forEach(n => {
+                    n.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                });
+                
+                // Rest of the existing function...
+                const panel = document.getElementById('characterDetailsPanel');
+                panel.classList.add('translate-x-full');
+                currentCharacterData = null;
+            }
+
+            function refreshCharacterTree() {
+                const container = document.getElementById('characterTreeContainer');
+                const nodes = container.querySelectorAll('.character-node');
+                
+                // Add click handlers to nodes
+                nodes.forEach(node => {
+                    node.onclick = function(e) {
+                        e.stopPropagation();
+                        showCharacterDetails(this);
+                    };
+                });
+
+                // Update relationship lines
+                updateRelationshipLines();
+            }
+
+            function updateRelationshipLines() {
+                const container = document.getElementById('characterTreeContainer');
+                if (!container) return;
+                
+                const nodes = container.querySelectorAll('.character-node');
+                
+                // Remove all existing dynamic lines
+                container.querySelectorAll('.character-link:not([data-static="true"])').forEach(link => link.remove());
+                
+                // Create a map of node positions
+                const nodePositions = {};
+                nodes.forEach(node => {
+                    const rect = node.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+                    
+                    // Get node center position relative to container
+                    const centerX = rect.left + rect.width/2 - containerRect.left;
+                    const centerY = rect.top + rect.height/2 - containerRect.top;
+                    
+                    nodePositions[node.getAttribute('data-name')] = {
+                        x: centerX,
+                        y: centerY,
+                        element: node
+                    };
+                });
+                
+                // Define the connections based on the reference image
+                const connections = [
+                    { from: "John Doe", to: "Mystery Figure" },
+                    { from: "John Doe", to: "Sarah" }
+                ];
+                
+                // Create connection lines
+                connections.forEach(conn => {
+                    const fromPos = nodePositions[conn.from];
+                    const toPos = nodePositions[conn.to];
+                    
+                    if (fromPos && toPos) {
+                        // Calculate line properties
+                        const dx = toPos.x - fromPos.x;
+                        const dy = toPos.y - fromPos.y;
+                        const length = Math.sqrt(dx * dx + dy * dy);
+                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+                        
+                        // Create the line element
+                        const line = document.createElement('div');
+                        line.className = 'character-link';
+                        line.style.width = `${length}px`;
+                        line.style.left = `${fromPos.x}px`;
+                        line.style.top = `${fromPos.y}px`;
+                        line.style.transform = `rotate(${angle}deg)`;
+                        
+                        // Add to container
+                        container.appendChild(line);
+                    }
+                });
+            }
+
+            // Character Tree container click handler for adding new characters
+            const characterTreeContainer = document.getElementById('characterTreeContainer');
+            if (characterTreeContainer) {
+                characterTreeContainer.addEventListener('click', function(e) {
+                    // Only register clicks directly on the container (not on nodes)
+                    if (e.target === this || e.target.classList.contains('character-tree')) {
+                        // Store the click position for potential character placement
+                        const rect = this.getBoundingClientRect();
+                        networkClickPosition = {
+                            x: e.clientX - rect.left,
+                            y: e.clientY - rect.top
+                        };
+                        
+                        // Show the interaction overlay
+                        const overlay = document.getElementById('networkInteractionOverlay');
+                        overlay.style.display = 'block';
+                        
+                        // Position the overlay interaction button near the click
+                        const overlayBtn = overlay.querySelector('div');
+                        overlayBtn.style.left = networkClickPosition.x + 'px';
+                        overlayBtn.style.top = networkClickPosition.y + 'px';
+                    }
+                });
+            }
+
+            // Add Character from Network button click handler
+            const addCharacterFromNetworkBtn = document.getElementById('addCharacterFromNetworkBtn');
+            if (addCharacterFromNetworkBtn) {
+                addCharacterFromNetworkBtn.addEventListener('click', function() {
+                    // Hide the overlay
+                    document.getElementById('networkInteractionOverlay').style.display = 'none';
+                    
+                    // Open the modal for new character
+                    openModal('character', {
+                        posX: networkClickPosition.x,
+                        posY: networkClickPosition.y
+                    });
+                });
+            }
+
+            // Initialize character tree
+            refreshCharacterTree();
+            
+            // Hide network overlay when clicking anywhere else
+            document.addEventListener('click', function(e) {
+                const overlay = document.getElementById('networkInteractionOverlay');
+                if (overlay && !e.target.closest('#characterTreeContainer')) {
+                    overlay.style.display = 'none';
+                }
+                
+                // Close character details panel when clicking outside
+                const panel = document.getElementById('characterDetailsPanel');
+                const characterNodes = document.querySelectorAll('.character-node');
+                
+                if (panel && !panel.contains(e.target) && 
+                    !Array.from(characterNodes).some(node => node.contains(e.target))) {
+                    closeCharacterDetails();
+                }
+            });
+
+            // Add openModal function definition
+            window.openModal = function(type, data = null) {
+                const modal = document.getElementById('addItemModal');
+                const titleElement = modal.querySelector('h2');
+                const typeSelectElement = modal.querySelector('select');
+                const nameInput = modal.querySelector('input[type="text"]');
+                const descriptionTextarea = modal.querySelector('textarea');
+                
+                if (type === 'character') {
+                    titleElement.textContent = data ? 'Edit Character' : 'Add New Character';
+                    
+                    if (data) {
+                        // Pre-fill with character data
+                        if (data.name) {
+                            nameInput.value = data.name;
+                        }
+                        
+                        if (data.traits || data.backstory) {
+                            let description = '';
+                            if (data.traits) description += `Traits: ${data.traits}\n`;
+                            if (data.backstory) description += `Backstory: ${data.backstory}`;
+                            descriptionTextarea.value = description.trim();
+                        }
+                    }
+                }
+                
+                // Show the modal
+                modal.classList.remove('hidden');
+            };
+            
+            // Ensure closeModal is also defined in the global scope
+            window.closeModal = function() {
+                const modal = document.getElementById('addItemModal');
+                modal.classList.add('hidden');
+                
+                // Reset form fields
+                modal.querySelectorAll('input[type="text"], textarea').forEach(input => {
+                    input.value = '';
+                });
+            };
+            
+            // Make sure other functions are available globally if needed
+            window.showCharacterDetails = showCharacterDetails;
+            window.closeCharacterDetails = closeCharacterDetails;
+            window.refreshCharacterTree = refreshCharacterTree;
+            window.updateRelationshipLines = updateRelationshipLines;
+
+            // Fix edit button event listener
+            const editCharacterBtn = document.getElementById('editCharacterBtn');
+            if (editCharacterBtn) {
+                editCharacterBtn.addEventListener('click', function() {
+                    if (currentCharacterData) {
+                        openModal('character', currentCharacterData);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html> 
