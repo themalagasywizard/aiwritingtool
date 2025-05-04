@@ -1,7 +1,7 @@
 [build]
   functions = "./functions"
   publish = "."
-  command = "npm install"
+  command = "npm install && node scripts/process-templates.js"
   node_version = "18"
 
 [dev]
@@ -22,6 +22,10 @@
   memory = 1024
   # Set timeout to 120 seconds for production deployment
   timeout = 120
+
+# Process HTML files with environment variables
+[[plugins]]
+  package = "@netlify/plugin-html-templates"
 
 # Handle API redirects
 [[redirects]]
