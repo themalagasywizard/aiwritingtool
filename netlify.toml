@@ -13,8 +13,8 @@
 [functions]
   directory = "functions"
   node_bundler = "esbuild"
-  included_files = ["functions/config.js"]
-  external_node_modules = ["node-fetch"]
+  included_files = ["functions/config.js", "lib/supabase.js"]
+  external_node_modules = ["node-fetch", "@supabase/supabase-js"]
 
 [functions.generate-text]
   included_files = ["functions/config.js"]
@@ -38,4 +38,11 @@
     [headers.values]
     Access-Control-Allow-Origin = "*"
     Access-Control-Allow-Methods = "GET, POST, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type, Authorization" 
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Environment variable validation
+[context.production]
+  environment = { NODE_VERSION = "18.x" }
+
+[context.deploy-preview]
+  environment = { NODE_VERSION = "18.x" } 
