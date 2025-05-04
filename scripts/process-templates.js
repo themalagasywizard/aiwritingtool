@@ -4,11 +4,7 @@ const path = require('path');
 // Function to process HTML files and inject environment variables
 function processTemplates() {
     const files = ['index.html', 'auth/auth.html', 'auth/callback.html'];
-    const envVars = {
-        SUPABASE_URL: process.env.SUPABASE_URL || '',
-        SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || ''
-    };
-
+    
     files.forEach(file => {
         const filePath = path.join(__dirname, '..', file);
         
@@ -16,11 +12,18 @@ function processTemplates() {
             if (fs.existsSync(filePath)) {
                 let content = fs.readFileSync(filePath, 'utf8');
                 
-                // Replace environment variables
-                Object.entries(envVars).forEach(([key, value]) => {
-                    const regex = new RegExp(`<%= process.env.${key} %>`, 'g');
-                    content = content.replace(regex, value);
-                });
+                // Create a script tag with environment variables
+                const envScript = `
+                    <script>
+                        window.ENV = {
+                            SUPABASE_URL: '${process.env.SUPABASE_URL || ''}',
+                            SUPABASE_ANON_KEY: '${process.env.SUPABASE_ANON_KEY || ''}'
+                        };
+                    </script>
+                `;
+                
+                // Insert the script tag after the opening head tag
+                content = content.replace('<head>', '<head>' + envScript);
                 
                 fs.writeFileSync(filePath, content);
                 console.log(`Processed ${file} successfully`);

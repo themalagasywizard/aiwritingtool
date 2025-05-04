@@ -23,10 +23,6 @@
   # Set timeout to 120 seconds for production deployment
   timeout = 120
 
-# Process HTML files with environment variables
-[[plugins]]
-  package = "@netlify/plugin-html-templates"
-
 # Handle API redirects
 [[redirects]]
   from = "/api/functions/*"
