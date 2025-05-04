@@ -2,6 +2,7 @@
   functions = "./functions"
   publish = "."
   command = "npm install"
+  node_version = "18"
 
 [dev]
   framework = "#static"
@@ -23,13 +24,13 @@
   timeout = 120
 
 [[redirects]]
-  from = "/.netlify/functions/*"
-  to = "/.netlify/functions/:splat"
+  from = "/api/functions/*"
+  to = "/api/functions/:splat"
   status = 200
 
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/:splat"
+  to = "/api/:splat"
   status = 200
 
 # Add CORS headers
@@ -42,7 +43,7 @@
 
 # Environment variable validation
 [context.production]
-  environment = { NODE_VERSION = "18.x" }
+  environment = { NODE_VERSION = "18" }
 
 [context.deploy-preview]
-  environment = { NODE_VERSION = "18.x" } 
+  environment = { NODE_VERSION = "18" } 
