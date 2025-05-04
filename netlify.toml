@@ -65,6 +65,10 @@
 # Environment variable validation
 [context.production]
   environment = { NODE_VERSION = "18" }
+  # Add your environment variables in the Netlify dashboard
+  # SUPABASE_URL, SUPABASE_ANON_KEY, HF_API_KEY, DEEPSEEK_API_KEY
 
 [context.deploy-preview]
   environment = { NODE_VERSION = "18" } 
+  # Add your environment variables in the Netlify dashboard
+  # SUPABASE_URL, SUPABASE_ANON_KEY, HF_API_KEY, DEEPSEEK_API_KEY 
