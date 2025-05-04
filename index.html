@@ -12,26 +12,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                primary: '#4B5EAA',
-                primaryLight: '#E6E9F0',
-                secondary: '#6B7280',
-                accent: '#F472B6',
-                background: '#F9FAFB',
-                textPrimary: '#1F2937',
-                textSecondary: '#9CA3AF',
-                success: '#34D399',
-                error: '#EF4444',
-                warning: '#FBBF24',
-              },
-              boxShadow: {
-                'sm-custom': '0 2px 8px rgba(0, 0, 0, 0.05)',
-                'md-custom': '0 4px 12px rgba(0, 0, 0, 0.1)',
-              }
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4B5EAA',
+                        primaryLight: '#E6E9F0',
+                        secondary: '#6B7280',
+                        accent: '#F472B6',
+                        background: '#F9FAFB',
+                        textPrimary: '#1F2937',
+                        textSecondary: '#9CA3AF',
+                        success: '#34D399',
+                        error: '#EF4444',
+                        warning: '#FBBF24',
+                    }
+                }
             }
-          }
         }
     </script>
     <!-- Custom Styles -->
@@ -486,6 +482,44 @@
     </style>
 </head>
 <body class="h-screen flex flex-col">
+    <script type="module">
+        import { supabase } from './lib/supabase.js';
+
+        // Check authentication status
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                window.location.href = '/auth/auth.html';
+                return;
+            }
+
+            // Update UI with user info
+            const userAvatar = document.querySelector('#userAvatar');
+            if (userAvatar) {
+                userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.email)}&background=4B5EAA&color=fff`;
+            }
+        };
+
+        // Handle sign out
+        const handleSignOut = async () => {
+            const { error } = await supabase.auth.signOut();
+            if (!error) {
+                window.location.href = '/auth/auth.html';
+            }
+        };
+
+        // Add sign out handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const signOutBtn = document.querySelector('#signOutBtn');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', handleSignOut);
+            }
+        });
+
+        // Check auth on page load
+        checkAuth();
+    </script>
+
     <!-- Top Bar -->
     <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
         <div class="flex items-center space-x-4">
@@ -504,7 +538,9 @@
                 Save
             </button>
             <div class="relative group">
-                <img src="https://ui-avatars.com/api/?name=User&background=4B5EAA&color=fff" alt="User Avatar" class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
+                <img id="userAvatar" src="https://ui-avatars.com/api/?name=User&background=4B5EAA&color=fff" 
+                     alt="User Avatar" 
+                     class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
                 <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
                     <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                         <i class="fas fa-user-circle text-primary mr-2"></i>
@@ -514,9 +550,9 @@
                         <i class="fas fa-cog text-secondary mr-2"></i>
                         <span>Settings</span>
                     </div>
-                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
                         <i class="fas fa-sign-out-alt mr-2"></i>
-                        <span>Logout</span>
+                        <span>Sign Out</span>
                     </div>
                 </div>
             </div>
