@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "start-dev.bat",
-    "build": "echo 'No build step required'"
+    "build": "node scripts/process-templates.js"
   },
   "dependencies": {
     "node-fetch": "^2.6.9",

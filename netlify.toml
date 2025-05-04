@@ -1,7 +1,7 @@
 [build]
   functions = "./functions"
   publish = "."
-  command = "npm install"
+  command = "npm install && node scripts/process-templates.js"
   node_version = "18"
 
 [dev]
@@ -34,12 +34,36 @@
   to = "/api/:splat"
   status = 200
 
-# Serve index.html for all routes
+# Handle authentication redirects
 [[redirects]]
-  from = "/*"
+  from = "/auth/callback"
+  to = "/auth/callback.html"
+  status = 200
+
+[[redirects]]
+  from = "/auth/*"
+  to = "/auth/:splat"
+  status = 200
+
+# Auth route - needs to come before the default redirect
+[[redirects]]
+  from = "/auth"
+  to = "/auth/auth.html"
+  status = 200
+
+# Make sure index.html is accessible directly
+[[redirects]]
+  from = "/index.html"
   to = "/index.html"
   status = 200
-  force = true
+  force = false
+
+# Default redirect to index.html for authenticated users
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+  force = false
 
 # Add CORS headers
 [[headers]]
