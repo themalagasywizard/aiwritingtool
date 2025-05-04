@@ -8,14 +8,15 @@
   },
   "scripts": {
     "dev": "start-dev.bat",
-    "build": "echo 'No build step required'"
+    "build": "node scripts/process-templates.js"
   },
   "dependencies": {
     "node-fetch": "^2.6.9",
     "@supabase/supabase-js": "^2.39.3"
   },
   "devDependencies": {
-    "netlify-cli": "^15.0.0"
+    "netlify-cli": "^15.0.0",
+    "@netlify/plugin-html-templates": "^1.0.0"
   },
   "author": "",
   "license": "MIT"
