@@ -1,0 +1,61 @@
+[build]
+  functions = "./functions"
+  publish = "."
+  command = "npm install"
+  node_version = "18"
+
+[dev]
+  framework = "#static"
+  targetPort = 8888
+  port = 8888
+  functionsPort = 9999
+  functionsSiteTimeout = 120
+  
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+  included_files = ["functions/config.js", "lib/supabase.js"]
+  external_node_modules = ["node-fetch", "@supabase/supabase-js"]
+
+[functions.generate-text]
+  included_files = ["functions/config.js"]
+  memory = 1024
+  # Set timeout to 120 seconds for production deployment
+  timeout = 120
+
+# Handle API redirects
+[[redirects]]
+  from = "/api/functions/*"
+  to = "/api/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+  status = 200
+
+# Serve index.html for all routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = true
+
+# Add CORS headers
+[[headers]]
+  for = "/*"
+    [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Environment variable validation
+[context.production]
+  environment = { NODE_VERSION = "18" }
+  # Add your environment variables in the Netlify dashboard
+  # SUPABASE_URL, SUPABASE_ANON_KEY, HF_API_KEY, DEEPSEEK_API_KEY
+
+[context.deploy-preview]
+  environment = { NODE_VERSION = "18" } 
+  # Add your environment variables in the Netlify dashboard
+  # SUPABASE_URL, SUPABASE_ANON_KEY, HF_API_KEY, DEEPSEEK_API_KEY 

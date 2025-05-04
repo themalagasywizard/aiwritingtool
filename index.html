@@ -12,26 +12,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-          theme: {
-            extend: {
-              colors: {
-                primary: '#4B5EAA',
-                primaryLight: '#E6E9F0',
-                secondary: '#6B7280',
-                accent: '#F472B6',
-                background: '#F9FAFB',
-                textPrimary: '#1F2937',
-                textSecondary: '#9CA3AF',
-                success: '#34D399',
-                error: '#EF4444',
-                warning: '#FBBF24',
-              },
-              boxShadow: {
-                'sm-custom': '0 2px 8px rgba(0, 0, 0, 0.05)',
-                'md-custom': '0 4px 12px rgba(0, 0, 0, 0.1)',
-              }
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4B5EAA',
+                        primaryLight: '#E6E9F0',
+                        secondary: '#6B7280',
+                        accent: '#F472B6',
+                        background: '#F9FAFB',
+                        textPrimary: '#1F2937',
+                        textSecondary: '#9CA3AF',
+                        success: '#34D399',
+                        error: '#EF4444',
+                        warning: '#FBBF24',
+                    }
+                }
             }
-          }
         }
     </script>
     <!-- Custom Styles -->
@@ -276,15 +272,20 @@
         /* AI Assistant Styles */
         .ai-mode-btn {
             transition: all 0.2s ease;
+            flex: 1;
+            min-width: 120px;
+            padding: 0.5rem 2rem;
         }
 
         .ai-mode-btn.active {
             background-color: var(--primary);
             color: white;
+            box-shadow: 0 2px 4px rgba(75, 94, 170, 0.2);
         }
 
         .ai-mode-btn:not(.active):hover {
             background-color: var(--primaryLight);
+            transform: translateY(-1px);
         }
 
         @keyframes pulse {
@@ -306,6 +307,16 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             font-size: 0.95rem;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: messageAppear 0.3s ease forwards;
+        }
+
+        @keyframes messageAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .chat-message.user {
@@ -336,6 +347,11 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
+            overflow-y: auto;
+            max-height: calc(100vh - 300px);
+            min-height: 300px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary) transparent;
         }
 
         #chatHistory::-webkit-scrollbar {
@@ -344,11 +360,18 @@
 
         #chatHistory::-webkit-scrollbar-track {
             background: transparent;
+            border-radius: 3px;
         }
 
         #chatHistory::-webkit-scrollbar-thumb {
             background-color: var(--secondary);
             border-radius: 3px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        #chatHistory::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary);
         }
 
         /* Chat input styles */
@@ -418,8 +441,35 @@
 
         #aiOutput {
             min-height: 200px;
+            max-height: 400px;
             font-size: 1rem;
             line-height: 1.6;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background-color: #F9FAFB;
+            border-radius: 0.5rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary) transparent;
+        }
+
+        #aiOutput::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #aiOutput::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+
+        #aiOutput::-webkit-scrollbar-thumb {
+            background-color: var(--secondary);
+            border-radius: 3px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        #aiOutput::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary);
         }
 
         @media (max-width: 768px) {
@@ -432,6 +482,27 @@
     </style>
 </head>
 <body class="h-screen flex flex-col">
+    <script type="module">
+        // Initialize with a default user avatar
+        const userAvatar = document.querySelector('#userAvatar');
+        if (userAvatar) {
+            userAvatar.src = `https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff`;
+        }
+
+        // Handle sign out (just reload the page for now)
+        const handleSignOut = () => {
+            window.location.reload();
+        };
+
+        // Add sign out handler
+        document.addEventListener('DOMContentLoaded', () => {
+            const signOutBtn = document.querySelector('#signOutBtn');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', handleSignOut);
+            }
+        });
+    </script>
+
     <!-- Top Bar -->
     <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
         <div class="flex items-center space-x-4">
@@ -450,19 +521,21 @@
                 Save
             </button>
             <div class="relative group">
-                <img src="https://ui-avatars.com/api/?name=User&background=4B5EAA&color=fff" alt="User Avatar" class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
+                <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
+                     alt="User Avatar" 
+                     class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
                 <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
                     <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                         <i class="fas fa-user-circle text-primary mr-2"></i>
-                        <span>Profile</span>
+                        <span>Guest User</span>
                     </div>
                     <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                         <i class="fas fa-cog text-secondary mr-2"></i>
                         <span>Settings</span>
                     </div>
-                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                        <i class="fas fa-sign-out-alt mr-2"></i>
-                        <span>Logout</span>
+                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        <span>Refresh</span>
                     </div>
                 </div>
             </div>
@@ -614,14 +687,27 @@
                     <!-- Mode Toggle -->
                     <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-3">
                         <button class="ai-mode-btn flex-1 py-1 px-2 text-sm font-medium rounded active" data-mode="generate">Generate</button>
-                        <button class="ai-mode-btn flex-1 py-1 px-2 text-sm font-medium rounded" data-mode="edit">Edit</button>
                         <button class="ai-mode-btn flex-1 py-1 px-2 text-sm font-medium rounded" data-mode="chat">Chat</button>
                     </div>
                     
                     <!-- Model Selector -->
                     <select id="aiModel" class="w-full bg-primaryLight text-primary rounded-lg p-2 text-sm">
+                        <!-- DeepSeek Models (Direct API) -->
+                        <option value="deepseek-chat">DeepSeek Chat (V3) - Featured</option>
+                        <option value="deepseek-reasoner">DeepSeek Reasoner (R1) - Featured</option>
+                        
+                        <option disabled>──────── Hugging Face Models ────────</option>
                         <option value="distilgpt2">DistilGPT-2 (Fast)</option>
-                        <option value="gpt-neo">GPT-Neo (Advanced)</option>
+                        <option value="gpt2-medium">GPT-2 Medium (Balanced)</option>
+                        <!-- New models -->
+                        <option value="Qwen/Qwen3-0.6B">Qwen3-0.6B (Small but Improved)</option>
+                        <option value="google/gemma-2b">Gemma-2B (Google's Lightweight)</option>
+                        <option value="meta-llama/Llama-3-8B-Instruct">Llama-3-8B (High Quality)</option>
+                        <option value="tiiuae/falcon-7b-instruct">Falcon-7B (Creative)</option>
+                        <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral-8x7B (Most Powerful)</option>
+                        <!-- Temporarily disabled due to timeouts -->
+                        <!-- <option value="EleutherAI/gpt-neo-125M">GPT-Neo 125M (Advanced)</option> -->
+                        <!-- <option value="facebook/opt-350m">OPT 350M (Creative)</option> -->
                     </select>
                 </div>
 
@@ -650,6 +736,11 @@
                             <button id="chatSubmit" class="btn btn-primary flex-shrink-0" disabled>
                                 <i class="fas fa-paper-plane"></i>
                             </button>
+                        </div>
+                        
+                        <!-- Token usage info for DeepSeek models -->
+                        <div id="tokenUsageInfo" class="text-xs text-gray-500 mt-2 hidden">
+                            <span>Token usage: <span id="promptTokens">0</span> prompt + <span id="completionTokens">0</span> completion = <span id="totalTokens">0</span> total</span>
                         </div>
                     </div>
                 </div>
@@ -1797,6 +1888,7 @@
             const chatSubmit = document.getElementById('chatSubmit');
             const chatHistory = document.getElementById('chatHistory');
             const aiToast = document.getElementById('aiToast');
+            const aiModel = document.getElementById('aiModel');
             
             let currentMode = 'generate';
             
@@ -1851,15 +1943,21 @@
             function updatePlaceholder() {
                 const placeholders = {
                     generate: 'Write a scene with Jane...',
-                    edit: 'Make this paragraph more suspenseful...',
                     chat: 'Ask the AI...'
                 };
                 
                 if (currentMode === 'chat') {
                     chatInput.placeholder = placeholders.chat;
                 } else {
-                    aiInput.placeholder = placeholders[currentMode];
+                    aiInput.placeholder = placeholders.generate;
                 }
+            }
+            
+            // Get the active context items
+            function getActiveContext() {
+                // In a real implementation, this would get the actual context from the sidebar
+                // For now, we'll return a mock context
+                return ['Jane', 'Darkwood Forest'];
             }
             
             // Handle input validation and submit button state
@@ -1898,8 +1996,13 @@
                 autoExpandTextarea(this);
             });
             
-            // Handle chat submit
-            chatSubmit.addEventListener('click', () => {
+            // Add a delay function to rate limit requests
+            function delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            
+            // Handle chat submit with Hugging Face API call
+            chatSubmit.addEventListener('click', async () => {
                 const message = chatInput.value.trim();
                 if (!message) return;
                 
@@ -1922,23 +2025,121 @@
                 chatHistory.appendChild(typingIndicator);
                 chatHistory.scrollTop = chatHistory.scrollHeight;
                 
-                // TODO: Make actual API call here
-                setTimeout(() => {
+                try {
+                    // Add a small delay to avoid hitting rate limits
+                    await delay(500);
+                    
+                    const model = aiModel.value;
+                    const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prompt: message,
+                            context: getActiveContext(),
+                            mode: 'chat',
+                            tone: 'neutral',
+                            length: 200,
+                        }),
+                    });
+
+                    const data = await response.json();
+                    
                     // Remove typing indicator
                     typingIndicator.remove();
                     
-                    // Add AI response
-                    const response = `I understand you're interested in ${message.toLowerCase()}. Let me help you with that.
-
-Here are some suggestions:
-1. Consider the emotional impact
-2. Think about the pacing
-3. Look at it from different perspectives
-
-Would you like me to elaborate on any of these points?`;
+                    if (data.error && !data.text) {
+                        throw new Error(data.error);
+                    }
                     
-                    addChatMessage(response, false);
-                }, 1500);
+                    // Format the response text to remove the input prompt if it's repeated
+                    let responseText = data.text || '';
+                    if (responseText.includes(message)) {
+                        responseText = responseText.replace(message, '');
+                    }
+                    
+                    // Add model information to the response
+                    let formattedResponse = responseText || 'I apologize, but I couldn\'t generate a proper response.';
+                    
+                    // Add model info for non-fallback responses
+                    if (data.model && !data.isFallback) {
+                        formattedResponse = `<div class="text-xs text-gray-500 mb-2">Using model: ${data.model}</div>${formattedResponse}`;
+                    }
+                    
+                    // Add warning for fallback responses
+                    if (data.isFallback) {
+                        formattedResponse = `<div class="text-xs text-orange-500 mb-2">Note: Using offline response due to API limits.</div>${formattedResponse}`;
+                    }
+                    
+                    // Add AI response
+                    addChatMessage(formattedResponse, false, true);
+                } catch (error) {
+                    console.error('Error:', error);
+                    typingIndicator.remove();
+                    addChatMessage(`Error: ${error.message || 'Could not connect to AI. Please try again later.'}`, false);
+                    showToast('Error connecting to AI', 'error');
+                }
+            });
+            
+            // Handle AI submit with Hugging Face API call for Generate/Edit modes
+            aiSubmit.addEventListener('click', async () => {
+                const prompt = aiInput.value.trim();
+                if (!prompt) return;
+                
+                // Show loading state
+                aiOutput.innerHTML = '<p class="text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Generating...</p>';
+                aiInput.value = '';
+                validateInput(aiInput);
+                
+                try {
+                    // Add a small delay to avoid hitting rate limits
+                    await delay(500);
+                    
+                    const model = aiModel.value;
+                    const tone = document.getElementById('aiTone').value;
+                    const length = document.getElementById('aiLength').value;
+                    
+                    const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prompt: prompt,
+                            context: getActiveContext(),
+                            mode: currentMode,
+                            tone: tone,
+                            length: length,
+                        }),
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.error && !data.text) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Format the response text
+                    let responseText = data.text || '';
+                    // Remove the input prompt if it's repeated in the output
+                    if (responseText.includes(prompt)) {
+                        responseText = responseText.replace(prompt, '');
+                    }
+                    
+                    // Format the response with proper line breaks and paragraphs
+                    const formattedResponse = responseText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+                    
+                    // Show the model that was used
+                    const modelInfo = data.model ? `<div class="text-xs text-gray-500 mb-2">Generated with: ${data.model}</div>` : '';
+                    
+                    // Add a warning if this is a fallback response
+                    const fallbackWarning = data.isFallback ? 
+                        `<div class="text-xs text-orange-500 mb-2">Note: This is an offline fallback response. ${data.error || ''}</div>` : '';
+                    
+                    aiOutput.innerHTML = `${modelInfo}${fallbackWarning}<p class="text-gray-700">${formattedResponse}</p>`;
+                    showToast(data.isFallback ? 'Fallback response provided' : 'Text generated successfully!');
+                } catch (error) {
+                    console.error('Error:', error);
+                    aiOutput.innerHTML = `<p class="text-error">Error: ${error.message || 'Could not connect to AI. Please try again later.'}</p>`;
+                    showToast('Error connecting to AI', 'error');
+                }
             });
             
             // Handle Enter key in chat input (Shift+Enter for new line)
@@ -1949,23 +2150,6 @@ Would you like me to elaborate on any of these points?`;
                         chatSubmit.click();
                     }
                 }
-            });
-            
-            // Handle AI submit
-            aiSubmit.addEventListener('click', () => {
-                const prompt = aiInput.value.trim();
-                if (!prompt) return;
-                
-                // Show loading state
-                aiOutput.innerHTML = '<p class="text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Generating...</p>';
-                aiInput.value = '';
-                validateInput(aiInput);
-                
-                // TODO: Make actual API call here
-                setTimeout(() => {
-                    aiOutput.innerHTML = '<p class="text-gray-700">Generated text will appear here...</p>';
-                    showToast('Text generated successfully!');
-                }, 1500);
             });
             
             // Handle keyboard shortcuts
@@ -2002,8 +2186,10 @@ Would you like me to elaborate on any of these points?`;
                 
                 if (type === 'success') {
                     toast.classList.add('bg-success');
+                    toast.classList.remove('bg-error');
                 } else {
                     toast.classList.add('bg-error');
+                    toast.classList.remove('bg-success');
                 }
                 
                 setTimeout(() => {
@@ -2016,7 +2202,7 @@ Would you like me to elaborate on any of these points?`;
             }
             
             // Add chat message
-            function addChatMessage(message, isUser = false) {
+            function addChatMessage(message, isUser = false, allowHtml = false) {
                 const messageEl = document.createElement('div');
                 messageEl.className = `chat-message ${isUser ? 'user' : 'ai'}`;
                 
@@ -2026,7 +2212,12 @@ Would you like me to elaborate on any of these points?`;
                     .replace(/(\d+\.\s.*?)(?=(?:\d+\.|$))/g, '<div class="mb-1">$1</div>')
                     .replace(/•\s(.*?)(?=(?:•|$))/g, '<div class="mb-1">• $1</div>');
                 
-                messageEl.innerHTML = `<p>${formattedMessage}</p>`;
+                // If allowHtml is true, use innerHTML directly
+                if (allowHtml) {
+                    messageEl.innerHTML = `<div>${formattedMessage}</div>`;
+                } else {
+                    messageEl.innerHTML = `<p>${formattedMessage}</p>`;
+                }
                 
                 chatHistory.appendChild(messageEl);
                 chatHistory.scrollTop = chatHistory.scrollHeight;
