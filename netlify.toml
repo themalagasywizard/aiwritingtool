@@ -23,6 +23,7 @@
   # Set timeout to 120 seconds for production deployment
   timeout = 120
 
+# Handle API redirects
 [[redirects]]
   from = "/api/functions/*"
   to = "/api/functions/:splat"
@@ -33,15 +34,21 @@
   to = "/api/:splat"
   status = 200
 
+# Handle authentication redirects
 [[redirects]]
-  from = "/*"
+  from = "/auth/*"
+  to = "/auth/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/"
   to = "/auth/auth.html"
   status = 200
   force = true
   conditions = {Role = ["!user"]}
 
 [[redirects]]
-  from = "/auth/*"
+  from = "/*"
   to = "/index.html"
   status = 200
   force = true
