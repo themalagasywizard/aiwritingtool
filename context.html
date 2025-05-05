@@ -366,7 +366,7 @@
             characters: [],
             locations: [],
             timelineEvents: [],
-            currentDay: 1
+            selectedDate: new Date().toISOString().split('T')[0] // Today's date in YYYY-MM-DD format
         };
 
         // Variables for storing event creation state
@@ -525,19 +525,19 @@
             
             if (!appState.timelineEvents || appState.timelineEvents.length === 0) return;
             
-            // Get the current day
-            const currentDay = parseInt(document.getElementById('daySelector').value) || 1;
+            // Get the current selected date
+            const currentDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
             
-            // Filter events for the current day
+            // Filter events for the current date
             const eventsForDay = appState.timelineEvents.filter(event => {
-                const eventDay = parseInt(event.date_time?.split(' ')[0]?.replace('Day', '')) || 0;
-                return eventDay === currentDay;
+                const eventDate = event.date_time?.split('T')[0];
+                return eventDate === currentDate;
             });
             
             eventsForDay.forEach(event => {
                 // Find the correct cell based on location and time
                 const locationName = event.locations?.name;
-                const time = event.date_time?.split(' ')[2]?.split(':')[0] || '0';
+                const time = event.date_time?.split('T')[1]?.substr(0, 2) || '00';
                 
                 const cell = document.querySelector(`.timeline-cell[data-location="${locationName}"][data-time="${time}"]`);
                 if (!cell) return;
@@ -611,6 +611,9 @@
                     window.location.href = '/auth/auth.html';
                     return;
                 }
+                
+                // Set default date in date selector
+                document.getElementById('dateSelector').value = appState.selectedDate;
                 
                 // Load project data
                 const projectLoaded = await loadCurrentProject();
@@ -785,7 +788,7 @@
             window.closeCharacterDetails = closeCharacterDetails;
             window.editEvent = editEvent;
             window.showToast = showToast;
-            window.handleDaySelectorChange = handleDaySelectorChange;
+            window.handleDateSelectorChange = handleDateSelectorChange;
             window.removeCharacterFromEvent = removeCharacterFromEvent;
             window.removeCharacterFromPending = removeCharacterFromPending;
             window.handleAddLocationClick = handleAddLocationClick;
@@ -936,10 +939,12 @@
             }
         }
 
-        // Day selector change event
-        function handleDaySelectorChange() {
-            const day = document.getElementById('daySelector').value;
-            appState.currentDay = parseInt(day);
+        // Date selector change event
+        function handleDateSelectorChange() {
+            const date = document.getElementById('dateSelector').value;
+            // Store selected date in app state
+            appState.selectedDate = date;
+            // Update timeline display
             displayTimelineEvents();
         }
 
@@ -1607,19 +1612,7 @@
                         <p class="text-sm text-gray-500 mt-1">Drag characters to the timeline</p>
                     </div>
                     <div id="charactersList" class="p-4 space-y-2">
-                        <!-- Character items for dragging -->
-                        <div class="character-item bg-white border-2 border-primary text-primary p-2 rounded-lg cursor-move shadow-sm" 
-                             draggable="true" data-name="Elizabeth" data-color="blue" data-role="Protagonist">
-                            <div class="text-sm font-medium">Elizabeth</div>
-                        </div>
-                        <div class="character-item bg-white border-2 border-error text-error p-2 rounded-lg cursor-move shadow-sm" 
-                             draggable="true" data-name="James" data-color="red" data-role="Antagonist">
-                            <div class="text-sm font-medium">James</div>
-                        </div>
-                        <div class="character-item bg-white border-2 border-accent text-accent p-2 rounded-lg cursor-move shadow-sm" 
-                             draggable="true" data-name="Sarah" data-color="green" data-role="Supporting">
-                            <div class="text-sm font-medium">Sarah</div>
-                        </div>
+                        <!-- Character items will be loaded from database -->
                     </div>
                 </div>
 
@@ -1628,13 +1621,12 @@
                     <div class="p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
                         <h2 class="text-lg font-semibold text-primary">Story Timeline</h2>
                         <div class="flex items-center space-x-3">
-                            <select id="daySelector" class="border border-gray-200 rounded-lg p-2 text-sm" onchange="handleDaySelectorChange()">
-                                <option value="1">Day 1</option>
-                                <option value="2">Day 2</option>
-                                <option value="3">Day 3</option>
-                                <option value="4">Day 4</option>
-                                <option value="5">Day 5</option>
-                            </select>
+                            <div class="relative">
+                                <input type="date" id="dateSelector" class="border border-gray-200 rounded-lg p-2 text-sm pr-8" onchange="handleDateSelectorChange()">
+                                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </button>
+                            </div>
                             <button class="btn btn-primary text-xs py-1 px-2" id="addLocationBtn" title="Add Location">
                                 <i class="fas fa-plus text-xs mr-1"></i>Add Location
                             </button>
@@ -1676,35 +1668,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="border-r border-b border-gray-200 p-3 font-medium">Castle</td>
-                                        <!-- Generate 24 cells for each hour -->
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="0" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="1" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="2" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="3" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="4" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="5" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="6" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="7" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="8" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="9" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="10" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="11" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="12" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="13" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="14" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="15" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="16" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="17" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="18" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="19" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="20" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="21" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="22" data-location="Castle"></td>
-                                        <td class="border-b border-gray-200 timeline-cell relative" data-time="23" data-location="Castle"></td>
-                                    </tr>
-                                    <!-- Repeat similar structure for other locations -->
+                                    <!-- Locations will be loaded from database -->
                                 </tbody>
                             </table>
                         </div>
