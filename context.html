@@ -373,6 +373,7 @@
         let pendingEventCell = null;
         let pendingEventCharacters = [];
         let pendingEventLocation = null;
+        let pendingEventLocationId = null;
         let pendingEventTime = null;
         let currentEventData = null;
         let currentCharacterData = null;
@@ -508,11 +509,32 @@
                 row.innerHTML = `
                     <td class="border-r border-b border-gray-200 p-3 font-medium">${location.name}</td>
                     ${Array(24).fill(0).map((_, i) => `
-                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="${i}" data-location="${location.name}"></td>
+                        <td class="border-r border-b border-gray-200 timeline-cell relative" 
+                            data-time="${i}" 
+                            data-location="${location.name}"
+                            data-location-id="${location.id}"></td>
                     `).join('')}
                 `;
                 
                 timelineBody.appendChild(row);
+            });
+            
+            // Add drop event listeners to all timeline cells
+            document.querySelectorAll('.timeline-cell').forEach(cell => {
+                cell.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    cell.classList.add('drag-over');
+                });
+                
+                cell.addEventListener('dragleave', () => {
+                    cell.classList.remove('drag-over');
+                });
+                
+                cell.addEventListener('drop', e => {
+                    e.preventDefault();
+                    cell.classList.remove('drag-over');
+                    handleCharacterDrop(e, cell);
+                });
             });
             
             // After updating locations, refresh the timeline events
@@ -737,16 +759,20 @@
             if (closeEventModalBtn) {
                 closeEventModalBtn.addEventListener('click', () => {
                     document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
                     pendingEventCell = null;
                     pendingEventCharacters = [];
+                    pendingEventLocationId = null;
                 });
             }
             
             if (cancelEventBtn) {
                 cancelEventBtn.addEventListener('click', () => {
                     document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
                     pendingEventCell = null;
                     pendingEventCharacters = [];
+                    pendingEventLocationId = null;
                 });
             }
             
@@ -761,6 +787,7 @@
                     }
                     
                     document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
                     
                     // Create the event
                     await createEvent(
@@ -768,12 +795,13 @@
                         pendingEventTime, 
                         description, 
                         pendingEventCharacters,
-                        pendingEventLocation
+                        pendingEventLocationId
                     );
                     
                     // Reset state
                     pendingEventCell = null;
                     pendingEventCharacters = [];
+                    pendingEventLocationId = null;
                 });
             }
 
@@ -870,37 +898,48 @@
         }
 
         // Event Functions
-        async function createEvent(name, time, description, characters, location) {
+        async function createEvent(name, time, description, characters, locationId) {
             try {
                 if (!appState.currentProject) {
                     showToast('No project selected', 'error');
                     return null;
                 }
                 
+                // Show loading indicator
+                const createEventBtn = document.getElementById('createEvent');
+                if (createEventBtn) {
+                    const originalText = createEventBtn.innerHTML;
+                    createEventBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+                    createEventBtn.disabled = true;
+                }
+                
+                // Extract character IDs
+                const characterIds = characters.map(char => char.id);
+                
+                // Create the event with proper location_id and link to characters
                 const { data, error } = await window.supabaseServices.timelineEvents.create(
                     appState.currentProject.id,
                     name,
                     time,
                     description,
-                    JSON.stringify(characters)
+                    locationId,
+                    characterIds
                 );
+                
+                // Reset button state
+                if (createEventBtn) {
+                    createEventBtn.innerHTML = 'Create Event';
+                    createEventBtn.disabled = false;
+                }
                 
                 if (error) throw error;
                 
-                // Update the event with location
-                const { data: updatedData, error: updateError } = await window.supabaseServices.timelineEvents.update(
-                    data[0].id,
-                    { location }
-                );
-                
-                if (updateError) throw updateError;
-                
                 showToast('Event created successfully');
                 await loadTimelineEvents();
-                return updatedData[0];
+                return data;
             } catch (error) {
                 console.error('Error creating event:', error);
-                showToast('Error creating event', 'error');
+                showToast('Error creating event: ' + (error.message || 'Unknown error'), 'error');
                 return null;
             }
         }
@@ -1572,6 +1611,54 @@
                 const saveBtn = document.getElementById('saveCharacter');
                 saveBtn.innerHTML = 'Save Character';
                 saveBtn.disabled = false;
+            }
+        }
+
+        // Add the character drop handler
+        function handleCharacterDrop(e, cell) {
+            try {
+                // Get the dropped character data
+                const characterDataStr = e.dataTransfer.getData('text/plain');
+                if (!characterDataStr) return;
+                
+                const characterData = JSON.parse(characterDataStr);
+                if (!characterData || !characterData.id) return;
+                
+                // Get location and time from cell
+                const locationName = cell.getAttribute('data-location');
+                const locationId = cell.getAttribute('data-location-id');
+                const time = cell.getAttribute('data-time');
+                
+                // Store pending event data
+                pendingEventCell = cell;
+                pendingEventLocation = locationName;
+                pendingEventLocationId = locationId;
+                
+                // Format the date and time for the event
+                const selectedDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
+                pendingEventTime = `${selectedDate}T${time.padStart(2, '0')}:00:00`;
+                
+                // Add character to pending characters
+                const existingCharacter = pendingEventCharacters.find(char => char.id === characterData.id);
+                if (!existingCharacter) {
+                    pendingEventCharacters.push(characterData);
+                }
+                
+                // Show event creation modal
+                document.getElementById('eventCreationModal').classList.remove('hidden');
+                document.getElementById('eventCreationModal').classList.add('flex');
+                
+                // Set time in the modal
+                document.getElementById('eventTime').value = `${time.padStart(2, '0')}:00`;
+                
+                // Update the characters list in the modal
+                updatePendingCharactersList();
+                
+                // Focus on event name field
+                document.getElementById('eventName').focus();
+            } catch (error) {
+                console.error('Error handling character drop:', error);
+                showToast('Error handling drop', 'error');
             }
         }
     </script>
