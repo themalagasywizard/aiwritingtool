@@ -413,6 +413,47 @@
             }
         }
 
+        function updateTimelineLocations() {
+            const timelineBody = document.querySelector('.timeline-grid table tbody');
+            if (!timelineBody) return;
+            
+            // Clear existing locations
+            timelineBody.innerHTML = '';
+            
+            if (!appState.locations || appState.locations.length === 0) {
+                // Add a default location if none exist
+                const defaultRow = document.createElement('tr');
+                const locationName = 'Default Location';
+                
+                defaultRow.innerHTML = `
+                    <td class="border-r border-b border-gray-200 p-3 font-medium">${locationName}</td>
+                    ${Array(24).fill(0).map((_, i) => `
+                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="${i}" data-location="${locationName}"></td>
+                    `).join('')}
+                `;
+                
+                timelineBody.appendChild(defaultRow);
+                return;
+            }
+            
+            // Add a row for each location
+            appState.locations.forEach(location => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td class="border-r border-b border-gray-200 p-3 font-medium">${location.name}</td>
+                    ${Array(24).fill(0).map((_, i) => `
+                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="${i}" data-location="${location.name}"></td>
+                    `).join('')}
+                `;
+                
+                timelineBody.appendChild(row);
+            });
+            
+            // After updating locations, refresh the timeline events
+            displayTimelineEvents();
+        }
+
         async function loadTimelineEvents() {
             try {
                 if (!appState.currentProject) return false;
@@ -701,6 +742,139 @@
             const day = document.getElementById('daySelector').value;
             appState.currentDay = parseInt(day);
             displayTimelineEvents();
+        }
+
+        // Character list population
+        function populateCharactersList() {
+            const charactersList = document.getElementById('charactersList');
+            charactersList.innerHTML = '';
+            
+            if (!appState.characters || appState.characters.length === 0) {
+                charactersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No characters yet</div>';
+                return;
+            }
+            
+            appState.characters.forEach(character => {
+                const characterItem = document.createElement('div');
+                characterItem.className = "character-item bg-white border-2 p-2 rounded-lg cursor-move shadow-sm";
+                characterItem.setAttribute('draggable', "true");
+                characterItem.setAttribute('data-character-id', character.id);
+                characterItem.setAttribute('data-name', character.name);
+                characterItem.setAttribute('data-role', character.role);
+                
+                characterItem.innerHTML = `
+                    <div class="text-sm font-medium">${character.name}</div>
+                    <div class="text-xs text-textSecondary">${character.role}</div>
+                `;
+                
+                // Add drag event listeners
+                characterItem.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        id: character.id,
+                        name: character.name,
+                        role: character.role
+                    }));
+                    this.classList.add('dragging');
+                });
+                
+                characterItem.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+                
+                charactersList.appendChild(characterItem);
+            });
+        }
+
+        // Timeline events display
+        function displayTimelineEvents() {
+            // Clear existing events
+            document.querySelectorAll('.timeline-event').forEach(el => el.remove());
+            
+            if (!appState.timelineEvents || appState.timelineEvents.length === 0) return;
+            
+            // Get the current day
+            const currentDay = parseInt(document.getElementById('daySelector').value) || 1;
+            
+            // Filter events for the current day
+            const eventsForDay = appState.timelineEvents.filter(event => {
+                const eventDay = parseInt(event.date_time?.split(' ')[0]?.replace('Day', '')) || 0;
+                return eventDay === currentDay;
+            });
+            
+            eventsForDay.forEach(event => {
+                // Find the correct cell based on location and time
+                const locationName = event.locations?.name;
+                const time = event.date_time?.split(' ')[2]?.split(':')[0] || '0';
+                
+                const cell = document.querySelector(`.timeline-cell[data-location="${locationName}"][data-time="${time}"]`);
+                if (!cell) return;
+                
+                // Create event element
+                const eventElement = document.createElement('div');
+                eventElement.className = 'timeline-event bg-primary text-white p-1 text-xs rounded text-center cursor-pointer';
+                eventElement.textContent = event.name;
+                eventElement.setAttribute('data-event-id', event.id);
+                
+                // Store event data
+                eventElement.setAttribute('data-description', event.description || '');
+                eventElement.setAttribute('data-characters', JSON.stringify(
+                    event.timeline_event_characters?.map(link => link.characters) || []
+                ));
+                
+                // Add event listeners
+                eventElement.addEventListener('click', showEventDetails);
+                eventElement.addEventListener('dragover', e => e.preventDefault());
+                eventElement.addEventListener('drop', handleEventDrop);
+                
+                cell.appendChild(eventElement);
+            });
+        }
+
+        // Character tree functions
+        function refreshCharacterTree() {
+            const container = document.getElementById('characterTreeContainer');
+            if (!container) return;
+            
+            // Clear existing nodes except static ones
+            container.querySelectorAll('.character-node:not([data-static="true"])').forEach(node => node.remove());
+            
+            // Create nodes for each character
+            appState.characters.forEach((character, index) => {
+                const node = document.createElement('div');
+                node.className = `character-node ${character.role.toLowerCase()}`;
+                node.setAttribute('data-name', character.name);
+                node.setAttribute('data-role', character.role);
+                node.setAttribute('data-traits', character.traits || '');
+                node.setAttribute('data-backstory', character.description || '');
+                
+                // Calculate position (you might want to adjust this based on your needs)
+                const angle = (index * 2 * Math.PI) / appState.characters.length;
+                const radius = 150; // Adjust based on your container size
+                const x = 50 + radius * Math.cos(angle);
+                const y = 50 + radius * Math.sin(angle);
+                
+                node.style.left = `${x}%`;
+                node.style.top = `${y}%`;
+                
+                node.innerHTML = `
+                    <div class="font-medium text-center">${character.name}</div>
+                    <div class="character-tooltip">
+                        <div class="font-bold text-primary mb-1">${character.name}</div>
+                        <div class="text-xs text-textSecondary mb-2">${character.role}</div>
+                        <div class="text-sm">${character.traits || 'No traits specified'}</div>
+                    </div>
+                `;
+                
+                node.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    showCharacterDetails(this);
+                });
+                
+                container.appendChild(node);
+            });
+            
+            // Update relationship lines
+            updateRelationshipLines();
         }
     </script>
 
