@@ -819,10 +819,20 @@
                                     order_index: idx
                                 }));
                             
+                            // Show saving indicator
+                            showToast('Updating chapter order...', 'success');
+                            
                             // Update database
                             const { error } = await chapters.updateOrder(updatedChapters);
                             
-                            if (error) throw error;
+                            if (error) {
+                                console.error('Error updating chapter order:', error);
+                                showToast('Failed to update chapter order: ' + (error.message || 'Unknown error'), 'error');
+                                // Reload chapters to restore original order
+                                await loadChapters(projectId);
+                                return;
+                            }
+                            
                             showToast('Chapter order updated', 'success');
                         } catch (error) {
                             console.error('Error updating chapter order:', error);
