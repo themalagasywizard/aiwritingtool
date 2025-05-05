@@ -13,6 +13,22 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase Module Import -->
+    <script type="module">
+        import * as supabaseModule from './lib/supabase.js';
+        // Make it available globally
+        window.supabaseModule = supabaseModule;
+        
+        // Set a default project ID if none exists
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if we have a project ID in localStorage
+            if (!localStorage.getItem('currentProjectId')) {
+                // Set a default project ID (this would be replaced with actual project creation in a real app)
+                localStorage.setItem('currentProjectId', 'default-project-1');
+                console.log('Set default project ID in localStorage');
+            }
+        });
+    </script>
     <script>
         tailwind.config = {
             theme: {
@@ -1243,7 +1259,10 @@
             
             // Show context modal when manage context button is clicked
             manageContextBtn.addEventListener('click', function() {
-                window.location.href = 'context.html';
+                // Get current project ID from localStorage
+                const currentProjectId = localStorage.getItem('currentProjectId');
+                // Navigate to context.html with project ID in query parameter
+                window.location.href = 'context.html' + (currentProjectId ? `?project=${currentProjectId}` : '');
             });
             
             // Close context modal

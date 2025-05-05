@@ -346,6 +346,7 @@
                         <span class="ml-2">Back to Editor</span>
                     </a>
                     <h1 class="text-xl font-semibold text-primary">Context Manager</h1>
+                    <span id="projectTitle" class="text-sm text-gray-500">Loading project...</span>
                 </div>
             </div>
             <!-- Tabs -->
@@ -723,7 +724,13 @@
             let currentCharacterData = null;
             let networkClickPosition = { x: 0, y: 0 };
             
-            // Supabase helpers
+            // Supabase helpers - Check if module was properly loaded
+            if (!window.supabaseModule) {
+                console.error("Supabase module not loaded! Please refresh the page.");
+                alert("Error: Supabase module not loaded. Please refresh the page.");
+                return;
+            }
+            
             const { supabase, projects, locations, characters, timelineEvents } = window.supabaseModule;
             
             // Initialize application with Supabase data
@@ -737,7 +744,9 @@
                     currentProjectId = urlParams.get('project') || localStorage.getItem('currentProjectId');
                     
                     if (!currentProjectId) {
-                        // Redirect back to the main page if no project ID
+                        // Redirect back to the main page if no project ID with error message
+                        console.error("No project ID found in URL or localStorage");
+                        alert("No project ID found. Redirecting to main page.");
                         window.location.href = 'index.html';
                         return;
                     }
@@ -756,7 +765,12 @@
                     }
                     
                     // 3. Set project title
-                    document.querySelector('#projectTitle').textContent = project.title || 'Story Context';
+                    const projectTitleEl = document.querySelector('#projectTitle');
+                    if (projectTitleEl) {
+                        projectTitleEl.textContent = project.title || 'Story Context';
+                    } else {
+                        console.warn("Project title element not found");
+                    }
                     
                     // 4. Load data in parallel
                     await Promise.all([
