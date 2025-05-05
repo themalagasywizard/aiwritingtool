@@ -616,6 +616,48 @@
 
         // Initialize all event handlers
         function initializeEventHandlers() {
+            // Initialize tab switching
+            const contextTabs = document.querySelectorAll('.context-tab');
+            const characterTreeView = document.getElementById('characterTreeView');
+            const regularListView = document.getElementById('regularListView');
+            
+            contextTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs
+                    contextTabs.forEach(t => {
+                        t.classList.remove('border-primary', 'text-primary', 'font-medium');
+                        t.classList.add('border-transparent');
+                    });
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('border-primary', 'text-primary', 'font-medium');
+                    this.classList.remove('border-transparent');
+                    
+                    // Get the tab name
+                    const tabName = this.getAttribute('data-tab');
+                    
+                    // Show the corresponding form and hide others
+                    document.querySelectorAll('.context-form-container').forEach(form => {
+                        if (form.id === tabName + 'Form') {
+                            form.classList.remove('hidden');
+                        } else {
+                            form.classList.add('hidden');
+                        }
+                    });
+                    
+                    // Toggle between character tree and regular views
+                    if (tabName === 'protagonists') {
+                        characterTreeView.classList.remove('hidden');
+                        regularListView.classList.add('hidden');
+                        // Refresh the character tree
+                        refreshCharacterTree();
+                    } else {
+                        characterTreeView.classList.add('hidden');
+                        regularListView.classList.remove('hidden');
+                    }
+                });
+            });
+
             // Initialize location modal handlers
             const addLocationBtn = document.getElementById('addLocationBtn');
             const closeLocationModalBtn = document.getElementById('closeLocationModal');
@@ -733,6 +775,12 @@
                     return;
                 }
 
+                // Show loading state
+                const createLocationBtn = document.getElementById('createLocation');
+                const originalText = createLocationBtn.innerHTML;
+                createLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+                createLocationBtn.disabled = true;
+
                 // Create location in database
                 const { data, error } = await window.supabaseServices.locations.create(
                     appState.currentProject.id,
@@ -744,12 +792,27 @@
 
                 if (error) throw error;
 
-                showToast('Location created successfully');
+                // Update UI
+                showToast('Location created successfully', 'success');
                 closeLocationModal();
+                
+                // Reset form
+                document.getElementById('locationName').value = '';
+                
+                // Refresh locations
                 await loadLocations();
+                
+                // Reset button state
+                createLocationBtn.innerHTML = originalText;
+                createLocationBtn.disabled = false;
             } catch (error) {
                 console.error('Error creating location:', error);
                 showToast('Error creating location', 'error');
+                
+                // Reset button state
+                const createLocationBtn = document.getElementById('createLocation');
+                createLocationBtn.innerHTML = 'Add Location';
+                createLocationBtn.disabled = false;
             }
         }
 
@@ -831,6 +894,92 @@
         }
 
         // Character tree functions
+        function updateRelationshipLines() {
+            const container = document.getElementById('characterTreeContainer');
+            if (!container) return;
+
+            // Clear all existing relationship lines
+            document.querySelectorAll('.character-link').forEach(link => link.remove());
+
+            // Get all character nodes
+            const characterNodes = document.querySelectorAll('.character-node');
+            if (characterNodes.length < 2) return; // Need at least 2 nodes for relationships
+
+            // Create an adjacency list of relationships
+            const relationships = {};
+
+            // Initialize relationships for all characters
+            characterNodes.forEach(node => {
+                const name = node.getAttribute('data-name');
+                relationships[name] = [];
+            });
+
+            // Populate relationships
+            characterNodes.forEach(node => {
+                const name = node.getAttribute('data-name');
+                const nodeRelationships = JSON.parse(node.getAttribute('data-relationships') || '[]');
+
+                // Add bidirectional relationships
+                nodeRelationships.forEach(relatedName => {
+                    if (relationships[name] && !relationships[name].includes(relatedName)) {
+                        relationships[name].push(relatedName);
+                    }
+                    if (relationships[relatedName] && !relationships[relatedName].includes(name)) {
+                        relationships[relatedName].push(name);
+                    }
+                });
+            });
+
+            // Create lines for each relationship (avoiding duplicates)
+            const processedPairs = new Set();
+
+            Object.keys(relationships).forEach(name => {
+                const node = Array.from(characterNodes).find(n => n.getAttribute('data-name') === name);
+
+                relationships[name].forEach(relatedName => {
+                    const relatedNode = Array.from(characterNodes).find(n => n.getAttribute('data-name') === relatedName);
+
+                    // Create a unique key for this pair
+                    const pairKey = [name, relatedName].sort().join('_');
+
+                    // Only process each pair once
+                    if (!processedPairs.has(pairKey) && node && relatedNode) {
+                        createRelationshipLine(node, relatedNode, container);
+                        processedPairs.add(pairKey);
+                    }
+                });
+            });
+        }
+
+        function createRelationshipLine(nodeA, nodeB, container) {
+            // Get positions
+            const rectA = nodeA.getBoundingClientRect();
+            const rectB = nodeB.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+
+            // Calculate center points relative to container
+            const aX = rectA.left + rectA.width / 2 - containerRect.left;
+            const aY = rectA.top + rectA.height / 2 - containerRect.top;
+            const bX = rectB.left + rectB.width / 2 - containerRect.left;
+            const bY = rectB.top + rectB.height / 2 - containerRect.top;
+
+            // Calculate distance and angle
+            const distance = Math.sqrt(Math.pow(bX - aX, 2) + Math.pow(bY - aY, 2));
+            const angle = Math.atan2(bY - aY, bX - aX) * 180 / Math.PI;
+
+            // Create link element
+            const link = document.createElement('div');
+            link.className = 'character-link';
+            link.style.width = `${distance}px`;
+            link.style.top = `${aY}px`;
+            link.style.left = `${aX}px`;
+            link.style.transform = `rotate(${angle}deg)`;
+
+            // Add to container
+            container.appendChild(link);
+            return link;
+        }
+
         function refreshCharacterTree() {
             const container = document.getElementById('characterTreeContainer');
             if (!container) return;
