@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+                    <script>
+                        window.ENV = {
+                            SUPABASE_URL: '',
+                            SUPABASE_ANON_KEY: ''
+                        };
+                    </script>
+                
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Context Manager - AIStoryCraft</title>
     <!-- Supabase Configuration -->
-    <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
-    <meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
+    <meta name="supabase-url" content="">
+    <meta name="supabase-anon-key" content="">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
@@ -16,6 +23,27 @@
     <!-- Frappe Gantt -->
     <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css">
+    
+    <!-- Set ENV values if they don't exist -->
+    <script>
+        // Ensure window.ENV exists with fallback values
+        if (!window.ENV) {
+            window.ENV = {
+                SUPABASE_URL: 'https://tadqfmqlqlahoknivhds.supabase.co',
+                SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhZHFmbXFscWxhaG9rbml2aGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTY0MTAsImV4cCI6MjA2MTg5MjQxMH0.6afLHxoHlX3U3JzsqX6d61mpmiu3bICkbHgb1XDY7V0'
+            };
+            
+            // Also update meta tags for backward compatibility
+            const urlMeta = document.querySelector('meta[name="supabase-url"]');
+            const keyMeta = document.querySelector('meta[name="supabase-anon-key"]');
+            
+            if (urlMeta) urlMeta.content = window.ENV.SUPABASE_URL;
+            if (keyMeta) keyMeta.content = window.ENV.SUPABASE_ANON_KEY;
+            
+            console.log('Using fallback Supabase credentials for development');
+        }
+    </script>
+    
     <!-- Supabase Module Import -->
     <script type="module">
         import * as supabaseModule from './lib/supabase.js';
