@@ -366,13 +366,14 @@
             characters: [],
             locations: [],
             timelineEvents: [],
-            currentDay: 1
+            selectedDate: new Date().toISOString().split('T')[0] // Today's date in YYYY-MM-DD format
         };
 
         // Variables for storing event creation state
         let pendingEventCell = null;
         let pendingEventCharacters = [];
         let pendingEventLocation = null;
+        let pendingEventLocationId = null;
         let pendingEventTime = null;
         let currentEventData = null;
         let currentCharacterData = null;
@@ -508,11 +509,32 @@
                 row.innerHTML = `
                     <td class="border-r border-b border-gray-200 p-3 font-medium">${location.name}</td>
                     ${Array(24).fill(0).map((_, i) => `
-                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="${i}" data-location="${location.name}"></td>
+                        <td class="border-r border-b border-gray-200 timeline-cell relative" 
+                            data-time="${i}" 
+                            data-location="${location.name}"
+                            data-location-id="${location.id}"></td>
                     `).join('')}
                 `;
                 
                 timelineBody.appendChild(row);
+            });
+            
+            // Add drop event listeners to all timeline cells
+            document.querySelectorAll('.timeline-cell').forEach(cell => {
+                cell.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    cell.classList.add('drag-over');
+                });
+                
+                cell.addEventListener('dragleave', () => {
+                    cell.classList.remove('drag-over');
+                });
+                
+                cell.addEventListener('drop', e => {
+                    e.preventDefault();
+                    cell.classList.remove('drag-over');
+                    handleCharacterDrop(e, cell);
+                });
             });
             
             // After updating locations, refresh the timeline events
@@ -525,19 +547,19 @@
             
             if (!appState.timelineEvents || appState.timelineEvents.length === 0) return;
             
-            // Get the current day
-            const currentDay = parseInt(document.getElementById('daySelector').value) || 1;
+            // Get the current selected date
+            const currentDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
             
-            // Filter events for the current day
+            // Filter events for the current date
             const eventsForDay = appState.timelineEvents.filter(event => {
-                const eventDay = parseInt(event.date_time?.split(' ')[0]?.replace('Day', '')) || 0;
-                return eventDay === currentDay;
+                const eventDate = event.date_time?.split('T')[0];
+                return eventDate === currentDate;
             });
             
             eventsForDay.forEach(event => {
                 // Find the correct cell based on location and time
                 const locationName = event.locations?.name;
-                const time = event.date_time?.split(' ')[2]?.split(':')[0] || '0';
+                const time = event.date_time?.split('T')[1]?.substr(0, 2) || '00';
                 
                 const cell = document.querySelector(`.timeline-cell[data-location="${locationName}"][data-time="${time}"]`);
                 if (!cell) return;
@@ -611,6 +633,9 @@
                     window.location.href = '/auth/auth.html';
                     return;
                 }
+                
+                // Set default date in date selector
+                document.getElementById('dateSelector').value = appState.selectedDate;
                 
                 // Load project data
                 const projectLoaded = await loadCurrentProject();
@@ -734,16 +759,20 @@
             if (closeEventModalBtn) {
                 closeEventModalBtn.addEventListener('click', () => {
                     document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
                     pendingEventCell = null;
                     pendingEventCharacters = [];
+                    pendingEventLocationId = null;
                 });
             }
             
             if (cancelEventBtn) {
                 cancelEventBtn.addEventListener('click', () => {
                     document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
                     pendingEventCell = null;
                     pendingEventCharacters = [];
+                    pendingEventLocationId = null;
                 });
             }
             
@@ -758,6 +787,7 @@
                     }
                     
                     document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
                     
                     // Create the event
                     await createEvent(
@@ -765,12 +795,13 @@
                         pendingEventTime, 
                         description, 
                         pendingEventCharacters,
-                        pendingEventLocation
+                        pendingEventLocationId
                     );
                     
                     // Reset state
                     pendingEventCell = null;
                     pendingEventCharacters = [];
+                    pendingEventLocationId = null;
                 });
             }
 
@@ -785,7 +816,7 @@
             window.closeCharacterDetails = closeCharacterDetails;
             window.editEvent = editEvent;
             window.showToast = showToast;
-            window.handleDaySelectorChange = handleDaySelectorChange;
+            window.handleDateSelectorChange = handleDateSelectorChange;
             window.removeCharacterFromEvent = removeCharacterFromEvent;
             window.removeCharacterFromPending = removeCharacterFromPending;
             window.handleAddLocationClick = handleAddLocationClick;
@@ -867,37 +898,48 @@
         }
 
         // Event Functions
-        async function createEvent(name, time, description, characters, location) {
+        async function createEvent(name, time, description, characters, locationId) {
             try {
                 if (!appState.currentProject) {
                     showToast('No project selected', 'error');
                     return null;
                 }
                 
+                // Show loading indicator
+                const createEventBtn = document.getElementById('createEvent');
+                if (createEventBtn) {
+                    const originalText = createEventBtn.innerHTML;
+                    createEventBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+                    createEventBtn.disabled = true;
+                }
+                
+                // Extract character IDs
+                const characterIds = characters.map(char => char.id);
+                
+                // Create the event with proper location_id and link to characters
                 const { data, error } = await window.supabaseServices.timelineEvents.create(
                     appState.currentProject.id,
                     name,
                     time,
                     description,
-                    JSON.stringify(characters)
+                    locationId,
+                    characterIds
                 );
+                
+                // Reset button state
+                if (createEventBtn) {
+                    createEventBtn.innerHTML = 'Create Event';
+                    createEventBtn.disabled = false;
+                }
                 
                 if (error) throw error;
                 
-                // Update the event with location
-                const { data: updatedData, error: updateError } = await window.supabaseServices.timelineEvents.update(
-                    data[0].id,
-                    { location }
-                );
-                
-                if (updateError) throw updateError;
-                
                 showToast('Event created successfully');
                 await loadTimelineEvents();
-                return updatedData[0];
+                return data;
             } catch (error) {
                 console.error('Error creating event:', error);
-                showToast('Error creating event', 'error');
+                showToast('Error creating event: ' + (error.message || 'Unknown error'), 'error');
                 return null;
             }
         }
@@ -936,10 +978,12 @@
             }
         }
 
-        // Day selector change event
-        function handleDaySelectorChange() {
-            const day = document.getElementById('daySelector').value;
-            appState.currentDay = parseInt(day);
+        // Date selector change event
+        function handleDateSelectorChange() {
+            const date = document.getElementById('dateSelector').value;
+            // Store selected date in app state
+            appState.selectedDate = date;
+            // Update timeline display
             displayTimelineEvents();
         }
 
@@ -1569,6 +1613,54 @@
                 saveBtn.disabled = false;
             }
         }
+
+        // Add the character drop handler
+        function handleCharacterDrop(e, cell) {
+            try {
+                // Get the dropped character data
+                const characterDataStr = e.dataTransfer.getData('text/plain');
+                if (!characterDataStr) return;
+                
+                const characterData = JSON.parse(characterDataStr);
+                if (!characterData || !characterData.id) return;
+                
+                // Get location and time from cell
+                const locationName = cell.getAttribute('data-location');
+                const locationId = cell.getAttribute('data-location-id');
+                const time = cell.getAttribute('data-time');
+                
+                // Store pending event data
+                pendingEventCell = cell;
+                pendingEventLocation = locationName;
+                pendingEventLocationId = locationId;
+                
+                // Format the date and time for the event
+                const selectedDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
+                pendingEventTime = `${selectedDate}T${time.padStart(2, '0')}:00:00`;
+                
+                // Add character to pending characters
+                const existingCharacter = pendingEventCharacters.find(char => char.id === characterData.id);
+                if (!existingCharacter) {
+                    pendingEventCharacters.push(characterData);
+                }
+                
+                // Show event creation modal
+                document.getElementById('eventCreationModal').classList.remove('hidden');
+                document.getElementById('eventCreationModal').classList.add('flex');
+                
+                // Set time in the modal
+                document.getElementById('eventTime').value = `${time.padStart(2, '0')}:00`;
+                
+                // Update the characters list in the modal
+                updatePendingCharactersList();
+                
+                // Focus on event name field
+                document.getElementById('eventName').focus();
+            } catch (error) {
+                console.error('Error handling character drop:', error);
+                showToast('Error handling drop', 'error');
+            }
+        }
     </script>
 
     <!-- Header with tabs -->
@@ -1607,19 +1699,7 @@
                         <p class="text-sm text-gray-500 mt-1">Drag characters to the timeline</p>
                     </div>
                     <div id="charactersList" class="p-4 space-y-2">
-                        <!-- Character items for dragging -->
-                        <div class="character-item bg-white border-2 border-primary text-primary p-2 rounded-lg cursor-move shadow-sm" 
-                             draggable="true" data-name="Elizabeth" data-color="blue" data-role="Protagonist">
-                            <div class="text-sm font-medium">Elizabeth</div>
-                        </div>
-                        <div class="character-item bg-white border-2 border-error text-error p-2 rounded-lg cursor-move shadow-sm" 
-                             draggable="true" data-name="James" data-color="red" data-role="Antagonist">
-                            <div class="text-sm font-medium">James</div>
-                        </div>
-                        <div class="character-item bg-white border-2 border-accent text-accent p-2 rounded-lg cursor-move shadow-sm" 
-                             draggable="true" data-name="Sarah" data-color="green" data-role="Supporting">
-                            <div class="text-sm font-medium">Sarah</div>
-                        </div>
+                        <!-- Character items will be loaded from database -->
                     </div>
                 </div>
 
@@ -1628,13 +1708,12 @@
                     <div class="p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
                         <h2 class="text-lg font-semibold text-primary">Story Timeline</h2>
                         <div class="flex items-center space-x-3">
-                            <select id="daySelector" class="border border-gray-200 rounded-lg p-2 text-sm" onchange="handleDaySelectorChange()">
-                                <option value="1">Day 1</option>
-                                <option value="2">Day 2</option>
-                                <option value="3">Day 3</option>
-                                <option value="4">Day 4</option>
-                                <option value="5">Day 5</option>
-                            </select>
+                            <div class="relative">
+                                <input type="date" id="dateSelector" class="border border-gray-200 rounded-lg p-2 text-sm pr-8" onchange="handleDateSelectorChange()">
+                                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </button>
+                            </div>
                             <button class="btn btn-primary text-xs py-1 px-2" id="addLocationBtn" title="Add Location">
                                 <i class="fas fa-plus text-xs mr-1"></i>Add Location
                             </button>
@@ -1676,35 +1755,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td class="border-r border-b border-gray-200 p-3 font-medium">Castle</td>
-                                        <!-- Generate 24 cells for each hour -->
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="0" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="1" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="2" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="3" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="4" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="5" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="6" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="7" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="8" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="9" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="10" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="11" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="12" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="13" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="14" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="15" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="16" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="17" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="18" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="19" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="20" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="21" data-location="Castle"></td>
-                                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="22" data-location="Castle"></td>
-                                        <td class="border-b border-gray-200 timeline-cell relative" data-time="23" data-location="Castle"></td>
-                                    </tr>
-                                    <!-- Repeat similar structure for other locations -->
+                                    <!-- Locations will be loaded from database -->
                                 </tbody>
                             </table>
                         </div>
