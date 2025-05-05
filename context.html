@@ -728,7 +728,87 @@
 
             // Load initial data
             await loadCharacters();
+            await loadLocations();
             await loadTimelineEvents();
+
+            // Function to load locations from Supabase
+            async function loadLocations() {
+                try {
+                    const { data: locations, error } = await window.settingsService.getByProject(currentProjectId);
+                    
+                    if (error) throw error;
+
+                    // Get the timeline grid tbody
+                    const timelineBody = document.querySelector('.timeline-grid table tbody');
+                    timelineBody.innerHTML = ''; // Clear existing rows
+
+                    // Add default "Castle" row if no locations exist
+                    if (!locations || locations.length === 0) {
+                        const defaultRow = createTimelineRow("Castle");
+                        timelineBody.appendChild(defaultRow);
+                    } else {
+                        // Add each location as a row
+                        locations.forEach(location => {
+                            const row = createTimelineRow(location.name);
+                            timelineBody.appendChild(row);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading locations:', error);
+                    alert('Error loading locations. Please try again.');
+                }
+            }
+
+            // Function to create a timeline row
+            function createTimelineRow(locationName) {
+                const row = document.createElement('tr');
+                
+                // Add location name cell
+                const nameCell = document.createElement('td');
+                nameCell.className = 'border-r border-b border-gray-200 p-3 font-medium';
+                nameCell.textContent = locationName;
+                row.appendChild(nameCell);
+                
+                // Add 24 hour cells
+                for (let i = 0; i < 24; i++) {
+                    const cell = document.createElement('td');
+                    cell.className = `border-r border-b border-gray-200 timeline-cell relative`;
+                    cell.setAttribute('data-time', i);
+                    cell.setAttribute('data-location', locationName);
+                    
+                    // Add border-right to all cells except the last one
+                    if (i < 23) {
+                        cell.classList.add('border-r');
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                return row;
+            }
+
+            // Function to save a new location
+            async function saveLocation(name, type = 'Location', description = '', keyFeatures = '') {
+                try {
+                    const { data: location, error } = await window.settingsService.create(
+                        currentProjectId,
+                        name,
+                        type,
+                        description,
+                        keyFeatures
+                    );
+
+                    if (error) throw error;
+
+                    // Reload locations to update the UI
+                    await loadLocations();
+
+                    return location;
+                } catch (error) {
+                    console.error('Error saving location:', error);
+                    throw error;
+                }
+            }
 
             // Function to load characters from Supabase
             async function loadCharacters() {
@@ -741,9 +821,12 @@
                     const charactersList = document.getElementById('charactersList');
                     charactersList.innerHTML = '';
 
-                    // Update character count
+                    // Update character count - safely
                     const characterCount = projectCharacters?.length || 0;
-                    document.querySelector('span.text-xs.text-textSecondary').textContent = `${characterCount} characters`;
+                    const countElement = document.querySelector('.p-4.border-b.border-gray-100 .text-sm.text-gray-500');
+                    if (countElement) {
+                        countElement.textContent = `${characterCount} characters`;
+                    }
 
                     if (projectCharacters && projectCharacters.length > 0) {
                         // Add characters to the drag list
@@ -773,41 +856,95 @@
 
                         // Add characters to the character tree
                         const characterTreeContainer = document.getElementById('characterTreeContainer');
-                        characterTreeContainer.innerHTML = ''; // Clear existing nodes
+                        if (characterTreeContainer) {
+                            characterTreeContainer.innerHTML = ''; // Clear existing nodes
 
-                        // Calculate positions for characters
-                        const centerX = characterTreeContainer.offsetWidth / 2;
-                        const centerY = 120;
-                        const radius = 100;
+                            // Calculate positions for characters
+                            const centerX = characterTreeContainer.offsetWidth / 2;
+                            const centerY = 120;
+                            const radius = 100;
 
-                        projectCharacters.forEach((character, index) => {
-                            const angle = (index * (2 * Math.PI / projectCharacters.length));
-                            const x = centerX + radius * Math.cos(angle);
-                            const y = centerY + radius * Math.sin(angle);
+                            projectCharacters.forEach((character, index) => {
+                                const angle = (index * (2 * Math.PI / projectCharacters.length));
+                                const x = centerX + radius * Math.cos(angle);
+                                const y = centerY + radius * Math.sin(angle);
 
-                            const node = document.createElement('div');
-                            node.className = `character-node ${character.role.toLowerCase()}`;
-                            node.style.top = `${y}px`;
-                            node.style.left = `${x}px`;
-                            node.setAttribute('data-name', character.name);
-                            node.setAttribute('data-role', character.role);
-                            node.setAttribute('data-traits', character.traits || '');
-                            node.setAttribute('data-backstory', character.description || '');
+                                const node = document.createElement('div');
+                                node.className = `character-node ${character.role.toLowerCase()}`;
+                                node.style.top = `${y}px`;
+                                node.style.left = `${x}px`;
+                                node.setAttribute('data-name', character.name);
+                                node.setAttribute('data-role', character.role);
+                                node.setAttribute('data-traits', character.traits || '');
+                                node.setAttribute('data-backstory', character.description || '');
 
-                            node.innerHTML = `
-                                <div class="font-medium text-center">${character.name.split(' ')[0]}</div>
-                            `;
+                                node.innerHTML = `
+                                    <div class="font-medium text-center">${character.name.split(' ')[0]}</div>
+                                `;
 
-                            characterTreeContainer.appendChild(node);
-                        });
+                                characterTreeContainer.appendChild(node);
+                            });
 
-                        // Update relationship lines
-                        updateRelationshipLines();
+                            // Update relationship lines
+                            updateRelationshipLines();
+                        }
                     }
                 } catch (error) {
                     console.error('Error loading characters:', error);
                     alert('Error loading characters. Please try again.');
                 }
+            }
+
+            // Add Location button click handler
+            const addLocationBtn = document.getElementById('addLocationBtn');
+            if (addLocationBtn) {
+                addLocationBtn.addEventListener('click', () => {
+                    const locationModal = document.getElementById('locationModal');
+                    if (locationModal) {
+                        locationModal.classList.remove('hidden');
+                        locationModal.classList.add('flex');
+                        document.getElementById('locationName').focus();
+                    }
+                });
+            }
+
+            // Location Modal handlers
+            const closeLocationModal = document.getElementById('closeLocationModal');
+            const cancelLocation = document.getElementById('cancelLocation');
+            const createLocation = document.getElementById('createLocation');
+
+            if (closeLocationModal) {
+                closeLocationModal.addEventListener('click', () => {
+                    document.getElementById('locationModal').classList.add('hidden');
+                    document.getElementById('locationName').value = '';
+                });
+            }
+
+            if (cancelLocation) {
+                cancelLocation.addEventListener('click', () => {
+                    document.getElementById('locationModal').classList.add('hidden');
+                    document.getElementById('locationName').value = '';
+                });
+            }
+
+            if (createLocation) {
+                createLocation.addEventListener('click', async () => {
+                    const locationName = document.getElementById('locationName').value.trim();
+                    
+                    if (locationName) {
+                        try {
+                            await saveLocation(locationName);
+                            document.getElementById('locationModal').classList.add('hidden');
+                            document.getElementById('locationName').value = '';
+                            alert('Location added successfully!');
+                        } catch (error) {
+                            console.error('Error adding location:', error);
+                            alert('Error adding location. Please try again.');
+                        }
+                    } else {
+                        alert('Please enter a location name');
+                    }
+                });
             }
 
             // Function to load timeline events from Supabase
