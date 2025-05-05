@@ -1,0 +1,22 @@
+{
+  "name": "aistorycraft",
+  "version": "1.0.0",
+  "description": "An AI-powered writing tool for storytellers",
+  "main": "index.html",
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "dev": "start-dev.bat",
+    "build": "node scripts/process-templates.js"
+  },
+  "dependencies": {
+    "node-fetch": "^2.6.9",
+    "@supabase/supabase-js": "^2.39.3"
+  },
+  "devDependencies": {
+    "netlify-cli": "^15.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+} 
