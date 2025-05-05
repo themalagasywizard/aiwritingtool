@@ -698,6 +698,33 @@
                 createLocationBtn.addEventListener('click', handleCreateLocationClick);
             }
 
+            // Initialize character form handlers
+            const newCharacterBtn = document.getElementById('newCharacterBtn');
+            const closeCharacterFormModalBtn = document.getElementById('closeCharacterFormModal');
+            const cancelCharacterFormBtn = document.getElementById('cancelCharacterForm');
+            const saveCharacterBtn = document.getElementById('saveCharacter');
+            const editCharacterBtn = document.getElementById('editCharacterBtn');
+            
+            if (newCharacterBtn) {
+                newCharacterBtn.addEventListener('click', openNewCharacterForm);
+            }
+            
+            if (closeCharacterFormModalBtn) {
+                closeCharacterFormModalBtn.addEventListener('click', closeCharacterForm);
+            }
+            
+            if (cancelCharacterFormBtn) {
+                cancelCharacterFormBtn.addEventListener('click', closeCharacterForm);
+            }
+            
+            if (saveCharacterBtn) {
+                saveCharacterBtn.addEventListener('click', saveCharacterData);
+            }
+            
+            if (editCharacterBtn) {
+                editCharacterBtn.addEventListener('click', openEditCharacterForm);
+            }
+
             // Initialize event modal handlers
             const closeEventModalBtn = document.getElementById('closeEventModal');
             const cancelEventBtn = document.getElementById('cancelEvent');
@@ -763,6 +790,10 @@
             window.handleAddLocationClick = handleAddLocationClick;
             window.closeLocationModal = closeLocationModal;
             window.handleCreateLocationClick = handleCreateLocationClick;
+            window.openNewCharacterForm = openNewCharacterForm;
+            window.closeCharacterForm = closeCharacterForm;
+            window.saveCharacterData = saveCharacterData;
+            window.openEditCharacterForm = openEditCharacterForm;
         }
 
         // Location Functions
@@ -1390,6 +1421,144 @@
                 showToast('Error handling drop', 'error');
             }
         }
+
+        // Character Form Functions
+        function openNewCharacterForm() {
+            console.log('Opening new character form');
+            // Reset the form fields
+            document.getElementById('characterFormTitle').textContent = 'Add New Character';
+            document.getElementById('characterName').value = '';
+            document.getElementById('characterRole').value = 'Protagonist';
+            document.getElementById('characterTraits').value = '';
+            document.getElementById('characterBackstory').value = '';
+            document.getElementById('characterRelationships').innerHTML = '<div class="text-sm text-gray-500">No relationships defined</div>';
+            
+            // Set the editing state to null (creating new)
+            currentCharacterData = null;
+            
+            // Show the modal
+            const modal = document.getElementById('characterFormModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Focus on the name field
+            document.getElementById('characterName').focus();
+        }
+
+        function openEditCharacterForm() {
+            if (!currentCharacterData) {
+                showToast('No character selected for editing', 'error');
+                return;
+            }
+            
+            console.log('Opening edit character form for:', currentCharacterData);
+            
+            // Set the form title
+            document.getElementById('characterFormTitle').textContent = 'Edit Character: ' + currentCharacterData.name;
+            
+            // Populate the form fields
+            document.getElementById('characterName').value = currentCharacterData.name;
+            document.getElementById('characterRole').value = currentCharacterData.role;
+            document.getElementById('characterTraits').value = currentCharacterData.traits || '';
+            document.getElementById('characterBackstory').value = currentCharacterData.backstory || '';
+            
+            // Show the modal
+            const modal = document.getElementById('characterFormModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Focus on the name field
+            document.getElementById('characterName').focus();
+        }
+
+        function closeCharacterForm() {
+            const modal = document.getElementById('characterFormModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            
+            // Reset current character data
+            currentCharacterData = null;
+        }
+
+        async function saveCharacterData() {
+            // Validate fields
+            const name = document.getElementById('characterName').value.trim();
+            const role = document.getElementById('characterRole').value;
+            const traits = document.getElementById('characterTraits').value.trim();
+            const backstory = document.getElementById('characterBackstory').value.trim();
+            
+            if (!name) {
+                showToast('Character name is required', 'error');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const saveBtn = document.getElementById('saveCharacter');
+                const originalText = saveBtn.textContent;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                saveBtn.disabled = true;
+                
+                if (currentCharacterData) {
+                    // Update existing character
+                    const { data, error } = await window.supabaseServices.characters.update(
+                        currentCharacterData.id,
+                        {
+                            name: name,
+                            role: role,
+                            traits: traits,
+                            backstory: backstory,
+                            updated_at: new Date().toISOString()
+                        }
+                    );
+                    
+                    if (error) throw error;
+                    
+                    // Update the character in the app state
+                    const index = appState.characters.findIndex(c => c.id === currentCharacterData.id);
+                    if (index !== -1) {
+                        appState.characters[index] = data[0];
+                    }
+                    
+                    showToast('Character updated successfully');
+                } else {
+                    // Create new character
+                    const { data, error } = await window.supabaseServices.characters.create(
+                        appState.currentProject.id,
+                        name,
+                        role,
+                        traits,
+                        backstory
+                    );
+                    
+                    if (error) throw error;
+                    
+                    // Add the new character to the app state
+                    appState.characters.push(data[0]);
+                    
+                    showToast('Character created successfully');
+                }
+                
+                // Refresh the characters list and tree
+                populateCharactersList();
+                refreshCharacterTree();
+                
+                // Close the form
+                closeCharacterForm();
+                
+                // Reset button state
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            } catch (error) {
+                console.error('Error saving character:', error);
+                showToast('Error saving character: ' + (error.message || 'Unknown error'), 'error');
+                
+                // Reset button state
+                const saveBtn = document.getElementById('saveCharacter');
+                saveBtn.innerHTML = 'Save Character';
+                saveBtn.disabled = false;
+            }
+        }
     </script>
 
     <!-- Header with tabs -->
@@ -1540,27 +1709,14 @@
             <div class="bg-white shadow-md border border-gray-100 rounded-lg p-6">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-semibold text-primary">Characters Network</h2>
-                    <button class="btn btn-primary text-sm" onclick="openModal('character')">
+                    <button class="btn btn-primary text-sm" id="newCharacterBtn">
                         <i class="fas fa-plus text-sm mr-1"></i>
                         New Character
                     </button>
                 </div>
                 
                 <div class="character-tree relative p-8 min-h-[400px] border border-gray-100 rounded-lg mb-6" id="characterTreeContainer">
-                    <!-- Character nodes positioned to match reference image -->
-                    <div class="character-node protagonist" style="top: 120px; left: 50%; transform: translateX(-50%);" data-name="John Doe" data-role="Protagonist" data-traits="Brave, curious explorer" data-backstory="Survived an accident in New York">
-                        <div class="font-medium text-center">John</div>
-                    </div>
-                    <div class="character-node antagonist" style="top: 220px; left: 30%;" data-name="Mystery Figure" data-role="Antagonist" data-traits="Enigmatic, threatening" data-backstory="Unknown entity connected to the accident">
-                        <div class="font-medium text-center">Mystery</div>
-                    </div>
-                    <div class="character-node supporting" style="top: 220px; left: 70%;" data-name="Sarah" data-role="Supporting" data-traits="Supportive, knowledgeable" data-backstory="John's friend who helps him navigate his return">
-                        <div class="font-medium text-center">Sarah</div>
-                    </div>
-                    
-                    <!-- Predefined connection lines like in the reference image -->
-                    <div class="character-link" style="width: 225px; top: 140px; left: 50%; transform: rotate(45deg) translateX(-50%);"></div>
-                    <div class="character-link" style="width: 225px; top: 140px; left: 50%; transform: rotate(-45deg) translateX(-50%);"></div>
+                    <!-- Character nodes will be added dynamically -->
                 </div>
                 
                 <div class="flex justify-center space-x-6 text-sm">
@@ -1764,6 +1920,51 @@
                 <div class="flex justify-end space-x-3 pt-4">
                     <button id="cancelLocation" class="btn btn-secondary">Cancel</button>
                     <button id="createLocation" class="btn btn-primary">Add Location</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Form Modal -->
+    <div id="characterFormModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-md-custom overflow-y-auto max-h-[90vh]">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-primary" id="characterFormTitle">Add New Character</h2>
+                <button class="text-gray-400 hover:text-gray-600" id="closeCharacterFormModal">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-error">*</span></label>
+                    <input type="text" id="characterName" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Enter character name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Role <span class="text-error">*</span></label>
+                    <select id="characterRole" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="Protagonist">Protagonist</option>
+                        <option value="Antagonist">Antagonist</option>
+                        <option value="Supporting">Supporting</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Traits</label>
+                    <textarea id="characterTraits" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-24" placeholder="Character traits (e.g., brave, impulsive, wise)"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Backstory</label>
+                    <textarea id="characterBackstory" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-24" placeholder="Character's background and history"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Relationships (Coming soon)</label>
+                    <div id="characterRelationships" class="w-full px-4 py-2 border border-gray-200 rounded-lg min-h-[50px] bg-gray-50">
+                        <!-- Relationships will be added here -->
+                        <div class="text-sm text-gray-500">No relationships defined</div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button id="cancelCharacterForm" class="btn btn-secondary">Cancel</button>
+                    <button id="saveCharacter" class="btn btn-primary">Save Character</button>
                 </div>
             </div>
         </div>
