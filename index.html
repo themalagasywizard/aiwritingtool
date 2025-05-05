@@ -585,8 +585,20 @@
                     return;
                 }
                 
-                // Set the first project as current
-                appState.currentProject = userProjects[0];
+                // Get the last loaded project ID from localStorage
+                const lastProjectId = localStorage.getItem('lastProjectId');
+                
+                // Find the last loaded project or default to the first project
+                let currentProject = userProjects[0];
+                if (lastProjectId) {
+                    const foundProject = userProjects.find(p => p.id === lastProjectId);
+                    if (foundProject) {
+                        currentProject = foundProject;
+                    }
+                }
+                
+                // Set the current project
+                appState.currentProject = currentProject;
                 
                 // Update UI with project info
                 updateProjectUI(appState.currentProject);
@@ -624,6 +636,9 @@
                 
                 // Set as current project
                 appState.currentProject = newProject[0];
+                
+                // Save the new project ID to localStorage
+                localStorage.setItem('lastProjectId', newProject[0].id);
                 
                 // Update UI
                 updateProjectUI(appState.currentProject);
@@ -1009,6 +1024,9 @@
                 appState.currentProject = project;
                 appState.currentChapter = null;
                 appState.isDirty = false;
+
+                // Save the current project ID to localStorage
+                localStorage.setItem('lastProjectId', project.id);
 
                 // Update UI
                 updateProjectUI(project);
