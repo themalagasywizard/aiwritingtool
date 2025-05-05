@@ -636,7 +636,7 @@
                     appState.selectedDate = today;
                 }
                 
-                // Display events for the selected date
+                // Display events for the selected date without reloading characters
                 displayTimelineEvents();
                 return true;
             } catch (error) {
@@ -1350,9 +1350,10 @@
                 
                 if (error) throw error;
                 
-                // Update character links if necessary
+                // Keep existing character links - only update them if they were explicitly changed
                 if (currentEventData.characters) {
                     const characterIds = currentEventData.characters.map(char => char.id);
+                    console.log('Preserving existing character connections:', characterIds);
                     const { error: charError } = await window.supabaseServices.timelineEvents.updateCharacters(
                         currentEventData.id,
                         characterIds
@@ -1370,7 +1371,7 @@
                 saveBtn.removeEventListener('click', editEvent);
                 saveBtn.addEventListener('click', editEvent);
                 
-                // Reload the timeline events to refresh the display
+                // Only reload timeline events, don't affect character list
                 await loadTimelineEvents();
                 
                 // Close the event details panel
@@ -1542,14 +1543,17 @@
 
                 if (error) throw error;
 
-                // Update UI
-                const characterEl = document.querySelector(`[data-character-id="${characterId}"]`);
+                // Update UI in the event details panel
+                const characterEl = document.querySelector(`#eventDetailCharacters [data-character-id="${characterId}"]`);
                 if (characterEl) {
                     characterEl.remove();
                 }
 
                 // Update current event data
                 currentEventData.characters = updatedCharacters;
+
+                // We should NOT reload all characters, only refresh the timeline events
+                await loadTimelineEvents();
 
                 showToast('Character removed from event', 'success');
             } catch (error) {
@@ -1812,7 +1816,7 @@
                 // Show success message
                 showToast(`Added ${characterData.name} to event`, 'success');
                 
-                // Reload timeline events to ensure data consistency
+                // Only reload timeline events, without affecting characters list
                 await loadTimelineEvents();
                 
                 // If the event details panel is open for this event, update it
@@ -1838,6 +1842,12 @@
             
             if (characters.length > 0) {
                 characters.forEach(character => {
+                    // Ensure character has an ID (defensive coding)
+                    if (!character.id) {
+                        console.warn('Character missing ID in updateEventDetailsCharacters:', character);
+                        return;
+                    }
+                    
                     const characterEl = document.createElement('div');
                     characterEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
                     characterEl.setAttribute('data-character-id', character.id);
