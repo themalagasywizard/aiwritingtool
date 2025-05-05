@@ -682,16 +682,165 @@
                 projectChapters.forEach((chapter, index) => {
                     const chapterElement = document.createElement('div');
                     chapterElement.className = 'chapter-item p-2 pl-3 rounded cursor-pointer';
+                    chapterElement.setAttribute('data-chapter-id', chapter.id);
+                    chapterElement.setAttribute('draggable', 'true');
                     
                     chapterElement.innerHTML = `
                         <div class="flex items-center justify-between">
-                            <span>${chapter.title}</span>
-                            <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
+                            <span class="chapter-title">${chapter.title}</span>
+                            <i class="fas fa-grip-lines text-gray-300 cursor-move handle"></i>
                         </div>
                     `;
                     
                     // Add click handler
                     chapterElement.addEventListener('click', () => selectChapter(chapter));
+                    
+                    // Add double-click handler for renaming
+                    chapterElement.addEventListener('dblclick', (e) => {
+                        if (e.target.closest('.handle')) return; // Don't trigger rename when clicking the handle
+                        
+                        const titleSpan = chapterElement.querySelector('.chapter-title');
+                        const currentTitle = titleSpan.textContent;
+                        
+                        // Create input for editing
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'w-full p-0 border-none focus:ring-0 bg-primaryLight rounded';
+                        input.value = currentTitle;
+                        
+                        // Replace span with input
+                        titleSpan.replaceWith(input);
+                        input.focus();
+                        input.select();
+                        
+                        // Save on blur or Enter key
+                        const saveChapterTitle = async () => {
+                            const newTitle = input.value.trim();
+                            if (newTitle && newTitle !== currentTitle) {
+                                try {
+                                    // Update chapter title in database
+                                    const { data: updatedChapter, error } = await chapters.update(
+                                        chapter.id,
+                                        { title: newTitle }
+                                    );
+                                    
+                                    if (error) throw error;
+                                    
+                                    // Update local state if this is the current chapter
+                                    if (appState.currentChapter && appState.currentChapter.id === chapter.id) {
+                                        appState.currentChapter = updatedChapter[0];
+                                        elements.chapterTitle.textContent = newTitle;
+                                    }
+                                    
+                                    showToast('Chapter renamed', 'success');
+                                } catch (error) {
+                                    console.error('Error renaming chapter:', error);
+                                    showToast('Failed to rename chapter', 'error');
+                                }
+                            }
+                            
+                            // Restore span with updated or original title
+                            const newSpan = document.createElement('span');
+                            newSpan.className = 'chapter-title';
+                            newSpan.textContent = newTitle || currentTitle;
+                            input.replaceWith(newSpan);
+                        };
+                        
+                        input.addEventListener('blur', saveChapterTitle);
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                saveChapterTitle();
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                const newSpan = document.createElement('span');
+                                newSpan.className = 'chapter-title';
+                                newSpan.textContent = currentTitle;
+                                input.replaceWith(newSpan);
+                            }
+                        });
+                    });
+                    
+                    // Add drag and drop functionality
+                    chapterElement.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', chapter.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                        chapterElement.classList.add('bg-primaryLight');
+                    });
+                    
+                    chapterElement.addEventListener('dragend', () => {
+                        chapterElement.classList.remove('bg-primaryLight');
+                    });
+                    
+                    chapterElement.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                    });
+                    
+                    chapterElement.addEventListener('dragenter', (e) => {
+                        e.preventDefault();
+                        chapterElement.classList.add('border', 'border-primary');
+                    });
+                    
+                    chapterElement.addEventListener('dragleave', () => {
+                        chapterElement.classList.remove('border', 'border-primary');
+                    });
+                    
+                    chapterElement.addEventListener('drop', async (e) => {
+                        e.preventDefault();
+                        chapterElement.classList.remove('border', 'border-primary');
+                        
+                        const draggedChapterId = e.dataTransfer.getData('text/plain');
+                        if (!draggedChapterId || draggedChapterId === chapter.id) return;
+                        
+                        try {
+                            // Get all chapters in current order
+                            const chapterElements = Array.from(elements.chaptersList.querySelectorAll('.chapter-item'));
+                            const draggedElement = elements.chaptersList.querySelector(`[data-chapter-id="${draggedChapterId}"]`);
+                            const dropElement = chapterElement;
+                            
+                            // Get current indices
+                            const draggedIndex = chapterElements.indexOf(draggedElement);
+                            const dropIndex = chapterElements.indexOf(dropElement);
+                            
+                            // Move element in DOM
+                            if (draggedIndex < dropIndex) {
+                                // Moving down
+                                dropElement.parentNode.insertBefore(draggedElement, dropElement.nextElementSibling);
+                            } else {
+                                // Moving up
+                                dropElement.parentNode.insertBefore(draggedElement, dropElement);
+                            }
+                            
+                            // Update order_index values
+                            const updatedChapters = Array.from(elements.chaptersList.querySelectorAll('.chapter-item'))
+                                .map((el, idx) => ({
+                                    id: el.getAttribute('data-chapter-id'),
+                                    order_index: idx
+                                }));
+                            
+                            // Show saving indicator
+                            showToast('Updating chapter order...', 'success');
+                            
+                            // Update database
+                            const { error } = await chapters.updateOrder(updatedChapters);
+                            
+                            if (error) {
+                                console.error('Error updating chapter order:', error);
+                                showToast('Failed to update chapter order: ' + (error.message || 'Unknown error'), 'error');
+                                // Reload chapters to restore original order
+                                await loadChapters(projectId);
+                                return;
+                            }
+                            
+                            showToast('Chapter order updated', 'success');
+                        } catch (error) {
+                            console.error('Error updating chapter order:', error);
+                            showToast('Failed to update chapter order', 'error');
+                            // Reload chapters to restore original order
+                            await loadChapters(projectId);
+                        }
+                    });
                     
                     elements.chaptersList.appendChild(chapterElement);
                 });
@@ -721,7 +870,7 @@
             const chapterItems = document.querySelectorAll('.chapter-item');
             chapterItems.forEach(item => {
                 item.classList.remove('active');
-                if (item.querySelector('span').textContent === chapter.title) {
+                if (item.getAttribute('data-chapter-id') === chapter.id) {
                     item.classList.add('active');
                 }
             });
