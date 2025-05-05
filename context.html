@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css">
     <!-- Import Supabase client -->
     <script type="module">
-        import { auth, projects, characters, settings as locations, timelineEvents } from './lib/supabase.js';
+        import { auth, projects, characters, locations, timelineEvents } from './lib/supabase.js';
         // Make them available to non-module scripts
         window.supabaseServices = { auth, projects, characters, locations, timelineEvents };
     </script>
@@ -379,6 +379,48 @@
             }
         }
 
+        function populateCharactersList() {
+            const charactersList = document.getElementById('charactersList');
+            if (!charactersList) return;
+            
+            charactersList.innerHTML = '';
+            
+            if (!appState.characters || appState.characters.length === 0) {
+                charactersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No characters yet</div>';
+                return;
+            }
+            
+            appState.characters.forEach(character => {
+                const characterItem = document.createElement('div');
+                characterItem.className = "character-item bg-white border-2 p-2 rounded-lg cursor-move shadow-sm";
+                characterItem.setAttribute('draggable', "true");
+                characterItem.setAttribute('data-character-id', character.id);
+                characterItem.setAttribute('data-name', character.name);
+                characterItem.setAttribute('data-role', character.role);
+                
+                characterItem.innerHTML = `
+                    <div class="text-sm font-medium">${character.name}</div>
+                    <div class="text-xs text-textSecondary">${character.role}</div>
+                `;
+                
+                // Add drag event listeners
+                characterItem.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        id: character.id,
+                        name: character.name,
+                        role: character.role
+                    }));
+                    this.classList.add('dragging');
+                });
+                
+                characterItem.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+                
+                charactersList.appendChild(characterItem);
+            });
+        }
+
         async function loadCharacters() {
             try {
                 if (!appState.currentProject) return false;
@@ -452,6 +494,50 @@
             
             // After updating locations, refresh the timeline events
             displayTimelineEvents();
+        }
+
+        function displayTimelineEvents() {
+            // Clear existing events
+            document.querySelectorAll('.timeline-event').forEach(el => el.remove());
+            
+            if (!appState.timelineEvents || appState.timelineEvents.length === 0) return;
+            
+            // Get the current day
+            const currentDay = parseInt(document.getElementById('daySelector').value) || 1;
+            
+            // Filter events for the current day
+            const eventsForDay = appState.timelineEvents.filter(event => {
+                const eventDay = parseInt(event.date_time?.split(' ')[0]?.replace('Day', '')) || 0;
+                return eventDay === currentDay;
+            });
+            
+            eventsForDay.forEach(event => {
+                // Find the correct cell based on location and time
+                const locationName = event.locations?.name;
+                const time = event.date_time?.split(' ')[2]?.split(':')[0] || '0';
+                
+                const cell = document.querySelector(`.timeline-cell[data-location="${locationName}"][data-time="${time}"]`);
+                if (!cell) return;
+                
+                // Create event element
+                const eventElement = document.createElement('div');
+                eventElement.className = 'timeline-event bg-primary text-white p-1 text-xs rounded text-center cursor-pointer';
+                eventElement.textContent = event.name;
+                eventElement.setAttribute('data-event-id', event.id);
+                
+                // Store event data
+                eventElement.setAttribute('data-description', event.description || '');
+                eventElement.setAttribute('data-characters', JSON.stringify(
+                    event.timeline_event_characters?.map(link => link.characters) || []
+                ));
+                
+                // Add event listeners
+                eventElement.addEventListener('click', showEventDetails);
+                eventElement.addEventListener('dragover', e => e.preventDefault());
+                eventElement.addEventListener('drop', handleEventDrop);
+                
+                cell.appendChild(eventElement);
+            });
         }
 
         async function loadTimelineEvents() {
@@ -742,92 +828,6 @@
             const day = document.getElementById('daySelector').value;
             appState.currentDay = parseInt(day);
             displayTimelineEvents();
-        }
-
-        // Character list population
-        function populateCharactersList() {
-            const charactersList = document.getElementById('charactersList');
-            charactersList.innerHTML = '';
-            
-            if (!appState.characters || appState.characters.length === 0) {
-                charactersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No characters yet</div>';
-                return;
-            }
-            
-            appState.characters.forEach(character => {
-                const characterItem = document.createElement('div');
-                characterItem.className = "character-item bg-white border-2 p-2 rounded-lg cursor-move shadow-sm";
-                characterItem.setAttribute('draggable', "true");
-                characterItem.setAttribute('data-character-id', character.id);
-                characterItem.setAttribute('data-name', character.name);
-                characterItem.setAttribute('data-role', character.role);
-                
-                characterItem.innerHTML = `
-                    <div class="text-sm font-medium">${character.name}</div>
-                    <div class="text-xs text-textSecondary">${character.role}</div>
-                `;
-                
-                // Add drag event listeners
-                characterItem.addEventListener('dragstart', function(e) {
-                    e.dataTransfer.setData('text/plain', JSON.stringify({
-                        id: character.id,
-                        name: character.name,
-                        role: character.role
-                    }));
-                    this.classList.add('dragging');
-                });
-                
-                characterItem.addEventListener('dragend', function() {
-                    this.classList.remove('dragging');
-                });
-                
-                charactersList.appendChild(characterItem);
-            });
-        }
-
-        // Timeline events display
-        function displayTimelineEvents() {
-            // Clear existing events
-            document.querySelectorAll('.timeline-event').forEach(el => el.remove());
-            
-            if (!appState.timelineEvents || appState.timelineEvents.length === 0) return;
-            
-            // Get the current day
-            const currentDay = parseInt(document.getElementById('daySelector').value) || 1;
-            
-            // Filter events for the current day
-            const eventsForDay = appState.timelineEvents.filter(event => {
-                const eventDay = parseInt(event.date_time?.split(' ')[0]?.replace('Day', '')) || 0;
-                return eventDay === currentDay;
-            });
-            
-            eventsForDay.forEach(event => {
-                // Find the correct cell based on location and time
-                const locationName = event.locations?.name;
-                const time = event.date_time?.split(' ')[2]?.split(':')[0] || '0';
-                
-                const cell = document.querySelector(`.timeline-cell[data-location="${locationName}"][data-time="${time}"]`);
-                if (!cell) return;
-                
-                // Create event element
-                const eventElement = document.createElement('div');
-                eventElement.className = 'timeline-event bg-primary text-white p-1 text-xs rounded text-center cursor-pointer';
-                eventElement.textContent = event.name;
-                eventElement.setAttribute('data-event-id', event.id);
-                
-                // Store event data
-                eventElement.setAttribute('data-description', event.description || '');
-                eventElement.setAttribute('data-characters', JSON.stringify(
-                    event.timeline_event_characters?.map(link => link.characters) || []
-                ));
-                
-                // Add event listeners
-                eventElement.addEventListener('click', showEventDetails);
-                eventElement.addEventListener('dragover', e => e.preventDefault());
-                eventElement.addEventListener('drop', handleEventDrop);
-                
-                cell.appendChild(eventElement);
-            });
         }
 
         // Character tree functions
