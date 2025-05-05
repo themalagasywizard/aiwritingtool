@@ -1,21 +1,21 @@
 {
   "name": "aistorycraft",
   "version": "1.0.0",
-  "description": "An AI-powered writing tool for storytellers",
+  "description": "AI-powered writing tool with Supabase integration",
   "main": "index.html",
   "engines": {
     "node": "18.x"
   },
   "scripts": {
-    "dev": "start-dev.bat",
-    "build": "node scripts/process-templates.js"
+    "dev": "netlify dev",
+    "build": "node scripts/process-templates.js",
+    "start": "netlify dev"
   },
   "dependencies": {
-    "node-fetch": "^2.6.9",
     "@supabase/supabase-js": "^2.39.3"
   },
   "devDependencies": {
-    "netlify-cli": "^15.0.0"
+    "netlify-cli": "^17.15.1"
   },
   "author": "",
   "license": "MIT"

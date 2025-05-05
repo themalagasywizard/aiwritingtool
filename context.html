@@ -1417,7 +1417,7 @@
                 eventElement.setAttribute('data-time', eventData.time);
                 eventElement.setAttribute('data-description', eventData.description || '');
                 eventElement.setAttribute('data-characters', JSON.stringify(eventData.characters || []));
-                
+
                 // Event content
                 eventElement.innerHTML = `
                     <div class="font-medium">${eventData.name}</div>
@@ -1685,9 +1685,9 @@
 
                 if (!pendingEventCell) {
                     console.error("No target cell found for the event");
-                    return;
-                }
-
+                            return;
+                        }
+                        
                 try {
                     // Get location information from the cell
                     const locationName = pendingEventCell.getAttribute('data-location') || 'Castle';
@@ -1700,9 +1700,9 @@
                     if (currentEventData && currentEventData.id && !currentEventData.id.startsWith('temp-')) {
                         // Update existing event
                         const updates = {
-                            name: name,
-                            date_time: time,
-                            description: description,
+                                name: name,
+                                date_time: time,
+                                description: description,
                             characters: characterData,
                             location: locationName
                         };
@@ -1712,7 +1712,7 @@
                         }
                         
                         const { data, error } = await timelineEvents.update(currentEventData.id, updates);
-                        
+                            
                         if (error) throw error;
                         
                         console.log("Event updated:", data);
@@ -1724,11 +1724,11 @@
                         // Create updated event in UI
                         createTimelineEvent(pendingEventCell, {
                             id: currentEventData.id,
-                            name: name,
-                            time: time,
-                            description: description,
+                                name: name,
+                                time: time,
+                                description: description,
                             characters: pendingEventCharacters || []
-                        });
+                            });
                     } else {
                         // Create new event
                         const { data, error } = await timelineEvents.create(
@@ -1738,7 +1738,7 @@
                             description,
                             "" // significance (not used in UI)
                         );
-                        
+                            
                         if (error) throw error;
                         
                         console.log("Event created:", data);
@@ -1754,7 +1754,7 @@
                             });
                         }
                     }
-                    
+
                     // Reset state and close modal
                     resetEventModalAndState();
                 } catch (error) {
@@ -1851,13 +1851,13 @@
                     return null;
                 }
             }
-
+            
             // Implementation of deleteCharacterRelationship function
             async function deleteCharacterRelationship(relationshipId) {
                 try {
                     // Delete the relationship from Supabase
                     const { error } = await characters.deleteRelationship(relationshipId);
-                    
+                        
                     if (error) throw error;
                     
                     console.log("Character relationship deleted:", relationshipId);
@@ -1926,8 +1926,8 @@
                             cell.setAttribute('data-location', location.name);
                             cell.setAttribute('data-location-id', location.id);
                             row.appendChild(cell);
-                        }
-                        
+                    }
+                    
                         tableBody.appendChild(row);
                     });
                     
@@ -2088,7 +2088,7 @@
                     return false;
                 }
             }
-
+            
             // Make the functions available in the global scope
             window.loadCharacters = loadCharacters;
             window.loadLocations = loadLocations;
@@ -2103,7 +2103,7 @@
             const newRelationshipSelect = document.getElementById('newRelationshipSelect');
             const relationshipList = document.getElementById('relationshipList');
             const addRelationshipBtn = document.getElementById('addRelationshipBtn');
-
+            
             // Add relationship button click handler
             if (addRelationshipBtn) {
                 addRelationshipBtn.addEventListener('click', function() {
@@ -2196,8 +2196,8 @@
                         const relationshipId = this.getAttribute('data-id');
                         await deleteCharacterRelationship(relationshipId);
                         this.closest('div.flex.items-center.justify-between').remove();
-                    });
-                    
+            });
+            
                     // Reset select
                     newRelationshipSelect.value = '';
                 } catch (error) {
@@ -2271,8 +2271,8 @@
                     
                     const name = document.getElementById('protagonistName').value;
                     const role = document.getElementById('protagonistRole').value;
-                    
-                    if (!name) {
+                
+                if (!name) {
                         document.getElementById('protagonistName').classList.add('border-error');
                         isValid = false;
                     } else {
@@ -2302,7 +2302,7 @@
                                 
                                 // Reload characters to update the view
                                 await loadCharacters();
-                            } else {
+                } else {
                                 // Create new character
                                 const { data, error } = await characters.create(
                                     currentProjectId,
@@ -2318,7 +2318,7 @@
                                 
                                 // Reload characters to update the view
                                 await loadCharacters();
-                            }
+                }
                             
                             // Hide the form
                             characterFormContainer.classList.add('hidden');
@@ -2369,8 +2369,8 @@
                 pendingEventCharacters = [];
                 currentEventData = null;
                 window.eventDataForEditing = null;
-            }
-
+                }
+                
             // Make these functions globally available
             window.resetEventModalAndState = resetEventModalAndState;
             window.getCharacterColorClass = getCharacterColorClass;
@@ -2437,7 +2437,7 @@
                     node.style.left = `${x}px`;
                     node.style.top = `${y}px`;
                 });
-                
+                    
                 // Place others at bottom left
                 others.forEach((node, i) => {
                     const angle = (Math.PI) + ((i / others.length) * Math.PI / 2);
