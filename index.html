@@ -497,7 +497,7 @@
 </head>
 <body class="h-screen flex flex-col">
     <script type="module">
-        import { projects, chapters, characters, auth } from './lib/supabase.js';
+        import { auth, projects, chapters, characters, getClient } from './lib/supabase.js';
         
         // Global variables to store current project and user information
         let currentProject = null;
@@ -534,8 +534,11 @@
                 
                 if (user) {
                     // Update avatar with user email or name
-                    const nameInitial = user.email ? user.email.charAt(0).toUpperCase() : 'G';
-                    userAvatar.src = `https://ui-avatars.com/api/?name=${nameInitial}&background=4B5EAA&color=fff`;
+                    const userAvatar = document.querySelector('#userAvatar');
+                    if (userAvatar) {
+                        const nameInitial = user.email ? user.email.charAt(0).toUpperCase() : 'G';
+                        userAvatar.src = `https://ui-avatars.com/api/?name=${nameInitial}&background=4B5EAA&color=fff`;
+                    }
                     
                     // Update user display name
                     const userDisplayName = document.querySelector('#userDisplayName');
@@ -848,55 +851,61 @@
         }
         
         // Add a new chapter
-        document.querySelector('.sidebar .btn.btn-primary.w-full').addEventListener('click', async () => {
-            try {
-                if (!currentProject || !currentProject.id) {
-                    console.error("No current project found");
-                    return;
+        const addChapterBtn = document.querySelector('.sidebar .btn.btn-primary.w-full');
+        if (addChapterBtn) {
+            addChapterBtn.addEventListener('click', async () => {
+                try {
+                    if (!currentProject || !currentProject.id) {
+                        console.error("No current project found");
+                        return;
+                    }
+                    
+                    // Get the current chapters to determine the next chapter number
+                    const { data: chaptersData, error: chaptersError } = await chapters.getByProject(currentProject.id);
+                    
+                    if (chaptersError) {
+                        console.error("Error getting chapters:", chaptersError);
+                        return;
+                    }
+                    
+                    // Determine the next chapter number
+                    const nextChapterNumber = (chaptersData ? chaptersData.length : 0) + 1;
+                    
+                    // Create the new chapter
+                    const { data, error } = await chapters.create(
+                        currentProject.id,
+                        `Chapter ${nextChapterNumber}`,
+                        "<p class=\"mb-4\">Start writing your new chapter here...</p>",
+                        nextChapterNumber - 1
+                    );
+                    
+                    if (error) {
+                        console.error("Error creating new chapter:", error);
+                        return;
+                    }
+                    
+                    console.log("New chapter created:", data);
+                    
+                    // Reload the chapters
+                    await loadProjectChapters(currentProject.id);
+                } catch (error) {
+                    console.error("Error adding new chapter:", error);
                 }
-                
-                // Get the current chapters to determine the next chapter number
-                const { data: chaptersData, error: chaptersError } = await chapters.getByProject(currentProject.id);
-                
-                if (chaptersError) {
-                    console.error("Error getting chapters:", chaptersError);
-                    return;
-                }
-                
-                // Determine the next chapter number
-                const nextChapterNumber = (chaptersData ? chaptersData.length : 0) + 1;
-                
-                // Create the new chapter
-                const { data, error } = await chapters.create(
-                    currentProject.id,
-                    `Chapter ${nextChapterNumber}`,
-                    "<p class=\"mb-4\">Start writing your new chapter here...</p>",
-                    nextChapterNumber - 1
-                );
-                
-                if (error) {
-                    console.error("Error creating new chapter:", error);
-                    return;
-                }
-                
-                console.log("New chapter created:", data);
-                
-                // Reload the chapters
-                await loadProjectChapters(currentProject.id);
-            } catch (error) {
-                console.error("Error adding new chapter:", error);
-            }
-        });
+            });
+        }
         
         // Context manager button
-        document.getElementById('manageContextBtn').addEventListener('click', () => {
-            // Navigate to context page with project ID
-            if (currentProject && currentProject.id) {
-                window.location.href = `context.html?project_id=${currentProject.id}`;
-            } else {
-                window.location.href = 'context.html';
-            }
-        });
+        const manageContextBtn = document.getElementById('manageContextBtn');
+        if (manageContextBtn) {
+            manageContextBtn.addEventListener('click', () => {
+                // Navigate to context page with project ID
+                if (currentProject && currentProject.id) {
+                    window.location.href = `context.html?project_id=${currentProject.id}`;
+                } else {
+                    window.location.href = 'context.html';
+                }
+            });
+        }
     </script>
 </body>
 </html> 
