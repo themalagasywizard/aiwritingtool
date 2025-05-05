@@ -520,17 +520,45 @@
             }
         };
 
-        // Add sign out handler
+        // Add sign out handler and initialize auth state
         document.addEventListener('DOMContentLoaded', async () => {
             const signOutBtn = document.querySelector('#signOutBtn');
             if (signOutBtn) {
                 signOutBtn.addEventListener('click', handleSignOut);
             }
             
+            // Subscribe to auth state changes
+            const { data: { subscription } } = await auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT') {
+                    window.location.href = '/auth/auth.html';
+                } else if (event === 'SIGNED_IN') {
+                    loadUserData(session.user);
+                }
+            });
+            
             // Check authentication state
             try {
+                // First check for session
+                const { data: { session }, error: sessionError } = await auth.getSession();
+                if (sessionError) {
+                    console.warn('Session check failed:', sessionError);
+                    window.location.href = '/auth/auth.html';
+                    return;
+                }
+
+                if (!session) {
+                    console.log('No active session found');
+                    window.location.href = '/auth/auth.html';
+                    return;
+                }
+
+                // Now get user details
                 const { data: { user }, error } = await auth.getUser();
-                if (error) throw error;
+                if (error) {
+                    console.error('Error getting user:', error);
+                    window.location.href = '/auth/auth.html';
+                    return;
+                }
                 
                 if (user) {
                     // Update avatar with user email or name
@@ -554,6 +582,7 @@
                 }
             } catch (error) {
                 console.error('Auth check error:', error);
+                window.location.href = '/auth/auth.html';
             }
         });
         
