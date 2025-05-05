@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config();
 
 // Function to process HTML files and inject environment variables
 function processTemplates() {
-    const files = ['index.html', 'auth/auth.html', 'auth/callback.html'];
+    const files = ['index.html', 'auth/auth.html', 'auth/callback.html', 'context.html'];
     
     files.forEach(file => {
         const filePath = path.join(__dirname, '..', file);
