@@ -545,24 +545,39 @@
             // Clear existing events
             document.querySelectorAll('.timeline-event').forEach(el => el.remove());
             
-            if (!appState.timelineEvents || appState.timelineEvents.length === 0) return;
+            if (!appState.timelineEvents || appState.timelineEvents.length === 0) {
+                console.log('No timeline events found');
+                return;
+            }
             
             // Get the current selected date
             const currentDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
+            console.log('Current selected date:', currentDate);
+            
+            // Log all events to debug
+            console.log('All events:', appState.timelineEvents);
             
             // Filter events for the current date
             const eventsForDay = appState.timelineEvents.filter(event => {
                 const eventDate = event.date_time?.split('T')[0];
+                console.log(`Event: ${event.name}, date: ${eventDate}, comparing with ${currentDate}`);
                 return eventDate === currentDate;
             });
+            
+            console.log('Events for selected day:', eventsForDay);
             
             eventsForDay.forEach(event => {
                 // Find the correct cell based on location and time
                 const locationName = event.locations?.name;
-                const time = event.date_time?.split('T')[1]?.substr(0, 2) || '00';
+                const time = parseInt(event.date_time?.split('T')[1]?.substr(0, 2) || '00', 10);
+                
+                console.log(`Rendering event: ${event.name} at location: ${locationName}, time: ${time}`);
                 
                 const cell = document.querySelector(`.timeline-cell[data-location="${locationName}"][data-time="${time}"]`);
-                if (!cell) return;
+                if (!cell) {
+                    console.log(`Cell not found for location ${locationName} at time ${time}`);
+                    return;
+                }
                 
                 // Create event element
                 const eventElement = document.createElement('div');
@@ -587,12 +602,28 @@
 
         async function loadTimelineEvents() {
             try {
-                if (!appState.currentProject) return false;
+                if (!appState.currentProject) {
+                    console.log('No current project, cannot load timeline events');
+                    return false;
+                }
+                
+                console.log('Loading timeline events for project:', appState.currentProject.id);
                 
                 const { data: eventsList, error } = await window.supabaseServices.timelineEvents.getByProject(appState.currentProject.id);
                 if (error) throw error;
                 
+                console.log('Loaded events from database:', eventsList);
+                
                 appState.timelineEvents = eventsList || [];
+                
+                // Set the date selector to today if not yet set
+                if (!document.getElementById('dateSelector').value) {
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('dateSelector').value = today;
+                    appState.selectedDate = today;
+                }
+                
+                // Display events for the selected date
                 displayTimelineEvents();
                 return true;
             } catch (error) {
@@ -634,8 +665,12 @@
                     return;
                 }
                 
-                // Set default date in date selector
-                document.getElementById('dateSelector').value = appState.selectedDate;
+                // Set today's date in date selector
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('dateSelector').value = today;
+                appState.selectedDate = today;
+                
+                console.log('Initialized date selector with today:', today);
                 
                 // Load project data
                 const projectLoaded = await loadCurrentProject();
@@ -659,6 +694,8 @@
                 
                 // Setup tab switching
                 setupTabSwitching();
+                
+                console.log('App initialized successfully');
             } catch (error) {
                 console.error('Error initializing app:', error);
                 showToast('Error initializing application. Please check your connection and try again.', 'error');
@@ -916,6 +953,14 @@
                 // Extract character IDs
                 const characterIds = characters.map(char => char.id);
                 
+                console.log('Creating event with data:', {
+                    name,
+                    time,
+                    description,
+                    locationId,
+                    characterIds
+                });
+                
                 // Create the event with proper location_id and link to characters
                 const { data, error } = await window.supabaseServices.timelineEvents.create(
                     appState.currentProject.id,
@@ -934,8 +979,16 @@
                 
                 if (error) throw error;
                 
+                console.log('Event created successfully:', data);
+                
                 showToast('Event created successfully');
+                
+                // Make sure to reload the timeline events from the database
                 await loadTimelineEvents();
+                
+                // Force redisplay of the timeline
+                displayTimelineEvents();
+                
                 return data;
             } catch (error) {
                 console.error('Error creating event:', error);
@@ -1636,7 +1689,12 @@
                 
                 // Format the date and time for the event
                 const selectedDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
-                pendingEventTime = `${selectedDate}T${time.padStart(2, '0')}:00:00`;
+                const formattedTime = time.toString().padStart(2, '0');
+                pendingEventTime = `${selectedDate}T${formattedTime}:00:00`;
+                
+                console.log('Creating event at date/time:', pendingEventTime);
+                console.log('Location name:', locationName);
+                console.log('Location ID:', locationId);
                 
                 // Add character to pending characters
                 const existingCharacter = pendingEventCharacters.find(char => char.id === characterData.id);
@@ -1649,7 +1707,7 @@
                 document.getElementById('eventCreationModal').classList.add('flex');
                 
                 // Set time in the modal
-                document.getElementById('eventTime').value = `${time.padStart(2, '0')}:00`;
+                document.getElementById('eventTime').value = `${formattedTime}:00`;
                 
                 // Update the characters list in the modal
                 updatePendingCharactersList();
@@ -1657,7 +1715,7 @@
                 // Focus on event name field
                 document.getElementById('eventName').focus();
             } catch (error) {
-                console.error('Error handling character drop:', error);
+                console.error('Error handling drop:', error);
                 showToast('Error handling drop', 'error');
             }
         }
