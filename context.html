@@ -664,7 +664,8 @@
                             
                             // If this is the characters tab, refresh the character tree
                             if (tabName === 'characters') {
-                                refreshCharacterTree();
+                                console.log("Loading characters tab, refreshing character tree");
+                                setTimeout(() => refreshCharacterTree(), 100); // Slight delay to ensure DOM is ready
                             }
                         } else {
                             content.classList.add('hidden');
@@ -1076,9 +1077,10 @@
                 const node = document.createElement('div');
                 node.className = `character-node ${character.role?.toLowerCase() || 'supporting'}`;
                 node.setAttribute('data-name', character.name);
+                node.setAttribute('data-id', character.id); // Add ID attribute
                 node.setAttribute('data-role', character.role || 'Supporting');
                 node.setAttribute('data-traits', character.traits || '');
-                node.setAttribute('data-backstory', character.description || '');
+                node.setAttribute('data-backstory', character.backstory || ''); // Fixed attribute name
                 node.setAttribute('data-relationships', JSON.stringify(character.relationships || []));
                 
                 // Position the node
@@ -1274,8 +1276,16 @@
             const backstory = characterNode.getAttribute('data-backstory');
             const relationships = JSON.parse(characterNode.getAttribute('data-relationships') || '[]');
 
-            // Store current character data
+            // Find the actual character object from appState to get its ID
+            const character = appState.characters.find(c => c.name === name);
+            if (!character) {
+                showToast('Character not found in application state', 'error');
+                return;
+            }
+
+            // Store current character data including the ID
             currentCharacterData = {
+                id: character.id,
                 name,
                 role,
                 traits,
@@ -1772,7 +1782,7 @@
                     </div>
                     
                     <div class="p-6 border-t border-gray-100">
-                        <button class="btn btn-primary w-full" id="editCharacterBtn">
+                        <button class="btn btn-primary w-full" id="editCharacterBtn" onclick="openEditCharacterForm()">
                             <i class="fas fa-edit mr-2"></i>
                             Edit Character
                         </button>
