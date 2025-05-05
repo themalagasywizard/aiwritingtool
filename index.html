@@ -482,6 +482,61 @@
                 max-width: 100%;
             }
         }
+
+        /* Fullscreen mode styles */
+        body.fullscreen-mode {
+            overflow: hidden;
+        }
+
+        .fullscreen-mode .editor-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Format button active states */
+        .toolbar-btn.active {
+            background-color: var(--primary-light);
+            color: var(--primary);
+        }
+
+        /* Support for contenteditable formatting */
+        .editor-content h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .editor-content h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            margin-top: 1.5rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .editor-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            margin-top: 1.25rem;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .editor-content ul, .editor-content ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .editor-content ul li {
+            list-style-type: disc;
+            margin-bottom: 0.5rem;
+        }
+
+        .editor-content ol li {
+            list-style-type: decimal;
+            margin-bottom: 0.5rem;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -885,6 +940,9 @@
             
             // Update word count
             updateWordCount();
+            
+            // Update toolbar button states
+            updateActiveFormatting();
         }
 
         async function createChapter(title, content, orderIndex) {
@@ -1261,6 +1319,212 @@
                 updateWordCount();
             });
             
+            // Rich Text Formatting Buttons
+            function execFormatCommand(command, value = null) {
+                document.execCommand(command, false, value);
+                
+                // Focus back on the editor to continue editing
+                elements.editorContent.focus();
+                
+                // Mark as dirty to ensure changes are saved
+                updateSaveStatus(true);
+                
+                // Update active formatting buttons
+                setTimeout(updateActiveFormatting, 10);
+            }
+            
+            // Initialize toolbar buttons
+            function initToolbar() {
+                // Bold button
+                document.querySelector('.toolbar-btn[title="Bold"]').addEventListener('click', () => {
+                    execFormatCommand('bold');
+                });
+                
+                // Italic button
+                document.querySelector('.toolbar-btn[title="Italic"]').addEventListener('click', () => {
+                    execFormatCommand('italic');
+                });
+                
+                // Heading button
+                document.querySelector('.toolbar-btn[title="Heading"]').addEventListener('click', () => {
+                    const selection = window.getSelection();
+                    
+                    // If no selection is made, return
+                    if (selection.rangeCount === 0) return;
+                    
+                    // Get the current selection range
+                    const range = selection.getRangeAt(0);
+                    
+                    // Check if the selection is inside a heading already
+                    let currentBlock = range.commonAncestorContainer;
+                    while (currentBlock && currentBlock !== elements.editorContent) {
+                        if (currentBlock.nodeType === 1 && /^h[1-6]$/i.test(currentBlock.tagName)) {
+                            // If already a heading, convert it to a paragraph
+                            execFormatCommand('formatBlock', 'p');
+                            return;
+                        }
+                        currentBlock = currentBlock.parentNode;
+                    }
+                    
+                    // If not already a heading, make it an H2
+                    execFormatCommand('formatBlock', 'h2');
+                });
+                
+                // List button
+                document.querySelector('.toolbar-btn[title="List"]').addEventListener('click', () => {
+                    execFormatCommand('insertUnorderedList');
+                });
+                
+                // Full Screen button
+                document.querySelector('.toolbar-btn[title="Full Screen"]').addEventListener('click', toggleFullScreen);
+                
+                // Add listeners to update toolbar button states
+                elements.editorContent.addEventListener('keyup', updateActiveFormatting);
+                elements.editorContent.addEventListener('mouseup', updateActiveFormatting);
+                elements.editorContent.addEventListener('mousedown', updateActiveFormatting);
+                elements.editorContent.addEventListener('click', updateActiveFormatting);
+            }
+            
+            // Update active formatting buttons based on current selection
+            function updateActiveFormatting() {
+                const isBold = document.queryCommandState('bold');
+                const isItalic = document.queryCommandState('italic');
+                const isUnorderedList = document.queryCommandState('insertUnorderedList');
+                
+                // Check if selection is within a heading
+                const selection = window.getSelection();
+                let isHeading = false;
+                
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    let currentBlock = range.commonAncestorContainer;
+                    
+                    while (currentBlock && currentBlock !== elements.editorContent) {
+                        if (currentBlock.nodeType === 1 && /^h[1-6]$/i.test(currentBlock.tagName)) {
+                            isHeading = true;
+                            break;
+                        }
+                        currentBlock = currentBlock.parentNode;
+                    }
+                }
+                
+                // Update button states
+                document.querySelector('.toolbar-btn[title="Bold"]').classList.toggle('active', isBold);
+                document.querySelector('.toolbar-btn[title="Italic"]').classList.toggle('active', isItalic);
+                document.querySelector('.toolbar-btn[title="Heading"]').classList.toggle('active', isHeading);
+                document.querySelector('.toolbar-btn[title="List"]').classList.toggle('active', isUnorderedList);
+            }
+            
+            // Full Screen functionality
+            function toggleFullScreen() {
+                if (!document.fullscreenElement) {
+                    // Enter full screen
+                    if (document.documentElement.requestFullscreen) {
+                        document.documentElement.requestFullscreen();
+                    } else if (document.documentElement.mozRequestFullScreen) { // Firefox
+                        document.documentElement.mozRequestFullScreen();
+                    } else if (document.documentElement.webkitRequestFullscreen) { // Chrome, Safari and Opera
+                        document.documentElement.webkitRequestFullscreen();
+                    } else if (document.documentElement.msRequestFullscreen) { // IE/Edge
+                        document.documentElement.msRequestFullscreen();
+                    }
+                    
+                    // Add fullscreen class to body for styling if needed
+                    document.body.classList.add('fullscreen-mode');
+                    
+                    // Update button icon
+                    document.querySelector('.toolbar-btn[title="Full Screen"] i').classList.remove('fa-expand');
+                    document.querySelector('.toolbar-btn[title="Full Screen"] i').classList.add('fa-compress');
+                } else {
+                    // Exit full screen
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.mozCancelFullScreen) { // Firefox
+                        document.mozCancelFullScreen();
+                    } else if (document.webkitExitFullscreen) { // Chrome, Safari and Opera
+                        document.webkitExitFullscreen();
+                    } else if (document.msExitFullscreen) { // IE/Edge
+                        document.msExitFullscreen();
+                    }
+                    
+                    // Remove fullscreen class
+                    document.body.classList.remove('fullscreen-mode');
+                    
+                    // Update button icon back to expand
+                    document.querySelector('.toolbar-btn[title="Full Screen"] i').classList.remove('fa-compress');
+                    document.querySelector('.toolbar-btn[title="Full Screen"] i').classList.add('fa-expand');
+                }
+            }
+            
+            // Listen for fullscreen change event
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+            
+            function handleFullscreenChange() {
+                const isFullScreen = document.fullscreenElement || 
+                                  document.webkitFullscreenElement || 
+                                  document.mozFullScreenElement || 
+                                  document.msFullscreenElement;
+                
+                // Update button icon based on fullscreen state
+                const fullScreenBtn = document.querySelector('.toolbar-btn[title="Full Screen"] i');
+                if (isFullScreen) {
+                    fullScreenBtn.classList.remove('fa-expand');
+                    fullScreenBtn.classList.add('fa-compress');
+                } else {
+                    fullScreenBtn.classList.remove('fa-compress');
+                    fullScreenBtn.classList.add('fa-expand');
+                }
+            }
+            
+            // Add keyboard shortcuts for formatting
+            elements.editorContent.addEventListener('keydown', (e) => {
+                // Bold: Ctrl/Cmd + B
+                if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                    e.preventDefault();
+                    execFormatCommand('bold');
+                }
+                
+                // Italic: Ctrl/Cmd + I
+                if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                    e.preventDefault();
+                    execFormatCommand('italic');
+                }
+                
+                // Heading: Ctrl/Cmd + H
+                if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+                    e.preventDefault();
+                    
+                    const selection = window.getSelection();
+                    if (selection.rangeCount === 0) return;
+                    
+                    // Get the current selection range
+                    const range = selection.getRangeAt(0);
+                    
+                    // Check if the selection is inside a heading already
+                    let currentBlock = range.commonAncestorContainer;
+                    while (currentBlock && currentBlock !== elements.editorContent) {
+                        if (currentBlock.nodeType === 1 && /^h[1-6]$/i.test(currentBlock.tagName)) {
+                            // If already a heading, convert it to a paragraph
+                            execFormatCommand('formatBlock', 'p');
+                            return;
+                        }
+                        currentBlock = currentBlock.parentNode;
+                    }
+                    
+                    // If not already a heading, make it an H2
+                    execFormatCommand('formatBlock', 'h2');
+                }
+                
+                // List: Ctrl/Cmd + U
+                if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+                    e.preventDefault();
+                    execFormatCommand('insertUnorderedList');
+                }
+            });
+            
             // Auto-save timer
             setInterval(() => {
                 if (appState.isDirty && appState.currentChapter) {
@@ -1274,6 +1538,9 @@
                 loadUserProjects();
             });
 
+            // Initialize the toolbar functionality
+            initToolbar();
+            
             // Close Load Project Panel
             document.getElementById('closeLoadProjectPanel').addEventListener('click', toggleLoadProjectPanel);
             document.getElementById('loadProjectOverlay').addEventListener('click', toggleLoadProjectPanel);
