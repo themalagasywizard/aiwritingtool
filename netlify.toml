@@ -42,7 +42,7 @@
 
 # Environment variables endpoint redirect
 [[redirects]]
-  from = "/.netlify/functions/get-env"
+  from = "/get-env"
   to = "/.netlify/functions/get-env"
   status = 200
   force = true
