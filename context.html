@@ -24,6 +24,24 @@
     </script>
     
     <script>
+        // Global state variables
+        let currentEventData = null;
+        let currentCharacterData = null;
+        
+        let appState = {
+            currentProject: null,
+            characters: [],
+            locations: [],
+            timelineEvents: [],
+            currentDay: 1
+        };
+
+        // Variables for storing event creation state
+        let pendingEventCell = null;
+        let pendingEventCharacters = [];
+        let pendingEventLocation = null;
+        let pendingEventTime = null;
+
         tailwind.config = {
             theme: {
                 extend: {
@@ -1024,6 +1042,154 @@
             
             // Update relationship lines
             updateRelationshipLines();
+        }
+
+        async function editEvent() {
+            if (!currentEventData) {
+                showToast('No event selected for editing', 'error');
+                return;
+            }
+
+            try {
+                // Get updated values from the event details panel
+                const name = document.getElementById('eventDetailName').textContent;
+                const description = document.getElementById('eventDetailDescription').textContent;
+                const characters = Array.from(document.getElementById('eventDetailCharacters').children).map(el => {
+                    return {
+                        id: el.getAttribute('data-character-id'),
+                        name: el.querySelector('.character-name').textContent
+                    };
+                });
+
+                // Show loading state
+                const editBtn = document.getElementById('editEventBtn');
+                const originalText = editBtn.innerHTML;
+                editBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                editBtn.disabled = true;
+
+                // Update the event
+                const { error } = await window.supabaseServices.timelineEvents.update(
+                    currentEventData.id,
+                    {
+                        name,
+                        description,
+                        updated_at: new Date().toISOString()
+                    }
+                );
+
+                if (error) throw error;
+
+                // Update character links
+                const characterIds = characters.map(char => char.id);
+                const { error: charError } = await window.supabaseServices.timelineEvents.updateCharacters(
+                    currentEventData.id,
+                    characterIds
+                );
+
+                if (charError) throw charError;
+
+                // Update UI
+                showToast('Event updated successfully', 'success');
+                closeEventDetails();
+                await loadTimelineEvents();
+
+                // Reset button state
+                editBtn.innerHTML = originalText;
+                editBtn.disabled = false;
+            } catch (error) {
+                console.error('Error updating event:', error);
+                showToast('Error updating event', 'error');
+                
+                // Reset button state
+                const editBtn = document.getElementById('editEventBtn');
+                editBtn.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Event';
+                editBtn.disabled = false;
+            }
+        }
+
+        // Helper function to close event details panel
+        function closeEventDetails() {
+            const panel = document.getElementById('eventDetailsPanel');
+            panel.classList.add('translate-x-full');
+            currentEventData = null;
+        }
+
+        // Helper function to show event details
+        function showEventDetails(e) {
+            const eventElement = e.target;
+            const eventId = eventElement.getAttribute('data-event-id');
+            const name = eventElement.textContent;
+            const description = eventElement.getAttribute('data-description');
+            const characters = JSON.parse(eventElement.getAttribute('data-characters') || '[]');
+
+            // Store current event data
+            currentEventData = {
+                id: eventId,
+                name,
+                description,
+                characters
+            };
+
+            // Update panel content
+            document.getElementById('eventDetailName').textContent = name;
+            document.getElementById('eventDetailDescription').textContent = description || 'No description provided';
+
+            // Update characters list
+            const charactersList = document.getElementById('eventDetailCharacters');
+            charactersList.innerHTML = '';
+            
+            if (characters.length > 0) {
+                characters.forEach(character => {
+                    const characterEl = document.createElement('div');
+                    characterEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
+                    characterEl.setAttribute('data-character-id', character.id);
+                    characterEl.innerHTML = `
+                        <span class="character-name">${character.name}</span>
+                        <button onclick="removeCharacterFromEvent('${character.id}')" class="text-error hover:text-opacity-80">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    charactersList.appendChild(characterEl);
+                });
+            } else {
+                charactersList.innerHTML = '<div class="text-sm text-gray-500">No characters involved</div>';
+            }
+
+            // Show the panel
+            const panel = document.getElementById('eventDetailsPanel');
+            panel.classList.remove('translate-x-full');
+        }
+
+        // Helper function to remove character from event
+        async function removeCharacterFromEvent(characterId) {
+            if (!currentEventData) return;
+
+            try {
+                // Filter out the character
+                const updatedCharacters = currentEventData.characters.filter(char => char.id !== characterId);
+                
+                // Update the event's characters
+                const { error } = await window.supabaseServices.timelineEvents.updateCharacters(
+                    currentEventData.id,
+                    updatedCharacters.map(char => char.id)
+                );
+
+                if (error) throw error;
+
+                // Update UI
+                const characterEl = document.querySelector(`[data-character-id="${characterId}"]`);
+                if (characterEl) {
+                    characterEl.remove();
+                }
+
+                // Update current event data
+                currentEventData.characters = updatedCharacters;
+
+                showToast('Character removed from event', 'success');
+            } catch (error) {
+                console.error('Error removing character from event:', error);
+                showToast('Error removing character', 'error');
+            }
         }
     </script>
 
