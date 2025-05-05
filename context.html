@@ -593,8 +593,21 @@
                 
                 // Add event listeners
                 eventElement.addEventListener('click', showEventDetails);
-                eventElement.addEventListener('dragover', e => e.preventDefault());
-                eventElement.addEventListener('drop', handleEventDrop);
+                
+                // Add drag and drop event listeners with stopPropagation to prevent bubbling
+                eventElement.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    e.stopPropagation(); // Stop event from bubbling to cell
+                    eventElement.classList.add('bg-opacity-70');
+                    e.dataTransfer.dropEffect = 'link';
+                });
+                
+                eventElement.addEventListener('dragleave', e => {
+                    e.stopPropagation(); // Stop event from bubbling to cell
+                    eventElement.classList.remove('bg-opacity-70');
+                });
+                
+                eventElement.addEventListener('drop', handleDropOnEvent);
                 
                 cell.appendChild(eventElement);
             });
@@ -852,6 +865,11 @@
             window.closeEventDetails = closeEventDetails;
             window.closeCharacterDetails = closeCharacterDetails;
             window.editEvent = editEvent;
+            window.saveEventChanges = saveEventChanges;  
+            window.cancelEventEdit = cancelEventEdit;
+            window.handleDropOnEvent = handleDropOnEvent;
+            window.updateEventDetailsCharacters = updateEventDetailsCharacters;
+            window.addCharacterToEvent = addCharacterToEvent;
             window.showToast = showToast;
             window.handleDateSelectorChange = handleDateSelectorChange;
             window.removeCharacterFromEvent = removeCharacterFromEvent;
@@ -1216,67 +1234,239 @@
             }
 
             try {
-                // Get updated values from the event details panel
-                const name = document.getElementById('eventDetailName').textContent;
-                const description = document.getElementById('eventDetailDescription').textContent;
-                const characters = Array.from(document.getElementById('eventDetailCharacters').children).map(el => {
-                    return {
-                        id: el.getAttribute('data-character-id'),
-                        name: el.querySelector('.character-name').textContent
-                    };
-                });
-
-                // Show loading state
+                // Open editing mode
+                const eventDetailsPanel = document.getElementById('eventDetailsPanel');
+                const nameElement = document.getElementById('eventDetailName');
+                const descriptionElement = document.getElementById('eventDetailDescription');
+                const timeElement = document.getElementById('eventDetailTime');
+                
+                // If already in edit mode, don't recreate the fields
+                if (eventDetailsPanel.classList.contains('edit-mode')) {
+                    return;
+                }
+                
+                // Mark panel as in edit mode
+                eventDetailsPanel.classList.add('edit-mode');
+                
+                // Replace name with input field
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.id = 'eventEditName';
+                nameInput.className = 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent';
+                nameInput.value = currentEventData.name;
+                nameElement.replaceWith(nameInput);
+                
+                // Replace description with textarea
+                const descriptionTextarea = document.createElement('textarea');
+                descriptionTextarea.id = 'eventEditDescription';
+                descriptionTextarea.className = 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent min-h-[100px]';
+                descriptionTextarea.value = currentEventData.description || '';
+                descriptionElement.replaceWith(descriptionTextarea);
+                
+                // Create time editor
+                const timeText = timeElement.textContent.replace('Time: ', '');
+                const timeInput = document.createElement('input');
+                timeInput.type = 'time';
+                timeInput.id = 'eventEditTime';
+                timeInput.className = 'px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent';
+                timeInput.value = timeText;
+                
+                // Replace time element
+                const timeContainer = document.createElement('div');
+                timeContainer.className = 'flex items-center space-x-2 text-sm text-gray-500';
+                timeContainer.innerHTML = '<span>Time: </span>';
+                timeContainer.appendChild(timeInput);
+                timeElement.replaceWith(timeContainer);
+                
+                // Update footer buttons for save/cancel
                 const editBtn = document.getElementById('editEventBtn');
-                const originalText = editBtn.innerHTML;
-                editBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
-                editBtn.disabled = true;
+                editBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
+                
+                // Remove any existing event listeners and add the save listener
+                editBtn.removeEventListener('click', editEvent);
+                editBtn.removeEventListener('click', saveEventChanges);
+                editBtn.addEventListener('click', saveEventChanges);
+                
+                // Add cancel button
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'btn bg-gray-200 text-gray-700 w-full mt-2';
+                cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i>Cancel';
+                cancelBtn.addEventListener('click', cancelEventEdit);
+                
+                // Add the cancel button after the save button
+                const btnContainer = editBtn.parentElement;
+                btnContainer.appendChild(cancelBtn);
+                
+                // Focus on the name input
+                nameInput.focus();
+            } catch (error) {
+                console.error('Error setting up event edit form:', error);
+                showToast('Error setting up edit form', 'error');
+            }
+        }
 
-                // Update the event
-                const { error } = await window.supabaseServices.timelineEvents.update(
+        // Function to save event changes
+        async function saveEventChanges() {
+            if (!currentEventData) {
+                showToast('No event selected for editing', 'error');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const saveBtn = document.getElementById('editEventBtn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                saveBtn.disabled = true;
+                
+                // Get updated values
+                const newName = document.getElementById('eventEditName').value;
+                const newDescription = document.getElementById('eventEditDescription').value;
+                const newTime = document.getElementById('eventEditTime').value;
+                
+                if (!newName.trim()) {
+                    showToast('Event name cannot be empty', 'error');
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
+                
+                // Get the date part from the existing event date_time
+                const selectedDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
+                const formattedDateTime = `${selectedDate}T${newTime}:00`;
+                
+                console.log('Updating event with new time:', formattedDateTime);
+                
+                // Update the event in the database
+                const { data, error } = await window.supabaseServices.timelineEvents.update(
                     currentEventData.id,
                     {
-                        name,
-                        description,
+                        name: newName,
+                        description: newDescription,
+                        date_time: formattedDateTime,
                         updated_at: new Date().toISOString()
                     }
                 );
-
+                
                 if (error) throw error;
-
-                // Update character links
-                const characterIds = characters.map(char => char.id);
-                const { error: charError } = await window.supabaseServices.timelineEvents.updateCharacters(
-                    currentEventData.id,
-                    characterIds
-                );
-
-                if (charError) throw charError;
-
-                // Update UI
-                showToast('Event updated successfully', 'success');
-                closeEventDetails();
+                
+                // Update character links if necessary
+                if (currentEventData.characters) {
+                    const characterIds = currentEventData.characters.map(char => char.id);
+                    const { error: charError } = await window.supabaseServices.timelineEvents.updateCharacters(
+                        currentEventData.id,
+                        characterIds
+                    );
+                    
+                    if (charError) throw charError;
+                }
+                
+                // Reset the event edit UI properly
+                saveBtn.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Event';
+                saveBtn.disabled = false;
+                
+                // Remove any existing event listeners and restore the edit listener
+                saveBtn.removeEventListener('click', saveEventChanges);
+                saveBtn.removeEventListener('click', editEvent);
+                saveBtn.addEventListener('click', editEvent);
+                
+                // Reload the timeline events to refresh the display
                 await loadTimelineEvents();
-
-                // Reset button state
-                editBtn.innerHTML = originalText;
-                editBtn.disabled = false;
+                
+                // Close the event details panel
+                closeEventDetails();
+                
+                // Show success message
+                showToast('Event updated successfully', 'success');
             } catch (error) {
                 console.error('Error updating event:', error);
-                showToast('Error updating event', 'error');
+                showToast('Error updating event: ' + (error.message || 'Unknown error'), 'error');
                 
-                // Reset button state
-                const editBtn = document.getElementById('editEventBtn');
-                editBtn.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Event';
-                editBtn.disabled = false;
+                // Reset the save button
+                const saveBtn = document.getElementById('editEventBtn');
+                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
+                saveBtn.disabled = false;
+            }
+        }
+
+        // Function to cancel event editing
+        function cancelEventEdit() {
+            try {
+                // Close the details panel and reset
+                closeEventDetails();
+            } catch (error) {
+                console.error('Error canceling event edit:', error);
+                showToast('Error canceling edit', 'error');
             }
         }
 
         // Helper function to close event details panel
         function closeEventDetails() {
             const panel = document.getElementById('eventDetailsPanel');
+            
+            // Remove edit mode and restore normal view
+            panel.classList.remove('edit-mode');
+            
+            // Slide out panel
             panel.classList.add('translate-x-full');
+            
+            // Reset event data
             currentEventData = null;
+            
+            // Timeout to allow animation to complete before resetting panel content
+            setTimeout(() => {
+                try {
+                    // Get the elements
+                    const editBtn = document.getElementById('editEventBtn');
+                    const btnContainer = editBtn.parentElement;
+                    
+                    // Remove any cancel button that might have been added
+                    const cancelBtn = btnContainer.querySelector('button:not(#editEventBtn)');
+                    if (cancelBtn) {
+                        cancelBtn.remove();
+                    }
+                    
+                    // Reset the edit button to its original state
+                    editBtn.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Event';
+                    
+                    // Make sure we remove any existing event listener before adding the new one
+                    editBtn.removeEventListener('click', saveEventChanges);
+                    editBtn.removeEventListener('click', editEvent);
+                    // Add the edit event listener back
+                    editBtn.addEventListener('click', editEvent);
+                    
+                    // Reset the edited fields if they exist
+                    const nameInput = document.getElementById('eventEditName');
+                    const descriptionTextarea = document.getElementById('eventEditDescription');
+                    const timeContainer = document.querySelector('.flex.items-center.space-x-2.text-sm.text-gray-500');
+                    
+                    if (nameInput) {
+                        const nameElement = document.createElement('h2');
+                        nameElement.id = 'eventDetailName';
+                        nameElement.className = 'text-xl font-bold text-primary';
+                        nameElement.textContent = 'Event Name';
+                        nameInput.replaceWith(nameElement);
+                    }
+                    
+                    if (descriptionTextarea) {
+                        const descriptionElement = document.createElement('div');
+                        descriptionElement.id = 'eventDetailDescription';
+                        descriptionElement.className = 'mt-4 text-gray-700 text-sm whitespace-pre-wrap';
+                        descriptionElement.textContent = 'Description';
+                        descriptionTextarea.replaceWith(descriptionElement);
+                    }
+                    
+                    if (timeContainer) {
+                        const timeElement = document.createElement('div');
+                        timeElement.id = 'eventDetailTime';
+                        timeElement.className = 'mt-2 text-sm text-gray-500';
+                        timeElement.textContent = 'Time: 00:00';
+                        timeContainer.replaceWith(timeElement);
+                    }
+                } catch (error) {
+                    console.error('Error resetting event details panel:', error);
+                }
+            }, 300);
         }
 
         // Helper function to show event details
@@ -1295,9 +1485,20 @@
                 characters
             };
 
+            // Get event time from data-time attribute of the parent cell
+            const cell = eventElement.closest('.timeline-cell');
+            const time = cell ? cell.getAttribute('data-time') : '00';
+            const formattedTime = `${time.toString().padStart(2, '0')}:00`;
+            
+            // Add time to current event data
+            currentEventData.time = formattedTime;
+
             // Update panel content
             document.getElementById('eventDetailName').textContent = name;
             document.getElementById('eventDetailDescription').textContent = description || 'No description provided';
+            
+            // Update time display
+            document.getElementById('eventDetailTime').textContent = `Time: ${formattedTime}`;
 
             // Update characters list
             const charactersList = document.getElementById('eventDetailCharacters');
@@ -1484,6 +1685,55 @@
             });
         }
 
+        // Handle drop on events
+        function handleDropOnEvent(e) {
+            e.preventDefault();
+            // Stop event from bubbling up to the timeline cell
+            e.stopPropagation();
+            
+            try {
+                // Get the dropped character data
+                const characterDataStr = e.dataTransfer.getData('text/plain');
+                if (!characterDataStr) return;
+                
+                const characterData = JSON.parse(characterDataStr);
+                if (!characterData || !characterData.id) return;
+                
+                // Get the event element that received the drop
+                const eventElement = e.target.closest('.timeline-event');
+                if (!eventElement) {
+                    console.warn('No event element found for drop');
+                    return;
+                }
+                
+                // Get the event ID
+                const eventId = eventElement.getAttribute('data-event-id');
+                if (!eventId) {
+                    console.warn('No event ID found');
+                    return;
+                }
+                
+                // Get current characters for this event
+                const currentCharacters = JSON.parse(eventElement.getAttribute('data-characters') || '[]');
+                
+                // Check if character is already part of the event
+                const characterExists = currentCharacters.some(char => char.id === characterData.id);
+                if (characterExists) {
+                    showToast(`${characterData.name} is already part of this event`, 'error');
+                    return;
+                }
+                
+                // Show confirmation dialog
+                if (confirm(`Add ${characterData.name} to this event?`)) {
+                    addCharacterToEvent(eventId, characterData, eventElement);
+                }
+            } catch (error) {
+                console.error('Error handling drop on event:', error);
+                showToast('Error processing character drop', 'error');
+            }
+        }
+
+        // Original function for handling drops on timeline cells to create new events
         function handleEventDrop(e) {
             e.preventDefault();
             
@@ -1526,6 +1776,81 @@
             } catch (error) {
                 console.error('Error handling drop:', error);
                 showToast('Error handling drop', 'error');
+            }
+        }
+
+        // Function to add a character to an existing event
+        async function addCharacterToEvent(eventId, characterData, eventElement) {
+            try {
+                console.log(`Adding character ${characterData.name} to event ${eventId}`);
+                
+                // Get current characters from the event element
+                const currentCharactersStr = eventElement.getAttribute('data-characters') || '[]';
+                const currentCharacters = JSON.parse(currentCharactersStr);
+                
+                // Add the new character
+                currentCharacters.push({
+                    id: characterData.id,
+                    name: characterData.name,
+                    role: characterData.role
+                });
+                
+                // Get all character IDs for the update
+                const characterIds = currentCharacters.map(char => char.id);
+                
+                // Update the character links in the database
+                const { error } = await window.supabaseServices.timelineEvents.updateCharacters(
+                    eventId,
+                    characterIds
+                );
+                
+                if (error) throw error;
+                
+                // Update the event element data-characters attribute
+                eventElement.setAttribute('data-characters', JSON.stringify(currentCharacters));
+                
+                // Show success message
+                showToast(`Added ${characterData.name} to event`, 'success');
+                
+                // Reload timeline events to ensure data consistency
+                await loadTimelineEvents();
+                
+                // If the event details panel is open for this event, update it
+                if (currentEventData && currentEventData.id === eventId) {
+                    // Update the characters in the current event data
+                    currentEventData.characters = currentCharacters;
+                    
+                    // Update the characters list in the event details panel
+                    updateEventDetailsCharacters(currentCharacters);
+                }
+            } catch (error) {
+                console.error('Error adding character to event:', error);
+                showToast('Error adding character to event', 'error');
+            }
+        }
+
+        // Helper function to update the characters list in the event details panel
+        function updateEventDetailsCharacters(characters) {
+            const charactersList = document.getElementById('eventDetailCharacters');
+            if (!charactersList) return;
+            
+            charactersList.innerHTML = '';
+            
+            if (characters.length > 0) {
+                characters.forEach(character => {
+                    const characterEl = document.createElement('div');
+                    characterEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
+                    characterEl.setAttribute('data-character-id', character.id);
+                    characterEl.innerHTML = `
+                        <span class="character-name">${character.name}</span>
+                        <button onclick="removeCharacterFromEvent('${character.id}')" class="text-error hover:text-opacity-80">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    charactersList.appendChild(characterEl);
+                });
+            } else {
+                charactersList.innerHTML = '<div class="text-sm text-gray-500">No characters involved</div>';
             }
         }
 
