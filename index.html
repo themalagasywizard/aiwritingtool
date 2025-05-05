@@ -499,6 +499,10 @@
     <script type="module">
         import { projects, chapters, characters, auth } from './lib/supabase.js';
         
+        // Global variables to store current project and user information
+        let currentProject = null;
+        let currentChapter = null;
+        
         // Initialize with a default user avatar
         const userAvatar = document.querySelector('#userAvatar');
         if (userAvatar) {
@@ -517,14 +521,17 @@
         };
 
         // Add sign out handler
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const signOutBtn = document.querySelector('#signOutBtn');
             if (signOutBtn) {
                 signOutBtn.addEventListener('click', handleSignOut);
             }
             
             // Check authentication state
-            auth.getUser().then(({ data: { user } }) => {
+            try {
+                const { data: { user }, error } = await auth.getUser();
+                if (error) throw error;
+                
                 if (user) {
                     // Update avatar with user email or name
                     const nameInitial = user.email ? user.email.charAt(0).toUpperCase() : 'G';
@@ -535,1732 +542,359 @@
                     if (userDisplayName) {
                         userDisplayName.textContent = user.email || 'Signed In User';
                     }
+                    
+                    // Load the user's project data
+                    await loadUserData(user);
                 } else {
                     // Not logged in, redirect to auth page
                     window.location.href = '/auth/auth.html';
                 }
-            }).catch(error => {
+            } catch (error) {
                 console.error('Auth check error:', error);
-            });
+            }
         });
-    </script>
-
-    <!-- Top Bar -->
-    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
-        <div class="flex items-center space-x-4">
-            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
-                <i class="fas fa-feather-alt"></i>
-            </div>
-            <h1 class="text-xl font-semibold text-primary">AIStoryCraft</h1>
-        </div>
-        <div class="flex items-center space-x-4">
-            <div class="text-sm text-textSecondary flex items-center">
-                <i class="fas fa-cloud-upload-alt mr-2 text-success"></i>
-                <span>Saved</span>
-            </div>
-            <button class="btn btn-primary">
-                <i class="fas fa-save mr-1"></i>
-                Save
-            </button>
-            <div class="relative group">
-                <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
-                     alt="User Avatar" 
-                     class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
-                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
-                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                        <i class="fas fa-user-circle text-primary mr-2"></i>
-                        <span id="userDisplayName">Guest User</span>
-                    </div>
-                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                        <i class="fas fa-cog text-secondary mr-2"></i>
-                        <span>Settings</span>
-                    </div>
-                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                        <i class="fas fa-sync-alt mr-2"></i>
-                        <span>Refresh</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <div class="flex flex-1 overflow-hidden">
-        <!-- Sidebar -->
-        <aside class="sidebar h-full overflow-y-auto p-4">
-            <!-- Project Info -->
-            <div class="mb-6">
-                <div class="bg-white rounded-lg p-3 shadow-sm-custom mb-4">
-                    <h2 class="text-primary font-medium mb-1">My Novel</h2>
-                    <div class="flex items-center text-xs text-textSecondary">
-                        <i class="fas fa-clock mr-1"></i>
-                        <span>Last edited: Today, 2:30 PM</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Chapters -->
-            <div class="mb-6">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-sm font-semibold uppercase tracking-wider text-secondary">Chapters</h2>
-                    <button class="text-primary hover:text-opacity-80" title="Collapse All">
-                        <i class="fas fa-compress-alt"></i>
-                    </button>
-                </div>
-                <div class="space-y-1">
-                    <div class="chapter-item active p-2 pl-3 rounded cursor-pointer">
-                        <div class="flex items-center justify-between">
-                            <span>Chapter 1: Introduction</span>
-                            <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
-                        </div>
-                    </div>
-                    <div class="chapter-item p-2 pl-3 rounded cursor-pointer">
-                        <div class="flex items-center justify-between">
-                            <span>Chapter 2: Rising Action</span>
-                            <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
-                        </div>
-                    </div>
-                    <div class="chapter-item p-2 pl-3 rounded cursor-pointer">
-                        <div class="flex items-center justify-between">
-                            <span>Chapter 3: Climax</span>
-                            <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
-                        </div>
-                    </div>
-                </div>
-                <button class="btn btn-primary w-full mt-3">
-                    <i class="fas fa-plus"></i>
-                    Add Chapter
-                </button>
-            </div>
-
-            <!-- Context Manager -->
-            <div class="mb-6">
-                <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-sm font-semibold uppercase tracking-wider text-secondary">Story Context</h2>
-                    <span class="text-xs text-textSecondary">3 items</span>
-                </div>
-                <div class="bg-white rounded-lg p-2 shadow-sm-custom mb-3">
-                    <div class="space-y-1">
-                        <div class="p-2 text-sm hover:bg-gray-50 rounded cursor-pointer">
-                            <div class="font-medium">John Doe</div>
-                            <div class="text-xs text-textSecondary">Protagonist</div>
-                        </div>
-                        <div class="p-2 text-sm hover:bg-gray-50 rounded cursor-pointer">
-                            <div class="font-medium">New York City</div>
-                            <div class="text-xs text-textSecondary">Setting</div>
-                        </div>
-                        <div class="p-2 text-sm hover:bg-gray-50 rounded cursor-pointer">
-                            <div class="font-medium">The Accident</div>
-                            <div class="text-xs text-textSecondary">Event</div>
-                        </div>
-                    </div>
-                </div>
-                <button class="btn btn-primary w-full" id="manageContextBtn">
-                    <i class="fas fa-brain"></i>
-                    Manage Context
-                </button>
-            </div>
-
-            <!-- Export -->
-            <div class="mb-6">
-                <button class="btn btn-success w-full">
-                    <i class="fas fa-file-pdf"></i>
-                    Export PDF
-                </button>
-            </div>
-
-            <!-- Word Count -->
-            <div class="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm-custom text-sm">
-                <div>
-                    <div class="text-textSecondary">Total Words</div>
-                    <div class="text-xl font-semibold text-primary">12,345</div>
-                </div>
-                <div class="h-12 w-12 relative">
-                    <svg class="w-full h-full" viewBox="0 0 36 36">
-                        <circle cx="18" cy="18" r="16" fill="none" stroke="#E6E9F0" stroke-width="2"></circle>
-                        <circle cx="18" cy="18" r="16" fill="none" stroke="#4B5EAA" stroke-width="2" stroke-dasharray="80 100" stroke-dashoffset="0" transform="rotate(-90 18 18)"></circle>
-                    </svg>
-                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-medium text-primary">80%</div>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Editor Area -->
-        <main class="flex-1 overflow-hidden flex flex-col bg-white">
-            <!-- Editor Toolbar -->
-            <div class="bg-white border-b border-gray-100 p-2 flex items-center space-x-2 shadow-sm-custom">
-                <div class="flex items-center space-x-1 mr-2">
-                    <button class="toolbar-btn" title="Bold">
-                        <i class="fas fa-bold"></i>
-                    </button>
-                    <button class="toolbar-btn" title="Italic">
-                        <i class="fas fa-italic"></i>
-                    </button>
-                    <button class="toolbar-btn" title="Heading">
-                        <i class="fas fa-heading"></i>
-                    </button>
-                    <button class="toolbar-btn" title="List">
-                        <i class="fas fa-list-ul"></i>
-                    </button>
-                </div>
-                <div class="h-6 w-px bg-gray-200 mx-2"></div>
-                <!-- AI Assistant Button -->
-                <button id="aiAssistBtn" class="btn btn-primary text-sm transform transition-transform hover:scale-105 active:scale-95">
-                    <i class="fas fa-robot mr-2"></i>
-                    AI Assist
-                </button>
-                <div class="flex-grow"></div>
-                <button class="toolbar-btn" title="Full Screen">
-                    <i class="fas fa-expand"></i>
-                </button>
-            </div>
-
-            <!-- AI Assistant Panel -->
-            <div id="aiAssistPanel" class="fixed right-0 top-0 h-screen w-[400px] bg-white shadow-md-custom transform translate-x-full transition-transform duration-300 z-50 flex flex-col" role="complementary" aria-label="AI Assistant">
-                <!-- Panel Header -->
-                <div class="flex-shrink-0 p-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-primary">AI Assistant</h2>
-                        <button id="closeAiPanel" class="text-gray-400 hover:text-gray-600">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Mode Toggle -->
-                    <div class="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-3">
-                        <button class="ai-mode-btn flex-1 py-1 px-2 text-sm font-medium rounded active" data-mode="generate">Generate</button>
-                        <button class="ai-mode-btn flex-1 py-1 px-2 text-sm font-medium rounded" data-mode="chat">Chat</button>
-                    </div>
-                    
-                    <!-- Model Selector -->
-                    <select id="aiModel" class="w-full bg-primaryLight text-primary rounded-lg p-2 text-sm">
-                        <!-- DeepSeek Models (Direct API) -->
-                        <option value="deepseek-chat">DeepSeek Chat (V3) - Featured</option>
-                        <option value="deepseek-reasoner">DeepSeek Reasoner (R1) - Featured</option>
-                        
-                        <option disabled>──────── Hugging Face Models ────────</option>
-                        <option value="distilgpt2">DistilGPT-2 (Fast)</option>
-                        <option value="gpt2-medium">GPT-2 Medium (Balanced)</option>
-                        <!-- New models -->
-                        <option value="Qwen/Qwen3-0.6B">Qwen3-0.6B (Small but Improved)</option>
-                        <option value="google/gemma-2b">Gemma-2B (Google's Lightweight)</option>
-                        <option value="meta-llama/Llama-3-8B-Instruct">Llama-3-8B (High Quality)</option>
-                        <option value="tiiuae/falcon-7b-instruct">Falcon-7B (Creative)</option>
-                        <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral-8x7B (Most Powerful)</option>
-                        <!-- Temporarily disabled due to timeouts -->
-                        <!-- <option value="EleutherAI/gpt-neo-125M">GPT-Neo 125M (Advanced)</option> -->
-                        <!-- <option value="facebook/opt-350m">OPT 350M (Creative)</option> -->
-                    </select>
-                </div>
-
-                <!-- Context Preview -->
-                <div class="flex-shrink-0 bg-primaryLight/20 p-3 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-secondary">Using context:</span>
-                        <button class="text-xs text-primary hover:text-primary/80">
-                            <i class="fas fa-edit mr-1"></i>Edit
-                        </button>
-                    </div>
-                    <div class="text-sm text-primary mt-1">Jane, Darkwood Forest</div>
-                </div>
-
-                <!-- Chat View -->
-                <div id="chatView" class="flex-1 flex flex-col hidden">
-                    <!-- Chat History (now at top) -->
-                    <div id="chatHistory" class="flex-1 overflow-y-auto">
-                        <!-- Example messages will be added here -->
-                    </div>
-                    
-                    <!-- Chat Input (now at bottom) -->
-                    <div class="flex-shrink-0 p-4 border-t border-gray-200">
-                        <div class="relative flex items-end space-x-2">
-                            <textarea id="chatInput" class="flex-1 border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ask the AI..." rows="1"></textarea>
-                            <button id="chatSubmit" class="btn btn-primary flex-shrink-0" disabled>
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                        
-                        <!-- Token usage info for DeepSeek models -->
-                        <div id="tokenUsageInfo" class="text-xs text-gray-500 mt-2 hidden">
-                            <span>Token usage: <span id="promptTokens">0</span> prompt + <span id="completionTokens">0</span> completion = <span id="totalTokens">0</span> total</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Generate/Edit View -->
-                <div id="generateEditView" class="flex-1 flex flex-col">
-                    <!-- Output Area (now at top) -->
-                    <div id="aiOutput" class="flex-1 bg-gray-50 rounded-lg m-4 p-6 overflow-y-auto">
-                        <p class="text-gray-400 text-sm italic">AI output will appear here...</p>
-                    </div>
-                    
-                    <!-- Controls (in middle) -->
-                    <div class="flex-shrink-0 space-y-3 px-4">
-                        <div>
-                            <label class="text-sm font-medium block mb-2">Tone</label>
-                            <select id="aiTone" class="w-full border border-gray-200 rounded-lg p-2 text-sm">
-                                <option>Suspenseful</option>
-                                <option>Humorous</option>
-                                <option>Dramatic</option>
-                                <option>Reflective</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-sm font-medium block mb-2">Length</label>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-500">Short</span>
-                                <input type="range" id="aiLength" min="50" max="500" value="200" class="flex-grow">
-                                <span class="text-xs text-gray-500">Long</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Input Area (now at bottom) -->
-                    <div class="flex-shrink-0 p-4 border-t border-gray-200">
-                        <div class="relative">
-                            <textarea id="aiInput" class="w-full min-h-[100px] max-h-[200px] border border-gray-200 rounded-lg p-3 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Write a scene with Jane..."></textarea>
-                            <button id="aiSubmit" class="absolute right-3 top-3 text-primary hover:text-primary/80 disabled:opacity-50">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mobile Overlay (shown on small screens) -->
-            <div id="aiMobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
-
-            <!-- Toast Notification -->
-            <div id="aiToast" class="fixed bottom-4 right-4 bg-success text-white p-3 rounded-lg shadow-md-custom hidden transform transition-transform duration-300">
-                <p class="text-sm"></p>
-            </div>
-
-            <!-- Editor Content -->
-            <div class="flex-1 overflow-y-auto p-8 bg-white">
-                <div class="editor-content max-w-3xl mx-auto" contenteditable="true">
-                    <h1 class="text-3xl font-bold mb-6">Chapter 1: Introduction</h1>
-                    <p class="mb-4">Start writing your story here. The cursor blinked rhythmically against the blank page, taunting with its emptiness. Every great story begins with a single word, then another, until a world emerges from nothing but imagination.</p>
-                    <p class="mb-4">Use the AI tools in the toolbar to continue your story, rewrite sections, or get suggestions when you're stuck. Your story context is always at hand in the sidebar to maintain consistency.</p>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- AI Preview Modal (Hidden by default) -->
-    <div class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center modal" id="aiModal">
-        <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 shadow-md-custom fade-in">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-primary">AI Suggestion</h2>
-                <button class="text-gray-400 hover:text-gray-600" id="closeModal">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="bg-gray-50 p-5 rounded-lg mb-5 border border-gray-100">
-                <p class="text-gray-700 leading-relaxed">The city lights twinkled below as John gazed out from his apartment window. Tomorrow would mark one year since the accident changed everything. He sighed, knowing that returning to New York had been necessary, even if every street corner held a memory he'd rather forget.</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4 mb-5">
-                <div>
-                    <label class="text-sm font-medium block mb-2">Tone</label>
-                    <select class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                        <option>Suspenseful</option>
-                        <option>Humorous</option>
-                        <option>Dramatic</option>
-                        <option>Reflective</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="text-sm font-medium block mb-2">Length</label>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xs text-gray-500">Short</span>
-                        <input type="range" min="50" max="500" value="200" class="flex-grow">
-                        <span class="text-xs text-gray-500">Long</span>
-                    </div>
-                </div>
-            </div>
-            <div class="flex justify-end space-x-3">
-                <button class="btn btn-primary">
-                    <i class="fas fa-sync-alt"></i>
-                    Regenerate
-                </button>
-                <button class="btn btn-error">
-                    <i class="fas fa-times"></i>
-                    Reject
-                </button>
-                <button class="btn btn-success">
-                    <i class="fas fa-check"></i>
-                    Accept
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Context Manager Modal (Hidden by default) -->
-    <div class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center modal" id="contextModal">
-        <div class="bg-white rounded-xl p-6 max-w-4xl w-full mx-4 shadow-md-custom fade-in overflow-y-auto max-h-[90vh]">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-primary">Manage Story Context</h2>
-                <button class="text-gray-400 hover:text-gray-600" id="closeContextModal">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="border-b border-gray-200 mb-4">
-                <div class="flex space-x-2">
-                    <button class="px-4 py-2 border-b-2 border-primary text-primary font-medium context-tab" data-tab="protagonists">Characters</button>
-                    <button class="px-4 py-2 border-b-2 border-transparent hover:text-primary context-tab" data-tab="settings">Settings</button>
-                    <button class="px-4 py-2 border-b-2 border-transparent hover:text-primary context-tab" data-tab="timeline">Timeline</button>
-                    <button class="px-4 py-2 border-b-2 border-transparent hover:text-primary context-tab" data-tab="other">Other</button>
-                </div>
-            </div>
-            
-            <!-- Context Items List -->
-            <div class="mb-4">
-                <!-- Character Tree View (for Characters tab) -->
-                <div id="characterTreeView" class="bg-white rounded-lg p-3 shadow-sm-custom">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-sm font-semibold text-primary">Characters Network</h3>
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xs text-textSecondary">3 characters</span>
-                            <button class="btn btn-primary text-xs py-1 px-2" id="newCharacterBtn">
-                                <i class="fas fa-plus text-xs mr-1"></i>
-                                New Character
-                            </button>
-                        </div>
-                    </div>
-                    <div class="character-tree relative" id="characterTreeContainer">
-                        <!-- Character nodes will be placed here dynamically -->
-                        <div class="character-node protagonist" style="top: 50px; left: 50%;" data-name="John Doe" data-role="Protagonist">
-                            <div class="font-medium text-center">John</div>
-                            <div class="character-tooltip">
-                                <div class="font-bold text-primary mb-1">John Doe</div>
-                                <div class="text-xs text-textSecondary mb-2">Protagonist</div>
-                                <div class="text-sm">Brave, curious explorer who survived an accident in New York.</div>
-                            </div>
-                        </div>
-                        <div class="character-node antagonist" style="top: 150px; left: 30%;" data-name="Mystery Figure" data-role="Antagonist">
-                            <div class="font-medium text-center">Mystery</div>
-                            <div class="character-tooltip">
-                                <div class="font-bold text-primary mb-1">Mystery Figure</div>
-                                <div class="text-xs text-textSecondary mb-2">Antagonist</div>
-                                <div class="text-sm">Unknown entity connected to the accident, with hidden motives.</div>
-                            </div>
-                        </div>
-                        <div class="character-node supporting" style="top: 150px; left: 70%;" data-name="Sarah" data-role="Supporting">
-                            <div class="font-medium text-center">Sarah</div>
-                            <div class="character-tooltip">
-                                <div class="font-bold text-primary mb-1">Sarah</div>
-                                <div class="text-xs text-textSecondary mb-2">Supporting Character</div>
-                                <div class="text-sm">John's friend who helps him navigate his return to the city.</div>
-                            </div>
-                        </div>
-                        <!-- Character links -->
-                        <div class="character-link" style="width: 150px; top: 80px; left: 50%; transform: rotate(45deg);"></div>
-                        <div class="character-link" style="width: 150px; top: 80px; left: 50%; transform: rotate(-45deg);"></div>
-                        
-                        <!-- Network area interaction overlay -->
-                        <div id="networkInteractionOverlay" class="absolute inset-0 cursor-pointer hidden">
-                            <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-md-custom p-3 text-center">
-                                <button class="btn btn-primary text-sm" id="addCharacterFromNetworkBtn">
-                                    <i class="fas fa-plus mr-1"></i>
-                                    Add Character Here
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-center mt-4">
-                        <div class="flex justify-center space-x-4">
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full bg-primary mr-1"></div>
-                                <span class="text-xs">Protagonist</span>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full bg-error mr-1"></div>
-                                <span class="text-xs">Antagonist</span>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full bg-accent mr-1"></div>
-                                <span class="text-xs">Supporting</span>
-                            </div>
-                            <div class="flex items-center">
-                                <div class="w-3 h-3 rounded-full bg-secondary mr-1"></div>
-                                <span class="text-xs">Minor</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Regular List View (for other tabs) -->
-                <div id="regularListView" class="bg-primaryLight p-3 rounded-lg hidden">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-sm font-semibold text-primary">Current Items</h3>
-                        <span class="text-xs text-textSecondary" id="contextItemCount">3 items</span>
-                    </div>
-                    <div class="space-y-1 max-h-32 overflow-y-auto" id="contextItemsList">
-                        <div class="p-2 text-sm bg-white rounded flex justify-between items-center">
-                            <div>
-                                <div class="font-medium">John Doe</div>
-                                <div class="text-xs text-textSecondary">Protagonist</div>
-                            </div>
-                            <div>
-                                <button class="text-primary hover:text-opacity-80 mr-2" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="text-error hover:text-opacity-80" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="p-2 text-sm bg-white rounded flex justify-between items-center">
-                            <div>
-                                <div class="font-medium">New York City</div>
-                                <div class="text-xs text-textSecondary">Setting</div>
-                            </div>
-                            <div>
-                                <button class="text-primary hover:text-opacity-80 mr-2" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="text-error hover:text-opacity-80" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="p-2 text-sm bg-white rounded flex justify-between items-center">
-                            <div>
-                                <div class="font-medium">The Accident</div>
-                                <div class="text-xs text-textSecondary">Timeline</div>
-                            </div>
-                            <div>
-                                <button class="text-primary hover:text-opacity-80 mr-2" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="text-error hover:text-opacity-80" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Form containers for each tab -->
-            <div id="protagonistsForm" class="context-form-container hidden">
-                <div id="characterFormHeader" class="bg-primaryLight p-3 mb-4 rounded-lg">
-                    <h3 class="text-primary font-medium" id="characterFormTitle">Add New Character</h3>
-                    <p class="text-sm text-secondary">Fill in the details below to add a character to your story.</p>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Name <span class="text-error">*</span></label>
-                        <input type="text" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Character name" id="protagonistName">
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Role <span class="text-error">*</span></label>
-                        <select class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" id="protagonistRole">
-                            <option value="Protagonist">Protagonist</option>
-                            <option value="Antagonist">Antagonist</option>
-                            <option value="Supporting">Supporting Character</option>
-                            <option value="Minor">Minor Character</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Traits</label>
-                        <textarea class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none h-20" placeholder="Character traits (e.g., brave, curious, impulsive)" id="protagonistTraits"></textarea>
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Relationships</label>
-                        <div class="bg-gray-50 rounded-lg p-2 h-auto">
-                            <div class="text-xs text-textSecondary mb-2">Connected to:</div>
-                            <div id="relationshipList" class="space-y-1 mb-3">
-                                <div class="flex items-center justify-between text-sm">
-                                    <div class="flex items-center">
-                                        <div class="w-2 h-2 rounded-full bg-primary mr-2"></div>
-                                        <span>John Doe (Protagonist)</span>
-                                    </div>
-                                    <button class="text-error hover:text-opacity-80 relationship-delete-btn">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                                <div class="flex items-center justify-between text-sm">
-                                    <div class="flex items-center">
-                                        <div class="w-2 h-2 rounded-full bg-error mr-2"></div>
-                                        <span>Mystery Figure (Antagonist)</span>
-                                    </div>
-                                    <button class="text-error hover:text-opacity-80 relationship-delete-btn">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="border-t border-gray-200 pt-2">
-                                <div class="text-xs text-textSecondary mb-1">Add Relationship:</div>
-                                <div class="flex space-x-2">
-                                    <select id="newRelationshipSelect" class="text-sm flex-grow border border-gray-200 rounded-lg p-1 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
-                                        <option value="">Select a character...</option>
-                                        <option value="John Doe">John Doe (Protagonist)</option>
-                                        <option value="Mystery Figure">Mystery Figure (Antagonist)</option>
-                                        <option value="Sarah">Sarah (Supporting)</option>
-                                    </select>
-                                    <button id="addRelationshipBtn" class="btn btn-primary py-1 px-2 text-xs">
-                                        <i class="fas fa-plus text-xs"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="text-sm font-medium block mb-2">Backstory</label>
-                        <textarea class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none h-20" placeholder="Character's history and background" id="protagonistBackstory"></textarea>
-                    </div>
-                </div>
-
-                <div class="bg-primaryLight p-3 rounded-lg mb-4">
-                    <div class="text-sm font-medium mb-2">Character Position in Network</div>
-                    <p class="text-xs text-textSecondary mb-3">Characters are automatically positioned in the network based on their relationships. Protagonists are placed in the center, with other characters connected to them.</p>
-                    <div class="flex space-x-4">
-                        <div class="w-5 h-5 rounded-full bg-primary"></div>
-                        <div class="w-5 h-5 rounded-full bg-error"></div>
-                        <div class="w-5 h-5 rounded-full bg-accent"></div>
-                        <div class="w-5 h-5 rounded-full bg-secondary"></div>
-                    </div>
-                    <div class="flex space-x-4 text-xs mt-1">
-                        <div>Protagonist</div>
-                        <div>Antagonist</div>
-                        <div>Supporting</div>
-                        <div>Minor</div>
-                    </div>
-                </div>
+        
+        // Load user's project data
+        async function loadUserData(user) {
+            try {
+                console.log("Loading user data for:", user.id);
                 
-                <div class="flex justify-end space-x-3">
-                    <button class="btn btn-error" id="cancelCharacterBtn">
-                        <i class="fas fa-times"></i>
-                        Cancel
-                    </button>
-                    <button class="btn btn-success" id="saveCharacterBtn">
-                        <i class="fas fa-save"></i>
-                        Save Character
-                    </button>
-                </div>
-            </div>
-
-            <div id="settingsForm" class="context-form-container hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Name <span class="text-error">*</span></label>
-                        <input type="text" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Setting name (e.g., Darkwood Forest)" id="settingName">
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Type</label>
-                        <select class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" id="settingType">
-                            <option value="Location">Location</option>
-                            <option value="Building">Building</option>
-                            <option value="City">City</option>
-                            <option value="Country">Country</option>
-                            <option value="Planet">Planet</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="text-sm font-medium block mb-2">Description <span class="text-error">*</span></label>
-                        <textarea class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none h-20" placeholder="Setting description" id="settingDescription"></textarea>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="text-sm font-medium block mb-2">Key Features</label>
-                        <textarea class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none h-20" placeholder="Notable features (e.g., haunted, foggy, ancient)" id="settingFeatures"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div id="timelineForm" class="context-form-container hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Event Name <span class="text-error">*</span></label>
-                        <input type="text" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Event name" id="timelineEventName">
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Date/Time</label>
-                        <input type="text" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="e.g., Full moon, 2025, Day 3" id="timelineDateTime">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="text-sm font-medium block mb-2">Description <span class="text-error">*</span></label>
-                        <textarea class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none h-20" placeholder="What happened in this event" id="timelineDescription"></textarea>
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="text-sm font-medium block mb-2">Significance</label>
-                        <textarea class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none h-20" placeholder="Why this event matters to the story (e.g., turning point, revelation)" id="timelineSignificance"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div id="otherForm" class="context-form-container hidden">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Name <span class="text-error">*</span></label>
-                        <input type="text" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Item name" id="otherName">
-                    </div>
-                    <div>
-                        <label class="text-sm font-medium block mb-2">Type</label>
-                        <input type="text" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="e.g., Theme, Object, Faction" id="otherType">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="text-sm font-medium block mb-2">Description <span class="text-error">*</span></label>
-                        <textarea class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none h-24" placeholder="Description" id="otherDescription"></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex justify-end space-x-3">
-                <button class="btn btn-error" id="deleteContextBtn">
-                    <i class="fas fa-trash"></i>
-                    Delete
-                </button>
-                <button class="btn btn-secondary" id="cancelContextBtn">
-                    <i class="fas fa-times"></i>
-                    Cancel
-                </button>
-                <button class="btn btn-success" id="saveContextBtn">
-                    <i class="fas fa-save"></i>
-                    Save
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Simple JS for Modal Toggle (Demo Only) -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Select elements
-            const contextModal = document.getElementById('contextModal');
-            const manageContextBtn = document.getElementById('manageContextBtn');
-            const closeContextModalBtn = document.getElementById('closeContextModal');
-            const cancelContextBtn = document.getElementById('cancelContextBtn');
-            const saveContextBtn = document.getElementById('saveContextBtn');
-            const deleteContextBtn = document.getElementById('deleteContextBtn');
-            const contextTabs = document.querySelectorAll('.context-tab');
-            const contextForms = document.querySelectorAll('.context-form-container');
-            const characterTreeView = document.getElementById('characterTreeView');
-            const regularListView = document.getElementById('regularListView');
-            const characterFormContainer = document.getElementById('protagonistsForm');
-            const newCharacterBtn = document.getElementById('newCharacterBtn');
-            const cancelCharacterBtn = document.getElementById('cancelCharacterBtn');
-            const saveCharacterBtn = document.getElementById('saveCharacterBtn');
-            const networkInteractionOverlay = document.getElementById('networkInteractionOverlay');
-            const addCharacterFromNetworkBtn = document.getElementById('addCharacterFromNetworkBtn');
-            const characterFormTitle = document.getElementById('characterFormTitle');
-            const newRelationshipSelect = document.getElementById('newRelationshipSelect');
-            const addRelationshipBtn = document.getElementById('addRelationshipBtn');
-            const relationshipList = document.getElementById('relationshipList');
-            
-            // Current editing state
-            let currentlyEditing = null;
-            let networkClickPosition = { x: 0, y: 0 };
-            
-            // Show context modal when manage context button is clicked
-            manageContextBtn.addEventListener('click', function() {
-                window.location.href = 'context.html';
-            });
-            
-            // Close context modal
-            function closeContextModal() {
-                contextModal.style.display = 'none';
-                currentlyEditing = null;
-                resetForms();
-                // Hide character form
-                characterFormContainer.classList.add('hidden');
-            }
-            
-            closeContextModalBtn.addEventListener('click', closeContextModal);
-            cancelContextBtn.addEventListener('click', closeContextModal);
-            
-            // Toggle between character tree and regular views based on tab
-            function toggleContextView(tabName) {
-                if (tabName === 'protagonists') {
-                    // Show character tree view for 'Characters' tab
-                    characterTreeView.classList.remove('hidden');
-                    regularListView.classList.add('hidden');
-                    
-                    // Hide character form by default
-                    characterFormContainer.classList.add('hidden');
-                    
-                    // Refresh character tree (if needed)
-                    refreshCharacterTree();
-                } else {
-                    // Show regular list view for other tabs
-                    characterTreeView.classList.add('hidden');
-                    regularListView.classList.remove('hidden');
-                }
-            }
-            
-            // Show the character form for new character
-            function showNewCharacterForm() {
-                // Reset any previous values
-                resetCharacterForm();
+                // First, try to get project ID from localStorage
+                const storedProjectId = localStorage.getItem('currentProjectId');
                 
-                // Set the form title for new character
-                characterFormTitle.textContent = 'Add New Character';
+                // Try to load user's projects
+                const { data: projectsData, error: projectsError } = await projects.getAll();
                 
-                // Show the character form
-                characterFormContainer.classList.remove('hidden');
-                
-                // Not currently editing an existing character
-                currentlyEditing = null;
-                
-                // Update delete button state
-                updateDeleteButtonState();
-                
-                // Update relationship select
-                updateRelationshipSelect();
-            }
-            
-            // Show the character form for editing an existing character
-            function showEditCharacterForm(character) {
-                // Fill the form with character data
-                document.getElementById('protagonistName').value = character.name;
-                document.getElementById('protagonistRole').value = character.role;
-                document.getElementById('protagonistTraits').value = character.traits || '';
-                document.getElementById('protagonistBackstory').value = character.backstory || '';
-                
-                // Clear existing relationships
-                relationshipList.innerHTML = '';
-                
-                // Add existing relationships to the form
-                const relationships = character.relationships || [];
-                if (relationships.length > 0) {
-                    // Get all character nodes to get their roles and colors
-                    const characterNodes = document.querySelectorAll('.character-node');
-                    
-                    relationships.forEach(relatedName => {
-                        // Find the related character node to get its role
-                        const relatedNode = Array.from(characterNodes).find(node => 
-                            node.getAttribute('data-name') === relatedName);
-                        
-                        if (relatedNode) {
-                            const relatedRole = relatedNode.getAttribute('data-role');
-                            
-                            // Determine color based on character role
-                            let colorClass = 'bg-primary'; // default
-                            if (relatedRole === 'Antagonist') {
-                                colorClass = 'bg-error';
-                            } else if (relatedRole === 'Supporting') {
-                                colorClass = 'bg-accent';
-                            } else if (relatedRole === 'Minor') {
-                                colorClass = 'bg-secondary';
-                            }
-                            
-                            // Create relationship element
-                            const relationshipEl = document.createElement('div');
-                            relationshipEl.className = 'flex items-center justify-between text-sm';
-                            relationshipEl.innerHTML = `
-                                <div class="flex items-center">
-                                    <div class="w-2 h-2 rounded-full ${colorClass} mr-2"></div>
-                                    <span>${relatedName} (${relatedRole})</span>
-                                </div>
-                                <button class="text-error hover:text-opacity-80 relationship-delete-btn">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            `;
-                            
-                            // Add to list
-                            relationshipList.appendChild(relationshipEl);
-                        }
-                    });
-                    
-                    // Add delete handlers
-                    initRelationshipDeleteButtons();
+                if (projectsError) {
+                    console.error("Error loading projects:", projectsError);
+                    return;
                 }
                 
-                // Set the form title for editing
-                characterFormTitle.textContent = 'Edit Character: ' + character.name;
+                console.log("User projects:", projectsData);
                 
-                // Show the character form
-                characterFormContainer.classList.remove('hidden');
-                
-                // Set currently editing
-                currentlyEditing = character;
-                
-                // Update delete button state
-                updateDeleteButtonState();
-                
-                // Update relationship select
-                updateRelationshipSelect();
-            }
-            
-            // Reset the character form
-            function resetCharacterForm() {
-                document.getElementById('protagonistName').value = '';
-                document.getElementById('protagonistRole').value = 'Protagonist';
-                document.getElementById('protagonistTraits').value = '';
-                document.getElementById('protagonistBackstory').value = '';
-                
-                // Clear existing relationships
-                relationshipList.innerHTML = '';
-            }
-            
-            // New Character button click handler
-            newCharacterBtn.addEventListener('click', function() {
-                showNewCharacterForm();
-            });
-            
-            // Cancel Character button click handler
-            cancelCharacterBtn.addEventListener('click', function() {
-                characterFormContainer.classList.add('hidden');
-                currentlyEditing = null;
-            });
-            
-            // Character network background click handler
-            document.getElementById('characterTreeContainer').addEventListener('click', function(e) {
-                // Only register clicks directly on the container (not on nodes)
-                if (e.target === this || e.target === networkInteractionOverlay) {
-                    // Store the click position for potential character placement
-                    const rect = this.getBoundingClientRect();
-                    networkClickPosition = {
-                        x: e.clientX - rect.left,
-                        y: e.clientY - rect.top
-                    };
-                    
-                    // Show the interaction overlay
-                    networkInteractionOverlay.style.display = 'block';
-                    
-                    // Position the overlay interaction button near the click
-                    const overlayBtn = networkInteractionOverlay.querySelector('div');
-                    overlayBtn.style.left = networkClickPosition.x + 'px';
-                    overlayBtn.style.top = networkClickPosition.y + 'px';
-                }
-            });
-            
-            // Add Character from Network button click handler
-            addCharacterFromNetworkBtn.addEventListener('click', function() {
-                // Hide the overlay
-                networkInteractionOverlay.style.display = 'none';
-                
-                // Show the new character form
-                showNewCharacterForm();
-            });
-            
-            // Hide network overlay when clicking anywhere else
-            document.addEventListener('click', function(e) {
-                // If click is outside the network container, hide the overlay
-                if (!e.target.closest('#characterTreeContainer')) {
-                    networkInteractionOverlay.style.display = 'none';
-                }
-            });
-            
-            // Handle tab switching
-            contextTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs
-                    contextTabs.forEach(t => {
-                        t.classList.remove('border-primary', 'text-primary', 'font-medium');
-                        t.classList.add('border-transparent');
-                    });
-                    
-                    // Add active class to clicked tab
-                    this.classList.add('border-primary', 'text-primary', 'font-medium');
-                    this.classList.remove('border-transparent');
-                    
-                    // Get the tab name
-                    const tabName = this.getAttribute('data-tab');
-                    
-                    // Show the corresponding form and hide others
-                    contextForms.forEach(form => {
-                        if (form.id === tabName + 'Form') {
-                            // Only show the form if we're not on protagonists tab
-                            // For protagonists, we only show the form when a character is clicked
-                            if (tabName !== 'protagonists') {
-                                form.classList.remove('hidden');
-                            } else {
-                                form.classList.add('hidden');
-                            }
+                // If we have projects, use the first one or the stored one
+                if (projectsData && projectsData.length > 0) {
+                    // If we have a stored project ID, try to find that project
+                    if (storedProjectId) {
+                        const storedProject = projectsData.find(p => p.id === storedProjectId);
+                        if (storedProject) {
+                            currentProject = storedProject;
                         } else {
-                            form.classList.add('hidden');
-                        }
-                    });
-                    
-                    // Toggle between character tree and regular views
-                    toggleContextView(tabName);
-                });
-            });
-            
-            // Character Tree Management
-            const characterTreeContainer = document.getElementById('characterTreeContainer');
-            
-            // Update relationship lines in the network
-            function updateRelationshipLines() {
-                // Clear all existing relationship lines
-                document.querySelectorAll('.character-link').forEach(link => {
-                    link.remove();
-                });
-                
-                // Get all character nodes
-                const characterNodes = document.querySelectorAll('.character-node');
-                
-                // Create an adjacency list of relationships
-                const relationships = {};
-                
-                // Initialize relationships for all characters
-                characterNodes.forEach(node => {
-                    const name = node.getAttribute('data-name');
-                    relationships[name] = [];
-                });
-                
-                // Populate relationships
-                characterNodes.forEach(node => {
-                    const name = node.getAttribute('data-name');
-                    const nodeRelationships = JSON.parse(node.getAttribute('data-relationships') || '[]');
-                    
-                    // Add bidirectional relationships
-                    nodeRelationships.forEach(relatedName => {
-                        if (relationships[name] && !relationships[name].includes(relatedName)) {
-                            relationships[name].push(relatedName);
-                        }
-                        if (relationships[relatedName] && !relationships[relatedName].includes(name)) {
-                            relationships[relatedName].push(name);
-                        }
-                    });
-                });
-                
-                // Create lines for each relationship (avoiding duplicates)
-                const processedPairs = new Set();
-                
-                Object.keys(relationships).forEach(name => {
-                    const node = Array.from(characterNodes).find(n => n.getAttribute('data-name') === name);
-                    
-                    relationships[name].forEach(relatedName => {
-                        const relatedNode = Array.from(characterNodes).find(n => n.getAttribute('data-name') === relatedName);
-                        
-                        // Create a unique key for this pair
-                        const pairKey = [name, relatedName].sort().join('_');
-                        
-                        // Only process each pair once
-                        if (!processedPairs.has(pairKey) && node && relatedNode) {
-                            createLink(node, relatedNode);
-                            processedPairs.add(pairKey);
-                        }
-                    });
-                });
-            }
-            
-            // Create link between two character nodes
-            function createLink(nodeA, nodeB) {
-                // Get positions
-                const rectA = nodeA.getBoundingClientRect();
-                const rectB = nodeB.getBoundingClientRect();
-                const containerRect = characterTreeContainer.getBoundingClientRect();
-                
-                // Calculate center points relative to container
-                const aX = rectA.left + rectA.width / 2 - containerRect.left;
-                const aY = rectA.top + rectA.height / 2 - containerRect.top;
-                const bX = rectB.left + rectB.width / 2 - containerRect.left;
-                const bY = rectB.top + rectB.height / 2 - containerRect.top;
-                
-                // Calculate distance and angle
-                const distance = Math.sqrt(Math.pow(bX - aX, 2) + Math.pow(bY - aY, 2));
-                const angle = Math.atan2(bY - aY, bX - aX) * 180 / Math.PI;
-                
-                // Create link element
-                const link = document.createElement('div');
-                link.className = 'character-link';
-                link.style.width = `${distance}px`;
-                link.style.top = `${aY}px`;
-                link.style.left = `${aX}px`;
-                link.style.transform = `rotate(${angle}deg)`;
-                
-                // Add to tree
-                characterTreeContainer.appendChild(link);
-                
-                return link;
-            }
-            
-            // Refresh character tree visualization
-            function refreshCharacterTree() {
-                // This function would update the tree based on actual data
-                // For the demo, we'll just make sure the nodes are positioned properly
-                
-                // Add click handlers to character nodes for editing
-                document.querySelectorAll('.character-node').forEach(node => {
-                    node.onclick = function(e) {
-                        // Stop propagation to prevent the network overlay from showing
-                        e.stopPropagation();
-                        
-                        const name = this.getAttribute('data-name');
-                        const role = this.getAttribute('data-role');
-                        const relationships = JSON.parse(this.getAttribute('data-relationships') || '[]');
-                        
-                        // Set current editing item and show form
-                        const character = { 
-                            id: 'mock-id', 
-                            name: name, 
-                            role: role,
-                            traits: "Sample traits for " + name,
-                            backstory: "Sample backstory for " + name,
-                            type: 'Protagonist',
-                            relationships: relationships
-                        };
-                        
-                        // Show the edit form
-                        showEditCharacterForm(character);
-                    };
-                });
-                
-                // Update relationship lines
-                updateRelationshipLines();
-            }
-            
-            // Add character to tree visualization
-            function addCharacterToTree(character) {
-                // If we have a position from network click, use that
-                // Otherwise, position based on relationships
-                let posX, posY;
-                
-                if (networkClickPosition.x && networkClickPosition.y) {
-                    posX = networkClickPosition.x;
-                    posY = networkClickPosition.y;
-                    
-                    // Reset the network click position
-                    networkClickPosition = { x: 0, y: 0 };
-                } else {
-                    // Calculate position based on existing nodes
-                    const nodeCount = characterTreeContainer.querySelectorAll('.character-node').length;
-                    const angle = nodeCount * (Math.PI / 4);
-                    const centerX = characterTreeContainer.offsetWidth / 2;
-                    const centerY = 120;
-                    const radius = 100;
-                    
-                    // Calculate position
-                    posX = centerX + radius * Math.cos(angle);
-                    posY = centerY + radius * Math.sin(angle);
-                }
-                
-                // Create node
-                const node = document.createElement('div');
-                node.className = `character-node ${character.role.toLowerCase()}`;
-                node.style.top = `${posY}px`;
-                node.style.left = `${posX}px`;
-                node.setAttribute('data-name', character.name);
-                node.setAttribute('data-role', character.role);
-                
-                // Create node content
-                const nameDisplay = character.name.split(' ')[0]; // Just first name for display
-                node.innerHTML = `
-                    <div class="font-medium text-center">${nameDisplay}</div>
-                    <div class="character-tooltip">
-                        <div class="font-bold text-primary mb-1">${character.name}</div>
-                        <div class="text-xs text-textSecondary mb-2">${character.role}</div>
-                        <div class="text-sm">${character.traits || 'No traits specified.'}</div>
-                    </div>
-                `;
-                
-                // Add to tree
-                characterTreeContainer.appendChild(node);
-                
-                // Note: We no longer automatically create links here
-                // Links will be created based on the relationships in updateRelationshipLines()
-                
-                // Attach click handler
-                node.onclick = function(e) {
-                    // Stop propagation to prevent the network overlay from showing
-                    e.stopPropagation();
-                    
-                    const name = this.getAttribute('data-name');
-                    const role = this.getAttribute('data-role');
-                    const relationships = JSON.parse(this.getAttribute('data-relationships') || '[]');
-                    
-                    // Set current editing item
-                    const character = { 
-                        id: 'mock-id', 
-                        name: name, 
-                        role: role,
-                        traits: character.traits || '',
-                        backstory: character.backstory || '',
-                        type: 'Protagonist',
-                        relationships: relationships
-                    };
-                    
-                    // Show the edit form
-                    showEditCharacterForm(character);
-                };
-                
-                return node;
-            }
-            
-            // Handle delete button state
-            function updateDeleteButtonState() {
-                if (currentlyEditing) {
-                    deleteContextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    deleteContextBtn.disabled = false;
-                } else {
-                    deleteContextBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                    deleteContextBtn.disabled = true;
-                }
-            }
-            
-            // Reset all forms
-            function resetForms() {
-                document.querySelectorAll('input, textarea, select').forEach(input => {
-                    input.value = '';
-                });
-                updateDeleteButtonState();
-            }
-            
-            // Initialize delete button state
-            updateDeleteButtonState();
-            
-            // Initialize view based on current tab
-            toggleContextView('protagonists');
-            
-            // Save Character button handler
-            saveCharacterBtn.addEventListener('click', function() {
-                // Basic validation
-                let isValid = true;
-                let formData = {};
-                
-                const name = document.getElementById('protagonistName').value;
-                const role = document.getElementById('protagonistRole').value;
-                
-                if (!name) {
-                    document.getElementById('protagonistName').classList.add('border-error');
-                    isValid = false;
-                } else {
-                    document.getElementById('protagonistName').classList.remove('border-error');
-                }
-                
-                if (isValid) {
-                    // Get relationships from the relationship list
-                    const relationships = [];
-                    relationshipList.querySelectorAll('span').forEach(span => {
-                        const relationshipText = span.textContent;
-                        // Extract name from text like "John Doe (Protagonist)"
-                        const relationshipName = relationshipText.split(' (')[0];
-                        relationships.push(relationshipName);
-                    });
-                    
-                    formData = {
-                        name: name,
-                        role: role,
-                        traits: document.getElementById('protagonistTraits').value,
-                        backstory: document.getElementById('protagonistBackstory').value,
-                        type: 'Protagonist',
-                        relationships: relationships
-                    };
-                    
-                    if (currentlyEditing) {
-                        // Update existing character
-                        console.log('Updated character:', formData);
-                        
-                        // Find and update node
-                        const node = Array.from(document.querySelectorAll('.character-node')).find(
-                            node => node.getAttribute('data-name') === currentlyEditing.name
-                        );
-                        
-                        if (node) {
-                            // Store old name to update relationships
-                            const oldName = node.getAttribute('data-name');
-                            
-                            // Update node data
-                            node.setAttribute('data-name', formData.name);
-                            node.setAttribute('data-role', formData.role);
-                            node.setAttribute('data-relationships', JSON.stringify(relationships));
-                            
-                            // Update class for role
-                            node.className = node.className.replace(/protagonist|antagonist|supporting|minor/g, '');
-                            node.classList.add(formData.role.toLowerCase());
-                            node.classList.add('character-node');
-                            
-                            // Update content
-                            const nameDisplay = formData.name.split(' ')[0]; // Just first name for display
-                            node.querySelector('.font-medium').textContent = nameDisplay;
-                            
-                            const tooltip = node.querySelector('.character-tooltip');
-                            tooltip.querySelector('.font-bold').textContent = formData.name;
-                            tooltip.querySelector('.text-xs').textContent = formData.role;
-                            tooltip.querySelector('.text-sm').textContent = formData.traits || 'No traits specified.';
-                            
-                            // If name changed, update relationships in other characters that reference this character
-                            if (oldName !== formData.name) {
-                                document.querySelectorAll('.character-node').forEach(otherNode => {
-                                    if (otherNode !== node) {
-                                        const otherRelationships = JSON.parse(otherNode.getAttribute('data-relationships') || '[]');
-                                        const index = otherRelationships.indexOf(oldName);
-                                        if (index !== -1) {
-                                            otherRelationships[index] = formData.name;
-                                            otherNode.setAttribute('data-relationships', JSON.stringify(otherRelationships));
-                                        }
-                                    }
-                                });
-                            }
+                            // Stored project not found, use the first one
+                            currentProject = projectsData[0];
                         }
                     } else {
-                        // Add new character
-                        console.log('Added new character:', formData);
-                        const newNode = addCharacterToTree(formData);
-                        newNode.setAttribute('data-relationships', JSON.stringify(relationships));
-                        
-                        // Update character count
-                        const characterCount = characterTreeContainer.querySelectorAll('.character-node').length;
-                        characterTreeView.querySelector('span.text-xs').textContent = `${characterCount} characters`;
+                        // No stored project, use the first one
+                        currentProject = projectsData[0];
                     }
                     
-                    // Update relationship lines in the network
-                    updateRelationshipLines();
+                    // Store the current project ID
+                    localStorage.setItem('currentProjectId', currentProject.id);
                     
-                    // Hide the form
-                    characterFormContainer.classList.add('hidden');
+                    // Update project info in UI
+                    updateProjectUI(currentProject);
                     
-                    // Reset editing state
-                    currentlyEditing = null;
+                    // Load chapters for this project
+                    await loadProjectChapters(currentProject.id);
                     
-                    // Reset form
-                    resetCharacterForm();
-                }
-            });
-            
-            // Add relationship
-            addRelationshipBtn.addEventListener('click', function() {
-                addRelationship();
-            });
-            
-            // Add relationship function
-            function addRelationship() {
-                const selectedCharacter = newRelationshipSelect.value;
-                const selectedOption = newRelationshipSelect.options[newRelationshipSelect.selectedIndex];
-                
-                if (!selectedCharacter) {
-                    return; // Nothing selected
-                }
-                
-                // Check if relationship already exists
-                const existingRelationships = relationshipList.querySelectorAll('span');
-                for (let i = 0; i < existingRelationships.length; i++) {
-                    if (existingRelationships[i].textContent.includes(selectedCharacter)) {
-                        return; // Relationship already exists
-                    }
-                }
-                
-                // Create relationship element
-                const relationshipEl = document.createElement('div');
-                relationshipEl.className = 'flex items-center justify-between text-sm';
-                
-                // Determine color based on character role
-                let colorClass = 'bg-primary'; // default
-                if (selectedOption.textContent.includes('Antagonist')) {
-                    colorClass = 'bg-error';
-                } else if (selectedOption.textContent.includes('Supporting')) {
-                    colorClass = 'bg-accent';
-                } else if (selectedOption.textContent.includes('Minor')) {
-                    colorClass = 'bg-secondary';
-                }
-                
-                relationshipEl.innerHTML = `
-                    <div class="flex items-center">
-                        <div class="w-2 h-2 rounded-full ${colorClass} mr-2"></div>
-                        <span>${selectedOption.textContent}</span>
-                    </div>
-                    <button class="text-error hover:text-opacity-80 relationship-delete-btn">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
-                
-                // Add to list
-                relationshipList.appendChild(relationshipEl);
-                
-                // Add delete handler
-                const deleteBtn = relationshipEl.querySelector('.relationship-delete-btn');
-                deleteBtn.addEventListener('click', function() {
-                    relationshipEl.remove();
-                });
-                
-                // Reset select
-                newRelationshipSelect.value = '';
-            }
-            
-            // Add delete handlers to existing relationship delete buttons
-            function initRelationshipDeleteButtons() {
-                const deleteButtons = relationshipList.querySelectorAll('.relationship-delete-btn');
-                deleteButtons.forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        this.closest('div.flex.items-center.justify-between').remove();
-                    });
-                });
-            }
-            
-            // Add keypress handler for relationship select (enter to add)
-            newRelationshipSelect.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    addRelationship();
-                }
-            });
-            
-            // Initialize relationship delete buttons
-            initRelationshipDeleteButtons();
-            
-            // Populate relationship select from character nodes
-            function updateRelationshipSelect() {
-                // Clear existing options except first "Select a character..." option
-                while (newRelationshipSelect.options.length > 1) {
-                    newRelationshipSelect.remove(1);
-                }
-                
-                // Add all characters from nodes
-                document.querySelectorAll('.character-node').forEach(node => {
-                    const name = node.getAttribute('data-name');
-                    const role = node.getAttribute('data-role');
+                    // Load context items
+                    await loadContextItems(currentProject.id);
+                } else {
+                    // No projects found, create a default one
+                    const { data: newProject, error: createError } = await projects.create(
+                        "My Novel", 
+                        "A new writing project"
+                    );
                     
-                    // Skip if this is the currently editing character
-                    if (currentlyEditing && currentlyEditing.name === name) {
+                    if (createError) {
+                        console.error("Error creating default project:", createError);
                         return;
                     }
                     
-                    const option = document.createElement('option');
-                    option.value = name;
-                    option.textContent = `${name} (${role})`;
-                    newRelationshipSelect.appendChild(option);
-                });
-            }
-
-            // AI Assistant Panel Functionality
-            const aiAssistBtn = document.getElementById('aiAssistBtn');
-            const aiAssistPanel = document.getElementById('aiAssistPanel');
-            const closeAiPanel = document.getElementById('closeAiPanel');
-            const aiMobileOverlay = document.getElementById('aiMobileOverlay');
-            const modeButtons = document.querySelectorAll('.ai-mode-btn');
-            const generateEditView = document.getElementById('generateEditView');
-            const chatView = document.getElementById('chatView');
-            const aiInput = document.getElementById('aiInput');
-            const aiSubmit = document.getElementById('aiSubmit');
-            const chatInput = document.getElementById('chatInput');
-            const chatSubmit = document.getElementById('chatSubmit');
-            const chatHistory = document.getElementById('chatHistory');
-            const aiToast = document.getElementById('aiToast');
-            const aiModel = document.getElementById('aiModel');
-            
-            let currentMode = 'generate';
-            
-            // Toggle AI Panel
-            function toggleAiPanel() {
-                const isOpen = aiAssistPanel.classList.contains('translate-x-0');
-                aiAssistPanel.classList.toggle('translate-x-0');
-                aiAssistPanel.classList.toggle('translate-x-full');
-                aiMobileOverlay.classList.toggle('hidden');
-                
-                if (!isOpen) {
-                    // Panel is opening
-                    if (currentMode === 'generate') {
-                        aiInput.focus();
-                    } else if (currentMode === 'chat') {
-                        chatInput.focus();
+                    if (newProject && newProject.length > 0) {
+                        currentProject = newProject[0];
+                        localStorage.setItem('currentProjectId', currentProject.id);
+                        
+                        // Update project info in UI
+                        updateProjectUI(currentProject);
+                        
+                        // Create a default chapter
+                        await createDefaultChapter(currentProject.id);
                     }
                 }
+            } catch (error) {
+                console.error("Error loading user data:", error);
+            }
+        }
+        
+        // Update the project information in the UI
+        function updateProjectUI(project) {
+            // Update project title
+            const projectTitle = document.querySelector('.sidebar .bg-white.rounded-lg.p-3.shadow-sm-custom.mb-4 h2');
+            if (projectTitle && project) {
+                projectTitle.textContent = project.title || "My Novel";
             }
             
-            aiAssistBtn.addEventListener('click', toggleAiPanel);
-            closeAiPanel.addEventListener('click', toggleAiPanel);
-            aiMobileOverlay.addEventListener('click', toggleAiPanel);
-            
-            // Mode Switching
-            modeButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const mode = btn.dataset.mode;
-                    currentMode = mode;
+            // Update last edited date
+            const lastEdited = document.querySelector('.sidebar .bg-white.rounded-lg.p-3.shadow-sm-custom.mb-4 .text-xs.text-textSecondary span');
+            if (lastEdited && project && project.updated_at) {
+                const date = new Date(project.updated_at);
+                lastEdited.textContent = `Last edited: ${date.toLocaleString()}`;
+            }
+        }
+        
+        // Load chapters for a project
+        async function loadProjectChapters(projectId) {
+            try {
+                const { data: chaptersData, error: chaptersError } = await chapters.getByProject(projectId);
+                
+                if (chaptersError) {
+                    console.error("Error loading chapters:", chaptersError);
+                    return;
+                }
+                
+                console.log("Project chapters:", chaptersData);
+                
+                // Update the chapters list in the sidebar
+                const chaptersContainer = document.querySelector('.sidebar .space-y-1');
+                if (chaptersContainer) {
+                    // Clear existing chapters
+                    chaptersContainer.innerHTML = '';
                     
-                    // Update active state
-                    modeButtons.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    
-                    // Show/hide views
-                    if (mode === 'chat') {
-                        generateEditView.classList.add('hidden');
-                        chatView.classList.remove('hidden');
-                        chatInput.focus();
+                    // Add chapters to the sidebar
+                    if (chaptersData && chaptersData.length > 0) {
+                        chaptersData.forEach((chapter, index) => {
+                            const chapterItem = document.createElement('div');
+                            chapterItem.className = `chapter-item p-2 pl-3 rounded cursor-pointer ${index === 0 ? 'active' : ''}`;
+                            chapterItem.dataset.id = chapter.id;
+                            
+                            chapterItem.innerHTML = `
+                                <div class="flex items-center justify-between">
+                                    <span>${chapter.title || `Chapter ${index + 1}`}</span>
+                                    <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
+                                </div>
+                            `;
+                            
+                            // Add click handler to load chapter content
+                            chapterItem.addEventListener('click', () => {
+                                // Remove active class from all chapters
+                                document.querySelectorAll('.chapter-item').forEach(item => {
+                                    item.classList.remove('active');
+                                });
+                                
+                                // Add active class to this chapter
+                                chapterItem.classList.add('active');
+                                
+                                // Load the chapter content
+                                loadChapterContent(chapter);
+                            });
+                            
+                            chaptersContainer.appendChild(chapterItem);
+                        });
+                        
+                        // Load the first chapter by default
+                        if (chaptersData.length > 0) {
+                            loadChapterContent(chaptersData[0]);
+                        }
                     } else {
-                        generateEditView.classList.remove('hidden');
-                        chatView.classList.add('hidden');
-                        aiInput.focus();
+                        // No chapters, show a message
+                        chaptersContainer.innerHTML = `
+                            <div class="text-sm text-gray-500 italic p-2">
+                                No chapters found. Add a chapter to get started.
+                            </div>
+                        `;
                     }
-                    
-                    // Update placeholder
-                    updatePlaceholder();
-                });
-            });
-            
-            // Update input placeholder based on mode
-            function updatePlaceholder() {
-                const placeholders = {
-                    generate: 'Write a scene with Jane...',
-                    chat: 'Ask the AI...'
-                };
-                
-                if (currentMode === 'chat') {
-                    chatInput.placeholder = placeholders.chat;
-                } else {
-                    aiInput.placeholder = placeholders.generate;
                 }
+            } catch (error) {
+                console.error("Error in loadProjectChapters:", error);
             }
+        }
+        
+        // Load chapter content into the editor
+        function loadChapterContent(chapter) {
+            if (!chapter) return;
             
-            // Get the active context items
-            function getActiveContext() {
-                // In a real implementation, this would get the actual context from the sidebar
-                // For now, we'll return a mock context
-                return ['Jane', 'Darkwood Forest'];
-            }
+            // Store current chapter reference
+            currentChapter = chapter;
             
-            // Handle input validation and submit button state
-            function validateInput(input) {
-                const isValid = input.value.trim().length > 0;
-                const submitBtn = input.id === 'chatInput' ? chatSubmit : aiSubmit;
-                
-                submitBtn.disabled = !isValid;
-                submitBtn.classList.toggle('pulse', isValid);
-            }
-            
-            // Auto-expand textarea
-            function autoExpandTextarea(textarea) {
-                // Reset height to allow shrinking
-                textarea.style.height = 'auto';
-                
-                // Calculate new height (min 100px, max 300px)
-                const newHeight = Math.max(100, Math.min(textarea.scrollHeight, 300));
-                textarea.style.height = newHeight + 'px';
-            }
-            
-            // Handle AI input
-            aiInput.addEventListener('input', function() {
-                validateInput(this);
-                autoExpandTextarea(this);
-            });
-
-            // Initialize textarea height
-            window.addEventListener('load', function() {
-                autoExpandTextarea(aiInput);
-            });
-            
-            // Handle chat input
-            chatInput.addEventListener('input', function() {
-                validateInput(this);
-                autoExpandTextarea(this);
-            });
-            
-            // Add a delay function to rate limit requests
-            function delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-            
-            // Handle chat submit with Hugging Face API call
-            chatSubmit.addEventListener('click', async () => {
-                const message = chatInput.value.trim();
-                if (!message) return;
-                
-                addChatMessage(message, true);
-                
-                // Reset input and height
-                chatInput.value = '';
-                chatInput.style.height = 'auto';
-                validateInput(chatInput);
-                
-                // Show typing indicator
-                const typingIndicator = document.createElement('div');
-                typingIndicator.className = 'chat-message ai';
-                typingIndicator.innerHTML = `
-                    <p class="flex items-center text-sm text-gray-500">
-                        <i class="fas fa-circle-notch fa-spin mr-2"></i>
-                        AI is typing...
-                    </p>
+            // Get the editor content element
+            const editorContent = document.querySelector('.editor-content');
+            if (editorContent) {
+                // Set the chapter title
+                editorContent.innerHTML = `
+                    <h1 class="text-3xl font-bold mb-6">${chapter.title || 'Untitled Chapter'}</h1>
+                    ${chapter.content || '<p class="mb-4">Start writing your story here...</p>'}
                 `;
-                chatHistory.appendChild(typingIndicator);
-                chatHistory.scrollTop = chatHistory.scrollHeight;
-                
-                try {
-                    // Add a small delay to avoid hitting rate limits
-                    await delay(500);
-                    
-                    const model = aiModel.value;
-                    const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            prompt: message,
-                            context: getActiveContext(),
-                            mode: 'chat',
-                            tone: 'neutral',
-                            length: 200,
-                        }),
-                    });
-
-                    const data = await response.json();
-                    
-                    // Remove typing indicator
-                    typingIndicator.remove();
-                    
-                    if (data.error && !data.text) {
-                        throw new Error(data.error);
-                    }
-                    
-                    // Format the response text to remove the input prompt if it's repeated
-                    let responseText = data.text || '';
-                    if (responseText.includes(message)) {
-                        responseText = responseText.replace(message, '');
-                    }
-                    
-                    // Add model information to the response
-                    let formattedResponse = responseText || 'I apologize, but I couldn\'t generate a proper response.';
-                    
-                    // Add model info for non-fallback responses
-                    if (data.model && !data.isFallback) {
-                        formattedResponse = `<div class="text-xs text-gray-500 mb-2">Using model: ${data.model}</div>${formattedResponse}`;
-                    }
-                    
-                    // Add warning for fallback responses
-                    if (data.isFallback) {
-                        formattedResponse = `<div class="text-xs text-orange-500 mb-2">Note: Using offline response due to API limits.</div>${formattedResponse}`;
-                    }
-                    
-                    // Add AI response
-                    addChatMessage(formattedResponse, false, true);
-                } catch (error) {
-                    console.error('Error:', error);
-                    typingIndicator.remove();
-                    addChatMessage(`Error: ${error.message || 'Could not connect to AI. Please try again later.'}`, false);
-                    showToast('Error connecting to AI', 'error');
-                }
-            });
-            
-            // Handle AI submit with Hugging Face API call for Generate/Edit modes
-            aiSubmit.addEventListener('click', async () => {
-                const prompt = aiInput.value.trim();
-                if (!prompt) return;
-                
-                // Show loading state
-                aiOutput.innerHTML = '<p class="text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Generating...</p>';
-                aiInput.value = '';
-                validateInput(aiInput);
-                
-                try {
-                    // Add a small delay to avoid hitting rate limits
-                    await delay(500);
-                    
-                    const model = aiModel.value;
-                    const tone = document.getElementById('aiTone').value;
-                    const length = document.getElementById('aiLength').value;
-                    
-                    const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            prompt: prompt,
-                            context: getActiveContext(),
-                            mode: currentMode,
-                            tone: tone,
-                            length: length,
-                        }),
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.error && !data.text) {
-                        throw new Error(data.error);
-                    }
-                    
-                    // Format the response text
-                    let responseText = data.text || '';
-                    // Remove the input prompt if it's repeated in the output
-                    if (responseText.includes(prompt)) {
-                        responseText = responseText.replace(prompt, '');
-                    }
-                    
-                    // Format the response with proper line breaks and paragraphs
-                    const formattedResponse = responseText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
-                    
-                    // Show the model that was used
-                    const modelInfo = data.model ? `<div class="text-xs text-gray-500 mb-2">Generated with: ${data.model}</div>` : '';
-                    
-                    // Add a warning if this is a fallback response
-                    const fallbackWarning = data.isFallback ? 
-                        `<div class="text-xs text-orange-500 mb-2">Note: This is an offline fallback response. ${data.error || ''}</div>` : '';
-                    
-                    aiOutput.innerHTML = `${modelInfo}${fallbackWarning}<p class="text-gray-700">${formattedResponse}</p>`;
-                    showToast(data.isFallback ? 'Fallback response provided' : 'Text generated successfully!');
-                } catch (error) {
-                    console.error('Error:', error);
-                    aiOutput.innerHTML = `<p class="text-error">Error: ${error.message || 'Could not connect to AI. Please try again later.'}</p>`;
-                    showToast('Error connecting to AI', 'error');
-                }
-            });
-            
-            // Handle Enter key in chat input (Shift+Enter for new line)
-            chatInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (!chatSubmit.disabled) {
-                        chatSubmit.click();
-                    }
-                }
-            });
-            
-            // Handle keyboard shortcuts
-            document.addEventListener('keydown', (e) => {
-                // Ctrl/Cmd + Shift + A to toggle AI panel
-                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
-                    e.preventDefault();
-                    toggleAiPanel();
-                }
-                
-                // Enter to submit in chat or generate/edit
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    if (document.activeElement === chatInput) {
-                        e.preventDefault();
-                        chatSubmit.click();
-                    } else if (document.activeElement === aiInput) {
-                        e.preventDefault();
-                        aiSubmit.click();
-                    }
-                }
-            });
-            
-            // Initialize
-            updatePlaceholder();
-            validateInput(aiInput);
-            validateInput(chatInput);
-            
-            // Show toast message
-            function showToast(message, type = 'success') {
-                const toast = document.getElementById('aiToast');
-                toast.querySelector('p').textContent = message;
-                toast.classList.remove('hidden');
-                toast.classList.add('transform', 'translate-y-0');
-                
-                if (type === 'success') {
-                    toast.classList.add('bg-success');
-                    toast.classList.remove('bg-error');
-                } else {
-                    toast.classList.add('bg-error');
-                    toast.classList.remove('bg-success');
-                }
-                
-                setTimeout(() => {
-                    toast.classList.add('translate-y-full');
-                    setTimeout(() => {
-                        toast.classList.add('hidden');
-                        toast.classList.remove('translate-y-full', 'bg-success', 'bg-error');
-                    }, 300);
-                }, 3000);
             }
             
-            // Add chat message
-            function addChatMessage(message, isUser = false, allowHtml = false) {
-                const messageEl = document.createElement('div');
-                messageEl.className = `chat-message ${isUser ? 'user' : 'ai'}`;
+            // Update word count
+            updateWordCount();
+        }
+        
+        // Create a default chapter for a new project
+        async function createDefaultChapter(projectId) {
+            try {
+                const { data, error } = await chapters.create(
+                    projectId,
+                    "Chapter 1: Introduction",
+                    "<p class=\"mb-4\">Start writing your story here. The cursor blinked rhythmically against the blank page, taunting with its emptiness. Every great story begins with a single word, then another, until a world emerges from nothing but imagination.</p><p class=\"mb-4\">Use the AI tools in the toolbar to continue your story, rewrite sections, or get suggestions when you're stuck. Your story context is always at hand in the sidebar to maintain consistency.</p>",
+                    0
+                );
                 
-                // Format message text (handle newlines and lists)
-                const formattedMessage = message
-                    .replace(/\n/g, '<br>')
-                    .replace(/(\d+\.\s.*?)(?=(?:\d+\.|$))/g, '<div class="mb-1">$1</div>')
-                    .replace(/•\s(.*?)(?=(?:•|$))/g, '<div class="mb-1">• $1</div>');
-                
-                // If allowHtml is true, use innerHTML directly
-                if (allowHtml) {
-                    messageEl.innerHTML = `<div>${formattedMessage}</div>`;
-                } else {
-                    messageEl.innerHTML = `<p>${formattedMessage}</p>`;
+                if (error) {
+                    console.error("Error creating default chapter:", error);
+                    return;
                 }
                 
-                chatHistory.appendChild(messageEl);
-                chatHistory.scrollTop = chatHistory.scrollHeight;
+                console.log("Default chapter created:", data);
+                
+                // Load the chapters to refresh the UI
+                await loadProjectChapters(projectId);
+            } catch (error) {
+                console.error("Error in createDefaultChapter:", error);
+            }
+        }
+        
+        // Load context items
+        async function loadContextItems(projectId) {
+            try {
+                // Load characters
+                const { data: characterData, error: characterError } = await characters.getByProject(projectId);
+                
+                if (characterError) {
+                    console.error("Error loading characters:", characterError);
+                    return;
+                }
+                
+                console.log("Project characters:", characterData);
+                
+                // Update the context items in the sidebar
+                const contextContainer = document.querySelector('.sidebar .space-y-1:nth-of-type(2)');
+                if (contextContainer) {
+                    // Clear existing items
+                    contextContainer.innerHTML = '';
+                    
+                    // Add characters to the sidebar
+                    if (characterData && characterData.length > 0) {
+                        characterData.forEach(character => {
+                            const characterItem = document.createElement('div');
+                            characterItem.className = 'p-2 text-sm hover:bg-gray-50 rounded cursor-pointer';
+                            
+                            characterItem.innerHTML = `
+                                <div class="font-medium">${character.name}</div>
+                                <div class="text-xs text-textSecondary">${character.role || 'Character'}</div>
+                            `;
+                            
+                            contextContainer.appendChild(characterItem);
+                        });
+                        
+                        // Update the context count
+                        const contextCount = document.querySelector('.sidebar .mb-3 span.text-xs');
+                        if (contextCount) {
+                            contextCount.textContent = `${characterData.length} items`;
+                        }
+                    } else {
+                        // No characters, show a message
+                        contextContainer.innerHTML = `
+                            <div class="text-sm text-gray-500 italic p-2">
+                                No context items found. Add some to enhance your story.
+                            </div>
+                        `;
+                        
+                        // Update context count
+                        const contextCount = document.querySelector('.sidebar .mb-3 span.text-xs');
+                        if (contextCount) {
+                            contextCount.textContent = `0 items`;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error in loadContextItems:", error);
+            }
+        }
+        
+        // Update word count
+        function updateWordCount() {
+            if (!currentChapter) return;
+            
+            // Get the content without HTML tags
+            const content = currentChapter.content || '';
+            const textContent = content.replace(/<[^>]*>/g, ' ');
+            
+            // Count words
+            const words = textContent.split(/\s+/).filter(word => word.length > 0).length;
+            
+            // Update the word count display
+            const wordCountElement = document.querySelector('.sidebar .text-xl.font-semibold');
+            if (wordCountElement) {
+                wordCountElement.textContent = words.toLocaleString();
+            }
+            
+            // Update progress circle (assuming 50,000 words is the goal)
+            const goalWords = 50000;
+            const progress = Math.min(100, Math.round((words / goalWords) * 100));
+            
+            // Update the progress circle
+            const progressCircle = document.querySelector('.sidebar svg circle:nth-child(2)');
+            if (progressCircle) {
+                progressCircle.setAttribute('stroke-dasharray', `${progress} 100`);
+            }
+            
+            // Update the progress text
+            const progressText = document.querySelector('.sidebar .absolute.top-1/2 .text-xs');
+            if (progressText) {
+                progressText.textContent = `${progress}%`;
+            }
+        }
+        
+        // Add a new chapter
+        document.querySelector('.sidebar .btn.btn-primary.w-full').addEventListener('click', async () => {
+            try {
+                if (!currentProject || !currentProject.id) {
+                    console.error("No current project found");
+                    return;
+                }
+                
+                // Get the current chapters to determine the next chapter number
+                const { data: chaptersData, error: chaptersError } = await chapters.getByProject(currentProject.id);
+                
+                if (chaptersError) {
+                    console.error("Error getting chapters:", chaptersError);
+                    return;
+                }
+                
+                // Determine the next chapter number
+                const nextChapterNumber = (chaptersData ? chaptersData.length : 0) + 1;
+                
+                // Create the new chapter
+                const { data, error } = await chapters.create(
+                    currentProject.id,
+                    `Chapter ${nextChapterNumber}`,
+                    "<p class=\"mb-4\">Start writing your new chapter here...</p>",
+                    nextChapterNumber - 1
+                );
+                
+                if (error) {
+                    console.error("Error creating new chapter:", error);
+                    return;
+                }
+                
+                console.log("New chapter created:", data);
+                
+                // Reload the chapters
+                await loadProjectChapters(currentProject.id);
+            } catch (error) {
+                console.error("Error adding new chapter:", error);
+            }
+        });
+        
+        // Context manager button
+        document.getElementById('manageContextBtn').addEventListener('click', () => {
+            // Navigate to context page with project ID
+            if (currentProject && currentProject.id) {
+                window.location.href = `context.html?project_id=${currentProject.id}`;
+            } else {
+                window.location.href = 'context.html';
             }
         });
     </script>

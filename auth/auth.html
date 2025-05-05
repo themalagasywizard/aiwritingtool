@@ -19,13 +19,44 @@
     <!-- Initialize environment variables from meta tags -->
     <script>
         window.ENV = window.ENV || {};
-        document.addEventListener('DOMContentLoaded', function() {
-            const supabaseUrl = document.querySelector('meta[name="supabase-url"]')?.content;
-            const supabaseAnonKey = document.querySelector('meta[name="supabase-anon-key"]')?.content;
-            if (supabaseUrl) window.ENV.SUPABASE_URL = supabaseUrl;
-            if (supabaseAnonKey) window.ENV.SUPABASE_ANON_KEY = supabaseAnonKey; 
-            console.log('Environment initialized from meta tags:', !!window.ENV.SUPABASE_URL, !!window.ENV.SUPABASE_ANON_KEY);
-        });
+        
+        async function initializeEnvironment() {
+            try {
+                // First try to get from meta tags
+                const supabaseUrl = document.querySelector('meta[name="supabase-url"]')?.content;
+                const supabaseAnonKey = document.querySelector('meta[name="supabase-anon-key"]')?.content;
+                
+                if (supabaseUrl && supabaseAnonKey) {
+                    window.ENV.SUPABASE_URL = supabaseUrl;
+                    window.ENV.SUPABASE_ANON_KEY = supabaseAnonKey;
+                    console.log('Environment initialized from meta tags');
+                    return;
+                }
+                
+                // If meta tags don't work, try to fetch from Netlify function
+                console.log('Attempting to fetch environment variables from Netlify function');
+                try {
+                    const response = await fetch('/get-env');
+                    if (response.ok) {
+                        const env = await response.json();
+                        if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+                            window.ENV.SUPABASE_URL = env.SUPABASE_URL;
+                            window.ENV.SUPABASE_ANON_KEY = env.SUPABASE_ANON_KEY;
+                            console.log('Environment initialized from Netlify function');
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Failed to load environment from function:', error);
+                }
+                
+                console.warn('Could not initialize environment variables');
+            } catch (error) {
+                console.error('Error initializing environment:', error);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', initializeEnvironment);
     </script>
 
     <!-- Google Fonts -->

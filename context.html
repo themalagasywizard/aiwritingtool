@@ -2465,6 +2465,318 @@
             // Make these functions globally available
             window.characterRelationships = characterRelationships;
             window.updateCharacterNodePositions = updateCharacterNodePositions;
+
+            // Add Location button event listener
+            const addLocationBtn = document.getElementById('addLocationBtn');
+            if (addLocationBtn) {
+                addLocationBtn.addEventListener('click', function() {
+                    showLocationModal();
+                });
+            }
+
+            // Location Modal event handlers
+            const closeLocationModalBtn = document.getElementById('closeLocationModal');
+            if (closeLocationModalBtn) {
+                closeLocationModalBtn.addEventListener('click', function() {
+                    document.getElementById('locationModal').classList.add('hidden');
+                });
+            }
+
+            const cancelLocationBtn = document.getElementById('cancelLocation');
+            if (cancelLocationBtn) {
+                cancelLocationBtn.addEventListener('click', function() {
+                    document.getElementById('locationModal').classList.add('hidden');
+                });
+            }
+
+            const createLocationBtn = document.getElementById('createLocation');
+            if (createLocationBtn) {
+                createLocationBtn.addEventListener('click', async function() {
+                    const nameInput = document.getElementById('locationName');
+                    const typeSelect = document.getElementById('locationType');
+                    const descriptionTextarea = document.getElementById('locationDescription');
+                    const featuresTextarea = document.getElementById('locationFeatures');
+                    const locationIdInput = document.getElementById('locationId');
+                    
+                    const name = nameInput.value.trim();
+                    const type = typeSelect.value;
+                    const description = descriptionTextarea.value.trim();
+                    const keyFeatures = featuresTextarea.value.trim();
+                    const locationId = locationIdInput.value;
+                    
+                    if (!name) {
+                        alert('Please enter a location name');
+                        return;
+                    }
+                    
+                    try {
+                        if (locationId) {
+                            // Update existing location
+                            const { data, error } = await settings.update(locationId, {
+                                name,
+                                type,
+                                description,
+                                key_features: keyFeatures
+                            });
+                            
+                            if (error) throw error;
+                            
+                            console.log("Location updated:", data);
+                        } else {
+                            // Create new location
+                            const { data, error } = await settings.create(
+                                currentProjectId,
+                                name,
+                                type,
+                                description,
+                                keyFeatures
+                            );
+                            
+                            if (error) throw error;
+                            
+                            console.log("Location created:", data);
+                        }
+                        
+                        // Close modal and reload locations
+                        document.getElementById('locationModal').classList.add('hidden');
+                        
+                        // Reset form fields
+                        nameInput.value = '';
+                        typeSelect.value = 'City';
+                        descriptionTextarea.value = '';
+                        featuresTextarea.value = '';
+                        locationIdInput.value = '';
+                        
+                        // Reload locations to refresh the view
+                        await loadLocations();
+                        
+                        // Reload timeline events to make sure they get placed correctly
+                        await loadTimelineEvents();
+                    } catch (error) {
+                        console.error("Error saving location:", error);
+                        alert("Error saving location: " + error.message);
+                    }
+                });
+            }
+
+            function resetEventModalAndState() {
+                // Close the modal
+                document.getElementById('eventCreationModal').classList.add('hidden');
+                document.getElementById('eventCreationModal').classList.remove('flex');
+                
+                // Reset form fields
+                document.getElementById('eventName').value = '';
+                document.getElementById('eventTime').value = '';
+                document.getElementById('eventDescription').value = '';
+                
+                // Reset state variables
+                pendingEventCell = null;
+                pendingEventCharacters = [];
+                currentEventData = null;
+                window.eventDataForEditing = null;
+            }
+
+            function showLocationModal(location = null) {
+                const modal = document.getElementById('locationModal');
+                const titleElement = modal.querySelector('h2');
+                const nameInput = document.getElementById('locationName');
+                const typeSelect = document.getElementById('locationType');
+                const descriptionTextarea = document.getElementById('locationDescription');
+                const featuresTextarea = document.getElementById('locationFeatures');
+                const locationIdInput = document.getElementById('locationId');
+                const saveButton = document.getElementById('createLocation');
+                
+                // Set title and button text based on whether we're editing or creating
+                if (location) {
+                    titleElement.textContent = 'Edit Location';
+                    saveButton.textContent = 'Update Location';
+                    
+                    // Fill in existing location data
+                    nameInput.value = location.name || '';
+                    typeSelect.value = location.type || 'City';
+                    descriptionTextarea.value = location.description || '';
+                    featuresTextarea.value = location.key_features || '';
+                    locationIdInput.value = location.id || '';
+                } else {
+                    titleElement.textContent = 'Add Location';
+                    saveButton.textContent = 'Add Location';
+                    
+                    // Reset form fields
+                    nameInput.value = '';
+                    typeSelect.value = 'City';
+                    descriptionTextarea.value = '';
+                    featuresTextarea.value = '';
+                    locationIdInput.value = '';
+                }
+                
+                // Show the modal
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                nameInput.focus();
+            }
+
+            function setupTimelineEventListeners() {
+                // Add drag-and-drop listeners for timeline events
+                document.querySelectorAll('.timeline-event').forEach(event => {
+                    // Add dragover listener to accept character drops
+                    event.addEventListener('dragover', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.classList.add('drag-over');
+                    });
+                    
+                    event.addEventListener('dragleave', function(e) {
+                        this.classList.remove('drag-over');
+                    });
+                    
+                    // Add drop listener
+                    event.addEventListener('drop', handleEventDrop);
+                });
+            }
+
+            function updateCharacterNodePositions() {
+                const container = document.getElementById('characterTreeContainer');
+                if (!container) return;
+                
+                const nodes = container.querySelectorAll('.character-node');
+                if (nodes.length === 0) return;
+                
+                const centerX = container.offsetWidth / 2;
+                const centerY = container.offsetHeight / 2;
+                const radius = Math.min(centerX, centerY) * 0.6;
+                
+                // Position protagonist at center
+                const protagonist = Array.from(nodes).find(node => 
+                    node.getAttribute('data-role') === 'Protagonist'
+                );
+                
+                if (protagonist) {
+                    protagonist.style.left = `${centerX}px`;
+                    protagonist.style.top = `${centerY - 60}px`;
+                    
+                    // Position other characters in a circle around protagonist
+                    const otherNodes = Array.from(nodes).filter(node => 
+                        node.getAttribute('data-role') !== 'Protagonist'
+                    );
+                    
+                    otherNodes.forEach((node, index) => {
+                        const angle = (index / otherNodes.length) * Math.PI * 2;
+                        const x = centerX + radius * Math.cos(angle);
+                        const y = centerY + radius * Math.sin(angle);
+                        
+                        node.style.left = `${x}px`;
+                        node.style.top = `${y}px`;
+                    });
+                } else {
+                    // If no protagonist, arrange all in a circle
+                    nodes.forEach((node, index) => {
+                        const angle = (index / nodes.length) * Math.PI * 2;
+                        const x = centerX + radius * Math.cos(angle);
+                        const y = centerY + radius * Math.sin(angle);
+                        
+                        node.style.left = `${x}px`;
+                        node.style.top = `${y}px`;
+                    });
+                }
+            }
+
+            // Add loadCharacters function implementation
+            async function loadCharacters() {
+                try {
+                    console.log("Loading characters for project:", currentProjectId);
+                    
+                    if (!currentProjectId) {
+                        console.error("No project ID available");
+                        return;
+                    }
+                    
+                    // Fetch characters from Supabase
+                    const { data: characterData, error } = await characters.getByProject(currentProjectId);
+                    
+                    if (error) {
+                        console.error("Error loading characters:", error);
+                        return;
+                    }
+                    
+                    console.log("Characters loaded:", characterData);
+                    
+                    if (!characterData || characterData.length === 0) {
+                        console.log("No characters found for this project");
+                        return;
+                    }
+                    
+                    // Load relationships for the characters
+                    await loadCharacterRelationships(characterData);
+                    
+                    // Clear existing nodes
+                    const container = document.getElementById('characterTreeContainer');
+                    if (container) {
+                        // Remove all nodes except those marked as static (for layout)
+                        container.querySelectorAll('.character-node:not([data-static="true"])').forEach(node => node.remove());
+                        
+                        // Create nodes for each character
+                        characterData.forEach((character, index) => {
+                            createCharacterNode(character, index, characterData.length);
+                        });
+                        
+                        // Update node positions and relationship lines
+                        updateCharacterNodePositions();
+                        updateRelationshipLines();
+                    }
+                    
+                    // Update character items in timeline sidebar
+                    const charactersList = document.getElementById('charactersList');
+                    if (charactersList) {
+                        charactersList.innerHTML = '';
+                        
+                        characterData.forEach(character => {
+                            // Determine role-based styling
+                            let borderColorClass = 'border-primary';
+                            let textColorClass = 'text-primary';
+                            
+                            if (character.role === 'Antagonist') {
+                                borderColorClass = 'border-error';
+                                textColorClass = 'text-error';
+                            } else if (character.role === 'Supporting') {
+                                borderColorClass = 'border-accent';
+                                textColorClass = 'text-accent';
+                            }
+                            
+                            // Create the draggable character item
+                            const charItem = document.createElement('div');
+                            charItem.className = `character-item bg-white border-2 ${borderColorClass} ${textColorClass} p-2 rounded-lg cursor-move shadow-sm`;
+                            charItem.setAttribute('draggable', 'true');
+                            charItem.setAttribute('data-name', character.name);
+                            charItem.setAttribute('data-id', character.id);
+                            charItem.setAttribute('data-role', character.role);
+                            
+                            charItem.innerHTML = `<div class="text-sm font-medium">${character.name}</div>`;
+                            
+                            // Add drag event handlers
+                            charItem.addEventListener('dragstart', function(e) {
+                                this.classList.add('dragging');
+                                e.dataTransfer.setData('text/plain', JSON.stringify({
+                                    id: character.id,
+                                    name: character.name,
+                                    role: character.role
+                                }));
+                            });
+                            
+                            charItem.addEventListener('dragend', function() {
+                                this.classList.remove('dragging');
+                            });
+                            
+                            charactersList.appendChild(charItem);
+                        });
+                    }
+                    
+                    // Return the loaded data for potential use elsewhere
+                    return characterData;
+                } catch (error) {
+                    console.error("Error in loadCharacters:", error);
+                    return [];
+                }
+            }
         });
     </script>
 </body>
