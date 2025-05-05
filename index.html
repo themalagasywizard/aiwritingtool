@@ -583,6 +583,116 @@
             loadProjectBtn: document.getElementById('loadProjectBtn'),
         };
 
+        // Rich Text Formatting Functions
+        function execFormatCommand(command, value = null) {
+            document.execCommand(command, false, value);
+            
+            // Focus back on the editor to continue editing
+            elements.editorContent.focus();
+            
+            // Mark as dirty to ensure changes are saved
+            updateSaveStatus(true);
+            
+            // Update active formatting buttons
+            setTimeout(updateActiveFormatting, 10);
+        }
+        
+        // Update active formatting buttons based on current selection
+        function updateActiveFormatting() {
+            // Ensure the editor is loaded
+            if (!elements.editorContent) return;
+            
+            try {
+                const isBold = document.queryCommandState('bold');
+                const isItalic = document.queryCommandState('italic');
+                const isUnorderedList = document.queryCommandState('insertUnorderedList');
+                
+                // Check if selection is within a heading
+                const selection = window.getSelection();
+                let isHeading = false;
+                
+                if (selection.rangeCount > 0) {
+                    const range = selection.getRangeAt(0);
+                    let currentBlock = range.commonAncestorContainer;
+                    
+                    while (currentBlock && currentBlock !== elements.editorContent) {
+                        if (currentBlock.nodeType === 1 && /^h[1-6]$/i.test(currentBlock.tagName)) {
+                            isHeading = true;
+                            break;
+                        }
+                        currentBlock = currentBlock.parentNode;
+                    }
+                }
+                
+                // Update button states if the buttons exist
+                const boldButton = document.querySelector('.toolbar-btn[title="Bold"]');
+                const italicButton = document.querySelector('.toolbar-btn[title="Italic"]');
+                const headingButton = document.querySelector('.toolbar-btn[title="Heading"]');
+                const listButton = document.querySelector('.toolbar-btn[title="List"]');
+                
+                if (boldButton) boldButton.classList.toggle('active', isBold);
+                if (italicButton) italicButton.classList.toggle('active', isItalic);
+                if (headingButton) headingButton.classList.toggle('active', isHeading);
+                if (listButton) listButton.classList.toggle('active', isUnorderedList);
+            } catch (error) {
+                console.warn('Error updating formatting buttons:', error);
+            }
+        }
+        
+        // Initialize toolbar buttons
+        function initToolbar() {
+            // Bold button
+            document.querySelector('.toolbar-btn[title="Bold"]')?.addEventListener('click', () => {
+                execFormatCommand('bold');
+            });
+            
+            // Italic button
+            document.querySelector('.toolbar-btn[title="Italic"]')?.addEventListener('click', () => {
+                execFormatCommand('italic');
+            });
+            
+            // Heading button
+            document.querySelector('.toolbar-btn[title="Heading"]')?.addEventListener('click', () => {
+                const selection = window.getSelection();
+                
+                // If no selection is made, return
+                if (selection.rangeCount === 0) return;
+                
+                // Get the current selection range
+                const range = selection.getRangeAt(0);
+                
+                // Check if the selection is inside a heading already
+                let currentBlock = range.commonAncestorContainer;
+                while (currentBlock && currentBlock !== elements.editorContent) {
+                    if (currentBlock.nodeType === 1 && /^h[1-6]$/i.test(currentBlock.tagName)) {
+                        // If already a heading, convert it to a paragraph
+                        execFormatCommand('formatBlock', 'p');
+                        return;
+                    }
+                    currentBlock = currentBlock.parentNode;
+                }
+                
+                // If not already a heading, make it an H2
+                execFormatCommand('formatBlock', 'h2');
+            });
+            
+            // List button
+            document.querySelector('.toolbar-btn[title="List"]')?.addEventListener('click', () => {
+                execFormatCommand('insertUnorderedList');
+            });
+            
+            // Full Screen button
+            document.querySelector('.toolbar-btn[title="Full Screen"]')?.addEventListener('click', toggleFullScreen);
+            
+            // Add listeners to update toolbar button states
+            if (elements.editorContent) {
+                elements.editorContent.addEventListener('keyup', updateActiveFormatting);
+                elements.editorContent.addEventListener('mouseup', updateActiveFormatting);
+                elements.editorContent.addEventListener('mousedown', updateActiveFormatting);
+                elements.editorContent.addEventListener('click', updateActiveFormatting);
+            }
+        }
+
         // Helper Functions
         function showLoading(message = 'Loading...') {
             elements.loadingMessage.textContent = message;
@@ -1324,114 +1434,6 @@
                 updateSaveStatus(true);
                 updateWordCount();
             });
-            
-            // Rich Text Formatting Buttons
-            function execFormatCommand(command, value = null) {
-                document.execCommand(command, false, value);
-                
-                // Focus back on the editor to continue editing
-                elements.editorContent.focus();
-                
-                // Mark as dirty to ensure changes are saved
-                updateSaveStatus(true);
-                
-                // Update active formatting buttons
-                setTimeout(updateActiveFormatting, 10);
-            }
-            
-            // Update active formatting buttons based on current selection
-            function updateActiveFormatting() {
-                // Ensure the editor is loaded
-                if (!elements.editorContent) return;
-                
-                try {
-                    const isBold = document.queryCommandState('bold');
-                    const isItalic = document.queryCommandState('italic');
-                    const isUnorderedList = document.queryCommandState('insertUnorderedList');
-                    
-                    // Check if selection is within a heading
-                    const selection = window.getSelection();
-                    let isHeading = false;
-                    
-                    if (selection.rangeCount > 0) {
-                        const range = selection.getRangeAt(0);
-                        let currentBlock = range.commonAncestorContainer;
-                        
-                        while (currentBlock && currentBlock !== elements.editorContent) {
-                            if (currentBlock.nodeType === 1 && /^h[1-6]$/i.test(currentBlock.tagName)) {
-                                isHeading = true;
-                                break;
-                            }
-                            currentBlock = currentBlock.parentNode;
-                        }
-                    }
-                    
-                    // Update button states if the buttons exist
-                    const boldButton = document.querySelector('.toolbar-btn[title="Bold"]');
-                    const italicButton = document.querySelector('.toolbar-btn[title="Italic"]');
-                    const headingButton = document.querySelector('.toolbar-btn[title="Heading"]');
-                    const listButton = document.querySelector('.toolbar-btn[title="List"]');
-                    
-                    if (boldButton) boldButton.classList.toggle('active', isBold);
-                    if (italicButton) italicButton.classList.toggle('active', isItalic);
-                    if (headingButton) headingButton.classList.toggle('active', isHeading);
-                    if (listButton) listButton.classList.toggle('active', isUnorderedList);
-                } catch (error) {
-                    console.warn('Error updating formatting buttons:', error);
-                }
-            }
-            
-            // Initialize toolbar buttons
-            function initToolbar() {
-                // Bold button
-                document.querySelector('.toolbar-btn[title="Bold"]').addEventListener('click', () => {
-                    execFormatCommand('bold');
-                });
-                
-                // Italic button
-                document.querySelector('.toolbar-btn[title="Italic"]').addEventListener('click', () => {
-                    execFormatCommand('italic');
-                });
-                
-                // Heading button
-                document.querySelector('.toolbar-btn[title="Heading"]').addEventListener('click', () => {
-                    const selection = window.getSelection();
-                    
-                    // If no selection is made, return
-                    if (selection.rangeCount === 0) return;
-                    
-                    // Get the current selection range
-                    const range = selection.getRangeAt(0);
-                    
-                    // Check if the selection is inside a heading already
-                    let currentBlock = range.commonAncestorContainer;
-                    while (currentBlock && currentBlock !== elements.editorContent) {
-                        if (currentBlock.nodeType === 1 && /^h[1-6]$/i.test(currentBlock.tagName)) {
-                            // If already a heading, convert it to a paragraph
-                            execFormatCommand('formatBlock', 'p');
-                            return;
-                        }
-                        currentBlock = currentBlock.parentNode;
-                    }
-                    
-                    // If not already a heading, make it an H2
-                    execFormatCommand('formatBlock', 'h2');
-                });
-                
-                // List button
-                document.querySelector('.toolbar-btn[title="List"]').addEventListener('click', () => {
-                    execFormatCommand('insertUnorderedList');
-                });
-                
-                // Full Screen button
-                document.querySelector('.toolbar-btn[title="Full Screen"]').addEventListener('click', toggleFullScreen);
-                
-                // Add listeners to update toolbar button states
-                elements.editorContent.addEventListener('keyup', updateActiveFormatting);
-                elements.editorContent.addEventListener('mouseup', updateActiveFormatting);
-                elements.editorContent.addEventListener('mousedown', updateActiveFormatting);
-                elements.editorContent.addEventListener('click', updateActiveFormatting);
-            }
             
             // Full Screen functionality
             function toggleFullScreen() {
