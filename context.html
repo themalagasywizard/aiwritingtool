@@ -1252,6 +1252,91 @@
                     return 'secondary';
             }
         }
+
+        function removeCharacterFromPending(characterId) {
+            // Find the index of the character in the pending list
+            const index = pendingEventCharacters.findIndex(char => char.id === characterId);
+            
+            // If found, remove the character
+            if (index !== -1) {
+                pendingEventCharacters.splice(index, 1);
+                
+                // Update the UI
+                updatePendingCharactersList();
+            }
+        }
+
+        function updatePendingCharactersList() {
+            const eventCharacters = document.getElementById('eventCharacters');
+            if (!eventCharacters) return;
+            
+            eventCharacters.innerHTML = '';
+            
+            if (pendingEventCharacters.length === 0) {
+                eventCharacters.innerHTML = '<div class="text-sm text-gray-500">No characters selected</div>';
+                return;
+            }
+            
+            pendingEventCharacters.forEach(character => {
+                const characterEl = document.createElement('div');
+                characterEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
+                characterEl.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 rounded-full bg-${getRoleColor(character.role)} mr-2"></div>
+                        <span>${character.name}</span>
+                    </div>
+                    <button onclick="removeCharacterFromPending('${character.id}')" class="text-error hover:text-opacity-80">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                eventCharacters.appendChild(characterEl);
+            });
+        }
+
+        function handleEventDrop(e) {
+            e.preventDefault();
+            
+            try {
+                // Get the dropped character data
+                const characterData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                if (!characterData || !characterData.id) return;
+                
+                // Get the target cell (timeline cell)
+                const cell = e.currentTarget.closest('.timeline-cell');
+                if (!cell) return;
+                
+                // Get location and time from cell
+                const location = cell.getAttribute('data-location');
+                const time = cell.getAttribute('data-time');
+                
+                // Store pending event data
+                pendingEventCell = cell;
+                pendingEventLocation = location;
+                pendingEventTime = `Day ${appState.currentDay} ${time}:00`;
+                
+                // Add character to pending characters
+                const existingCharacter = pendingEventCharacters.find(char => char.id === characterData.id);
+                if (!existingCharacter) {
+                    pendingEventCharacters.push(characterData);
+                }
+                
+                // Show event creation modal
+                document.getElementById('eventCreationModal').classList.remove('hidden');
+                document.getElementById('eventCreationModal').classList.add('flex');
+                
+                // Set time in the modal
+                document.getElementById('eventTime').value = `${time}:00`;
+                
+                // Update the characters list in the modal
+                updatePendingCharactersList();
+                
+                // Focus on event name field
+                document.getElementById('eventName').focus();
+            } catch (error) {
+                console.error('Error handling drop:', error);
+                showToast('Error handling drop', 'error');
+            }
+        }
     </script>
 
     <!-- Header with tabs -->
