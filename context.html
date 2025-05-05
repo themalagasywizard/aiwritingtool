@@ -346,6 +346,14 @@
             currentDay: 1
         };
 
+        // Variables for storing event creation state
+        let pendingEventCell = null;
+        let pendingEventCharacters = [];
+        let pendingEventLocation = null;
+        let pendingEventTime = null;
+        let currentEventData = null;
+        let currentCharacterData = null;
+
         // Core data loading functions
         async function loadCurrentProject() {
             try {
@@ -460,6 +468,82 @@
                     
                     // Initialize the character tree
                     refreshCharacterTree();
+
+                    // Initialize location modal handlers
+                    const addLocationBtn = document.getElementById('addLocationBtn');
+                    const closeLocationModalBtn = document.getElementById('closeLocationModal');
+                    const cancelLocationBtn = document.getElementById('cancelLocation');
+                    const createLocationBtn = document.getElementById('createLocation');
+
+                    if (addLocationBtn) {
+                        addLocationBtn.addEventListener('click', handleAddLocationClick);
+                    }
+                    
+                    if (closeLocationModalBtn) {
+                        closeLocationModalBtn.addEventListener('click', closeLocationModal);
+                    }
+                    
+                    if (cancelLocationBtn) {
+                        cancelLocationBtn.addEventListener('click', closeLocationModal);
+                    }
+                    
+                    if (createLocationBtn) {
+                        createLocationBtn.addEventListener('click', handleCreateLocationClick);
+                    }
+
+                    // Initialize event modal handlers
+                    const closeEventModalBtn = document.getElementById('closeEventModal');
+                    const cancelEventBtn = document.getElementById('cancelEvent');
+                    const createEventBtn = document.getElementById('createEvent');
+                    
+                    if (closeEventModalBtn) {
+                        closeEventModalBtn.addEventListener('click', () => {
+                            document.getElementById('eventCreationModal').classList.add('hidden');
+                            pendingEventCell = null;
+                            pendingEventCharacters = [];
+                        });
+                    }
+                    
+                    if (cancelEventBtn) {
+                        cancelEventBtn.addEventListener('click', () => {
+                            document.getElementById('eventCreationModal').classList.add('hidden');
+                            pendingEventCell = null;
+                            pendingEventCharacters = [];
+                        });
+                    }
+                    
+                    if (createEventBtn) {
+                        createEventBtn.addEventListener('click', async () => {
+                            const name = document.getElementById('eventName').value;
+                            const description = document.getElementById('eventDescription').value;
+                            
+                            if (!name.trim()) {
+                                alert('Please enter an event name');
+                                return;
+                            }
+                            
+                            document.getElementById('eventCreationModal').classList.add('hidden');
+                            
+                            // Create the event
+                            await createEvent(
+                                name, 
+                                pendingEventTime, 
+                                description, 
+                                pendingEventCharacters,
+                                pendingEventLocation
+                            );
+                            
+                            // Reset state
+                            pendingEventCell = null;
+                            pendingEventCharacters = [];
+                        });
+                    }
+
+                    // Initialize edit event button
+                    const editEventBtn = document.getElementById('editEventBtn');
+                    if (editEventBtn) {
+                        editEventBtn.addEventListener('click', editEvent);
+                    }
                 } catch (error) {
                     console.error('Error initializing app:', error);
                     showToast('Error initializing application', 'error');
@@ -642,7 +726,6 @@
             document.head.appendChild(style);
 
             // Add these character tree functions
-            let currentCharacterData = null;
             let networkClickPosition = { x: 0, y: 0 };
 
             function showCharacterDetails(node) {
@@ -684,12 +767,6 @@
             }
 
             function closeCharacterDetails() {
-                // Remove highlight from all nodes
-                document.querySelectorAll('.character-node').forEach(n => {
-                    n.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                });
-                
-                // Rest of the existing function...
                 const panel = document.getElementById('characterDetailsPanel');
                 panel.classList.add('translate-x-full');
                 currentCharacterData = null;
@@ -887,209 +964,149 @@
             }
 
             // Add these new functions and event handlers after the existing code
-            let currentEventData = null;
-            let pendingEventCell = null;
-            let pendingEventCharacters = [];
-
             function showEventCreationModal(timeValue) {
                 const modal = document.getElementById('eventCreationModal');
                 const timeInput = document.getElementById('eventTime');
                 const charactersContainer = document.getElementById('eventCharacters');
-
-                // Reset form state first
+                
+                // Reset form state
                 document.getElementById('eventName').value = '';
                 document.getElementById('eventDescription').value = '';
                 document.querySelector('#eventCreationModal h2').textContent = 'Create Timeline Event';
-                document.getElementById('createEvent').textContent = 'Create Event';
-
+                
                 // Set default time from cell - ensure we have a valid format
-                const hourValue = parseInt(time) || 0;
+                const hourValue = parseInt(timeValue) || 0;
                 timeInput.value = hourValue.toString().padStart(2, '0') + ':00';
-
+                
                 // Display initial characters
-                charactersContainer.innerHTML = pendingEventCharacters.map(char => `
+                charactersContainer.innerHTML = pendingEventCharacters.map(char => {
+                    const roleClass = getCharacterColorClass(char.role);
+                    return `
                     <div class="flex items-center justify-between p-2 bg-white rounded">
                         <span class="flex items-center">
-                            <div class="w-2 h-2 rounded-full ${getCharacterColorClass(char.role)} mr-2"></div>
+                            <div class="w-2 h-2 rounded-full ${roleClass} mr-2"></div>
                             ${char.name}
                         </span>
                         <button class="text-error hover:text-opacity-80" onclick="removeCharacterFromPending('${char.name}')">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                `).join('');
-
+                `}).join('');
+                
                 // Show the modal
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
                 document.getElementById('eventName').focus();
             }
 
-            function createTimelineEvent(name, time, description, characters) {
-                const eventElement = document.createElement('div');
-                eventElement.className = 'timeline-event bg-primary text-white p-1 text-xs rounded text-center cursor-pointer';
-                eventElement.textContent = name;
-                eventElement.setAttribute('data-time', time);
-                eventElement.setAttribute('data-description', description || '');
-                eventElement.setAttribute('data-characters', JSON.stringify(characters));
+            function getCharacterColorClass(role) {
+                if (!role) return 'bg-primary';
                 
-                // Make the event droppable for additional characters
-                eventElement.addEventListener('dragover', e => e.preventDefault());
-                eventElement.addEventListener('drop', handleEventDrop);
-                eventElement.addEventListener('click', showEventDetails);
-                
-                return eventElement;
+                const roleLower = role.toLowerCase();
+                if (roleLower.includes('protagonist')) return 'bg-primary';
+                if (roleLower.includes('antagonist')) return 'bg-error';
+                if (roleLower.includes('supporting')) return 'bg-accent';
+                return 'bg-secondary';
             }
 
-            function handleEventDrop(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                try {
-                    const charData = JSON.parse(e.dataTransfer.getData('text/plain'));
-                    const eventId = this.getAttribute('data-event-id');
-                    addCharacterToEvent(eventId, charData);
-                } catch (error) {
-                    console.error('Error adding character to event:', error);
-                }
+            function closeEventDetails() {
+                const panel = document.getElementById('eventDetailsPanel');
+                panel.classList.add('translate-x-full');
+                currentEventData = null;
             }
 
-            async function addCharacterToEvent(eventId, charData) {
-                try {
-                    const event = appState.timelineEvents.find(e => e.id == eventId);
-                    if (!event) return;
-                    
-                    // Parse the existing characters or initialize an empty array
-                    const characters = event.characters ? JSON.parse(event.characters) : [];
-                    
-                    // Check if this character is already in the event
-                    if (!characters.some(c => c.id == charData.id)) {
-                        // Add the character
-                        characters.push(charData);
-                        
-                        // Update the event in the database
-                        const { data, error } = await window.supabaseServices.timelineEvents.update(
-                            eventId,
-                            { characters: JSON.stringify(characters) }
-                        );
-                        
-                        if (error) throw error;
-                        
-                        // Update local state
-                        event.characters = JSON.stringify(characters);
-                        
+            function removeCharacterFromPending(characterName) {
+                pendingEventCharacters = pendingEventCharacters.filter(char => char.name !== characterName);
+                const characterElements = document.querySelectorAll('#eventCharacters > div');
+                characterElements.forEach(el => {
+                    if (el.querySelector('span').textContent.trim() === characterName) {
+                        el.remove();
+                    }
+                });
+            }
+
+            function removeCharacterFromEvent(characterId, eventId) {
+                if (!currentEventData || currentEventData.id !== eventId) return;
+                
+                const event = appState.timelineEvents.find(e => e.id == eventId);
+                if (!event) return;
+                
+                // Parse the existing characters
+                const characters = event.characters ? JSON.parse(event.characters) : [];
+                const updatedCharacters = characters.filter(c => c.id != characterId);
+                
+                // Update the event in the database
+                updateEvent(eventId, { characters: JSON.stringify(updatedCharacters) })
+                    .then(() => {
                         // Update UI
-                        const eventElement = document.querySelector(`[data-event-id="${eventId}"]`);
-                        if (eventElement) {
-                            eventElement.setAttribute('data-characters', JSON.stringify(characters));
-                        }
-                        
-                        // If event details panel is open, update it
-                        if (currentEventData && currentEventData.id == eventId) {
-                            updateEventDetailsCharacters(characters);
-                        }
-                        
-                        showToast('Character added to event');
-                    }
-                } catch (error) {
-                    console.error('Error updating event:', error);
-                    showToast('Error adding character to event', 'error');
-                }
+                        updateEventDetailsCharacters(updatedCharacters);
+                        showToast('Character removed from event');
+                    })
+                    .catch(error => {
+                        console.error('Error removing character from event:', error);
+                        showToast('Error removing character', 'error');
+                    });
             }
 
-            async function createEvent(name, time, description, characters, location) {
-                try {
-                    if (!appState.currentProject) {
-                        showToast('No project selected', 'error');
-                        return null;
-                    }
-                    
-                    const { data, error } = await window.supabaseServices.timelineEvents.create(
-                        appState.currentProject.id,
-                        name,
-                        time,
-                        description,
-                        JSON.stringify(characters)
-                    );
-                    
-                    if (error) throw error;
-                    
-                    // Update the event with location
-                    const { data: updatedData, error: updateError } = await window.supabaseServices.timelineEvents.update(
-                        data[0].id,
-                        { location }
-                    );
-                    
-                    if (updateError) throw updateError;
-                    
-                    showToast('Event created successfully');
-                    await loadTimelineEvents();
-                    return updatedData[0];
-                } catch (error) {
-                    console.error('Error creating event:', error);
-                    showToast('Error creating event', 'error');
-                    return null;
-                }
-            }
-
-            async function updateEvent(eventId, updates) {
-                try {
-                    const { data, error } = await window.supabaseServices.timelineEvents.update(
-                        eventId,
-                        updates
-                    );
-                    
-                    if (error) throw error;
-                    
-                    showToast('Event updated successfully');
-                    await loadTimelineEvents();
-                    return data[0];
-                } catch (error) {
-                    console.error('Error updating event:', error);
-                    showToast('Error updating event', 'error');
-                    return null;
-                }
-            }
-
-            async function deleteEvent(eventId) {
-                try {
-                    const { error } = await window.supabaseServices.timelineEvents.delete(eventId);
-                    if (error) throw error;
-                    
-                    showToast('Event deleted successfully');
-                    await loadTimelineEvents();
-                    return true;
-                } catch (error) {
-                    console.error('Error deleting event:', error);
-                    showToast('Error deleting event', 'error');
-                    return false;
-                }
-            }
-
-            function findReferencedLocations(events) {
-                const locationMap = {};
+            function updateEventDetailsCharacters(characters) {
+                const container = document.getElementById('eventDetailCharacters');
+                if (!container) return;
                 
-                // First populate with all known locations
-                appState.locations.forEach(location => {
-                    locationMap[location.name] = location;
+                container.innerHTML = '';
+                
+                if (!characters || characters.length === 0) {
+                    container.innerHTML = '<div class="text-sm text-gray-500">No characters in this event</div>';
+                    return;
+                }
+                
+                characters.forEach(char => {
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center justify-between bg-gray-50 p-2 rounded';
+                    
+                    const roleClass = getCharacterColorClass(char.role);
+                    
+                    el.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="w-2 h-2 rounded-full ${roleClass} mr-2"></div>
+                            <span>${char.name}</span>
+                        </div>
+                        <button onclick="removeCharacterFromEvent('${char.id}', '${currentEventData.id}')" class="text-error hover:text-opacity-80">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    
+                    container.appendChild(el);
                 });
-                
-                // Then check events for locations
-                events.forEach(event => {
-                    if (event.location && !locationMap[event.location]) {
-                        // This is a location referenced in events but not in our location table
-                        locationMap[event.location] = { name: event.location, id: null };
-                    }
-                });
-                
-                return locationMap;
             }
-            
-            // Day selector change event
-            function handleDaySelectorChange() {
-                const day = document.getElementById('daySelector').value;
-                appState.currentDay = parseInt(day);
-                displayTimelineEvents();
+
+            function showEventDetails() {
+                const eventElement = this;
+                const eventId = eventElement.getAttribute('data-event-id');
+                const event = appState.timelineEvents.find(e => e.id == eventId);
+                
+                if (!event) return;
+                
+                // Set current event
+                currentEventData = event;
+                
+                // Update panel content
+                document.getElementById('eventDetailName').textContent = event.name;
+                document.getElementById('eventDetailTime').textContent = `Time: ${event.date_time}`;
+                document.getElementById('eventDetailDescription').textContent = event.description || 'No description';
+                
+                // Update characters list
+                updateEventDetailsCharacters(JSON.parse(event.characters || '[]'));
+                
+                // Show panel
+                const panel = document.getElementById('eventDetailsPanel');
+                panel.classList.remove('translate-x-full');
+            }
+
+            function editEvent() {
+                if (!currentEventData) return;
+                
+                // TODO: Implement event editing
+                showToast('Event editing not implemented yet');
             }
 
             // ... existing code ...
@@ -1103,6 +1120,134 @@
         window.handleDaySelectorChange = handleDaySelectorChange;
         window.removeCharacterFromEvent = removeCharacterFromEvent;
         window.removeCharacterFromPending = removeCharacterFromPending;
+        window.handleAddLocationClick = handleAddLocationClick;
+        window.closeLocationModal = closeLocationModal;
+        window.handleCreateLocationClick = handleCreateLocationClick;
+
+        // Location Functions
+        function handleAddLocationClick() {
+            const locationModal = document.getElementById('locationModal');
+            locationModal.classList.remove('hidden');
+            locationModal.classList.add('flex');
+            document.getElementById('locationName').value = '';
+            document.getElementById('locationName').focus();
+        }
+
+        function closeLocationModal() {
+            const locationModal = document.getElementById('locationModal');
+            locationModal.classList.add('hidden');
+            locationModal.classList.remove('flex');
+        }
+
+        async function handleCreateLocationClick() {
+            const locationName = document.getElementById('locationName').value.trim();
+            if (!locationName) {
+                alert('Please enter a location name');
+                return;
+            }
+
+            try {
+                if (!appState.currentProject) {
+                    showToast('No project selected', 'error');
+                    return;
+                }
+
+                // Create location in database
+                const { data, error } = await window.supabaseServices.locations.create(
+                    appState.currentProject.id,
+                    locationName,
+                    'location', // Default type
+                    '', // No description
+                    '' // No key features
+                );
+
+                if (error) throw error;
+
+                showToast('Location created successfully');
+                closeLocationModal();
+                await loadLocations();
+            } catch (error) {
+                console.error('Error creating location:', error);
+                showToast('Error creating location', 'error');
+            }
+        }
+
+        // Event Functions
+        async function createEvent(name, time, description, characters, location) {
+            try {
+                if (!appState.currentProject) {
+                    showToast('No project selected', 'error');
+                    return null;
+                }
+                
+                const { data, error } = await window.supabaseServices.timelineEvents.create(
+                    appState.currentProject.id,
+                    name,
+                    time,
+                    description,
+                    JSON.stringify(characters)
+                );
+                
+                if (error) throw error;
+                
+                // Update the event with location
+                const { data: updatedData, error: updateError } = await window.supabaseServices.timelineEvents.update(
+                    data[0].id,
+                    { location }
+                );
+                
+                if (updateError) throw updateError;
+                
+                showToast('Event created successfully');
+                await loadTimelineEvents();
+                return updatedData[0];
+            } catch (error) {
+                console.error('Error creating event:', error);
+                showToast('Error creating event', 'error');
+                return null;
+            }
+        }
+
+        async function updateEvent(eventId, updates) {
+            try {
+                const { data, error } = await window.supabaseServices.timelineEvents.update(
+                    eventId,
+                    updates
+                );
+                
+                if (error) throw error;
+                
+                showToast('Event updated successfully');
+                await loadTimelineEvents();
+                return data[0];
+            } catch (error) {
+                console.error('Error updating event:', error);
+                showToast('Error updating event', 'error');
+                return null;
+            }
+        }
+
+        async function deleteEvent(eventId) {
+            try {
+                const { error } = await window.supabaseServices.timelineEvents.delete(eventId);
+                if (error) throw error;
+                
+                showToast('Event deleted successfully');
+                await loadTimelineEvents();
+                return true;
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                showToast('Error deleting event', 'error');
+                return false;
+            }
+        }
+
+        // Day selector change event
+        function handleDaySelectorChange() {
+            const day = document.getElementById('daySelector').value;
+            appState.currentDay = parseInt(day);
+            displayTimelineEvents();
+        }
     </script>
 
     <!-- Header with tabs -->
