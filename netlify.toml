@@ -40,6 +40,13 @@
   to = "/api/:splat"
   status = 200
 
+# Environment variables endpoint redirect
+[[redirects]]
+  from = "/.netlify/functions/get-env"
+  to = "/.netlify/functions/get-env"
+  status = 200
+  force = true
+
 # Handle authentication redirects
 [[redirects]]
   from = "/auth/callback"
