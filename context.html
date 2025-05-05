@@ -121,31 +121,59 @@
         .character-node {
             position: absolute;
             width: 100px;
-            height: 40px;
-            border-radius: 20px;
+            height: 100px;
+            border-radius: 50%;
             background-color: white;
+            border: 3px solid var(--primary);
             display: flex;
             align-items: center;
             justify-content: center;
+            text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             z-index: 2;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .character-node.protagonist {
-            border: 2px solid var(--primary);
-            color: var(--primary);
+            border-color: var(--primary);
+            background-color: rgba(75, 94, 170, 0.1);
         }
 
         .character-node.antagonist {
-            border: 2px solid var(--error);
-            color: var(--error);
+            border-color: var(--error);
+            background-color: rgba(239, 68, 68, 0.1);
         }
 
         .character-node.supporting {
-            border: 2px solid var(--accent);
-            color: var(--accent);
+            border-color: var(--accent);
+            background-color: rgba(244, 114, 182, 0.1);
+        }
+
+        .character-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .character-tooltip {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 5;
+        }
+
+        .character-node:hover .character-tooltip {
+            opacity: 1;
+            visibility: visible;
         }
 
         .character-link {
@@ -155,11 +183,6 @@
             transform-origin: 0 0;
             z-index: 1;
             pointer-events: none;
-        }
-
-        .character-node:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .role-badge.protagonist {
@@ -608,56 +631,51 @@
 
                 // Initialize event handlers
                 initializeEventHandlers();
+                
+                // Setup tab switching
+                setupTabSwitching();
             } catch (error) {
                 console.error('Error initializing app:', error);
                 showToast('Error initializing application. Please check your connection and try again.', 'error');
             }
         });
 
-        // Initialize all event handlers
-        function initializeEventHandlers() {
-            // Initialize tab switching
-            const contextTabs = document.querySelectorAll('.context-tab');
-            const characterTreeView = document.getElementById('characterTreeView');
-            const regularListView = document.getElementById('regularListView');
+        // Setup tab switching
+        function setupTabSwitching() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
             
-            contextTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    // Remove active class from all tabs
-                    contextTabs.forEach(t => {
-                        t.classList.remove('border-primary', 'text-primary', 'font-medium');
-                        t.classList.add('border-transparent');
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    
+                    // Update active state on buttons
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('active', 'border-primary', 'text-primary');
+                        btn.classList.add('border-transparent');
                     });
+                    button.classList.add('active', 'border-primary', 'text-primary');
+                    button.classList.remove('border-transparent');
                     
-                    // Add active class to clicked tab
-                    this.classList.add('border-primary', 'text-primary', 'font-medium');
-                    this.classList.remove('border-transparent');
-                    
-                    // Get the tab name
-                    const tabName = this.getAttribute('data-tab');
-                    
-                    // Show the corresponding form and hide others
-                    document.querySelectorAll('.context-form-container').forEach(form => {
-                        if (form.id === tabName + 'Form') {
-                            form.classList.remove('hidden');
+                    // Show the appropriate tab content
+                    tabContents.forEach(content => {
+                        if (content.id === tabName + 'Tab') {
+                            content.classList.remove('hidden');
+                            
+                            // If this is the characters tab, refresh the character tree
+                            if (tabName === 'characters') {
+                                refreshCharacterTree();
+                            }
                         } else {
-                            form.classList.add('hidden');
+                            content.classList.add('hidden');
                         }
                     });
-                    
-                    // Toggle between character tree and regular views
-                    if (tabName === 'protagonists') {
-                        characterTreeView.classList.remove('hidden');
-                        regularListView.classList.add('hidden');
-                        // Refresh the character tree
-                        refreshCharacterTree();
-                    } else {
-                        characterTreeView.classList.add('hidden');
-                        regularListView.classList.remove('hidden');
-                    }
                 });
             });
+        }
 
+        // Initialize all event handlers
+        function initializeEventHandlers() {
             // Initialize location modal handlers
             const addLocationBtn = document.getElementById('addLocationBtn');
             const closeLocationModalBtn = document.getElementById('closeLocationModal');
@@ -896,29 +914,32 @@
         // Character tree functions
         function updateRelationshipLines() {
             const container = document.getElementById('characterTreeContainer');
-            if (!container) return;
-
+            if (!container) {
+                console.error('Character tree container not found');
+                return;
+            }
+            
             // Clear all existing relationship lines
-            document.querySelectorAll('.character-link').forEach(link => link.remove());
-
+            container.querySelectorAll('.character-link').forEach(link => link.remove());
+            
             // Get all character nodes
-            const characterNodes = document.querySelectorAll('.character-node');
+            const characterNodes = container.querySelectorAll('.character-node');
             if (characterNodes.length < 2) return; // Need at least 2 nodes for relationships
-
+            
             // Create an adjacency list of relationships
             const relationships = {};
-
+            
             // Initialize relationships for all characters
             characterNodes.forEach(node => {
                 const name = node.getAttribute('data-name');
                 relationships[name] = [];
             });
-
+            
             // Populate relationships
             characterNodes.forEach(node => {
                 const name = node.getAttribute('data-name');
                 const nodeRelationships = JSON.parse(node.getAttribute('data-relationships') || '[]');
-
+                
                 // Add bidirectional relationships
                 nodeRelationships.forEach(relatedName => {
                     if (relationships[name] && !relationships[name].includes(relatedName)) {
@@ -929,19 +950,19 @@
                     }
                 });
             });
-
+            
             // Create lines for each relationship (avoiding duplicates)
             const processedPairs = new Set();
-
+            
             Object.keys(relationships).forEach(name => {
                 const node = Array.from(characterNodes).find(n => n.getAttribute('data-name') === name);
-
+                
                 relationships[name].forEach(relatedName => {
                     const relatedNode = Array.from(characterNodes).find(n => n.getAttribute('data-name') === relatedName);
-
+                    
                     // Create a unique key for this pair
                     const pairKey = [name, relatedName].sort().join('_');
-
+                    
                     // Only process each pair once
                     if (!processedPairs.has(pairKey) && node && relatedNode) {
                         createRelationshipLine(node, relatedNode, container);
@@ -951,69 +972,101 @@
             });
         }
 
-        function createRelationshipLine(nodeA, nodeB, container) {
+        function createRelationshipLine(node1, node2, container) {
+            if (!node1 || !node2) return;
+            
             // Get positions
-            const rectA = nodeA.getBoundingClientRect();
-            const rectB = nodeB.getBoundingClientRect();
+            const rect1 = node1.getBoundingClientRect();
+            const rect2 = node2.getBoundingClientRect();
             const containerRect = container.getBoundingClientRect();
-
-            // Calculate center points relative to container
-            const aX = rectA.left + rectA.width / 2 - containerRect.left;
-            const aY = rectA.top + rectA.height / 2 - containerRect.top;
-            const bX = rectB.left + rectB.width / 2 - containerRect.left;
-            const bY = rectB.top + rectB.height / 2 - containerRect.top;
-
+            
+            // Calculate center points relative to the container
+            const x1 = rect1.left + rect1.width / 2 - containerRect.left;
+            const y1 = rect1.top + rect1.height / 2 - containerRect.top;
+            const x2 = rect2.left + rect2.width / 2 - containerRect.left;
+            const y2 = rect2.top + rect2.height / 2 - containerRect.top;
+            
             // Calculate distance and angle
-            const distance = Math.sqrt(Math.pow(bX - aX, 2) + Math.pow(bY - aY, 2));
-            const angle = Math.atan2(bY - aY, bX - aX) * 180 / Math.PI;
-
-            // Create link element
-            const link = document.createElement('div');
-            link.className = 'character-link';
-            link.style.width = `${distance}px`;
-            link.style.top = `${aY}px`;
-            link.style.left = `${aX}px`;
-            link.style.transform = `rotate(${angle}deg)`;
-
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            // Create line element
+            const line = document.createElement('div');
+            line.className = 'character-link';
+            line.style.width = `${distance}px`;
+            line.style.left = `${x1}px`;
+            line.style.top = `${y1}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            
             // Add to container
-            container.appendChild(link);
-            return link;
+            container.appendChild(line);
+            
+            return line;
         }
 
         function refreshCharacterTree() {
             const container = document.getElementById('characterTreeContainer');
-            if (!container) return;
+            if (!container) {
+                console.error('Character tree container not found');
+                return;
+            }
+            
+            console.log('Refreshing character tree with characters:', appState.characters);
             
             // Clear existing nodes except static ones
             container.querySelectorAll('.character-node:not([data-static="true"])').forEach(node => node.remove());
             
-            // Create nodes for each character
+            // Clear all existing relationship lines
+            container.querySelectorAll('.character-link').forEach(link => link.remove());
+            
+            // If no characters, show a message
+            if (!appState.characters || appState.characters.length === 0) {
+                const message = document.createElement('div');
+                message.className = 'text-center p-4 text-gray-500';
+                message.innerHTML = '<i class="fas fa-info-circle mr-2"></i>No characters yet. Create characters to see them in the network.';
+                container.appendChild(message);
+                return;
+            }
+            
+            // Calculate positions for character nodes in a circle layout
+            const centerX = container.offsetWidth / 2;
+            const centerY = container.offsetHeight / 2;
+            const radius = Math.min(centerX, centerY) * 0.7; // 70% of the smaller dimension
+            
+            // Position each character in the circle
             appState.characters.forEach((character, index) => {
+                const angle = (index * 2 * Math.PI) / appState.characters.length;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                // Create node
                 const node = document.createElement('div');
-                node.className = `character-node ${character.role.toLowerCase()}`;
+                node.className = `character-node ${character.role?.toLowerCase() || 'supporting'}`;
                 node.setAttribute('data-name', character.name);
-                node.setAttribute('data-role', character.role);
+                node.setAttribute('data-role', character.role || 'Supporting');
                 node.setAttribute('data-traits', character.traits || '');
                 node.setAttribute('data-backstory', character.description || '');
+                node.setAttribute('data-relationships', JSON.stringify(character.relationships || []));
                 
-                // Calculate position (you might want to adjust this based on your needs)
-                const angle = (index * 2 * Math.PI) / appState.characters.length;
-                const radius = 150; // Adjust based on your container size
-                const x = 50 + radius * Math.cos(angle);
-                const y = 50 + radius * Math.sin(angle);
+                // Position the node
+                node.style.position = 'absolute';
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                node.style.transform = 'translate(-50%, -50%)';
                 
-                node.style.left = `${x}%`;
-                node.style.top = `${y}%`;
-                
+                // Add node content
                 node.innerHTML = `
                     <div class="font-medium text-center">${character.name}</div>
                     <div class="character-tooltip">
                         <div class="font-bold text-primary mb-1">${character.name}</div>
-                        <div class="text-xs text-textSecondary mb-2">${character.role}</div>
+                        <div class="text-xs text-textSecondary mb-2">${character.role || 'Supporting'}</div>
                         <div class="text-sm">${character.traits || 'No traits specified'}</div>
                     </div>
                 `;
                 
+                // Add click handler
                 node.addEventListener('click', function(e) {
                     e.stopPropagation();
                     showCharacterDetails(this);
@@ -1022,7 +1075,7 @@
                 container.appendChild(node);
             });
             
-            // Update relationship lines
+            // Now create relationship lines
             updateRelationshipLines();
         }
 
@@ -1353,7 +1406,7 @@
             </div>
             <!-- Tabs -->
             <div class="flex mt-6 border-b border-gray-200">
-                <button class="tab-btn px-4 py-2 border-b-2 border-primary text-primary font-medium" data-tab="timeline">
+                <button class="tab-btn px-4 py-2 border-b-2 border-primary text-primary font-medium active" data-tab="timeline">
                     <i class="fas fa-clock mr-2"></i>Story Timeline
                 </button>
                 <button class="tab-btn px-4 py-2 border-b-2 border-transparent hover:text-primary" data-tab="characters">
