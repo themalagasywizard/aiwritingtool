@@ -1296,22 +1296,55 @@
             });
 
             document.querySelector('button[title="Heading"]').addEventListener('click', () => {
-                // Toggle between h1 and normal paragraph
                 const selection = window.getSelection();
                 const range = selection.getRangeAt(0);
                 const container = range.commonAncestorContainer.parentElement;
                 
-                if (container.tagName === 'H1' || container.parentElement.tagName === 'H1') {
-                    document.execCommand('formatBlock', false, 'p');
+                // Create a new div for the heading
+                const headingDiv = document.createElement('div');
+                headingDiv.className = 'text-center text-2xl font-bold my-4';
+                
+                // If we're already in a centered heading, revert to normal
+                if (container.classList && container.classList.contains('text-center')) {
+                    // Remove the heading formatting
+                    const normalText = document.createElement('div');
+                    normalText.innerHTML = container.innerHTML;
+                    container.parentNode.replaceChild(normalText, container);
                 } else {
-                    document.execCommand('formatBlock', false, 'h1');
+                    // Apply heading formatting
+                    headingDiv.innerHTML = range.toString();
+                    range.deleteContents();
+                    range.insertNode(headingDiv);
                 }
+                
                 updateSaveStatus(true);
             });
 
-            document.querySelector('button[title="List"]').addEventListener('click', () => {
-                document.execCommand('insertUnorderedList', false, null);
-                updateSaveStatus(true);
+            // Font size button and dropdown
+            const fontSizeBtn = document.querySelector('button[title="Font Size"]');
+            const fontSizeDropdown = document.querySelector('.font-size-dropdown');
+            
+            // Toggle dropdown
+            fontSizeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fontSizeDropdown.classList.toggle('hidden');
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!fontSizeBtn.contains(e.target)) {
+                    fontSizeDropdown.classList.add('hidden');
+                }
+            });
+            
+            // Handle font size selection
+            document.querySelectorAll('.font-size-dropdown button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const size = button.getAttribute('data-size');
+                    document.execCommand('fontSize', false, size);
+                    fontSizeDropdown.classList.add('hidden');
+                    updateSaveStatus(true);
+                });
             });
 
             // Full Screen button
@@ -1349,13 +1382,13 @@
             function updateFormatButtons() {
                 const isBold = document.queryCommandState('bold');
                 const isItalic = document.queryCommandState('italic');
-                const isUnorderedList = document.queryCommandState('insertUnorderedList');
                 const container = window.getSelection().getRangeAt(0).commonAncestorContainer;
-                const isHeading = container.nodeType === 1 ? container.tagName === 'H1' : container.parentElement.tagName === 'H1';
+                const isHeading = container.nodeType === 1 ? 
+                    container.classList && container.classList.contains('text-center') : 
+                    container.parentElement.classList && container.parentElement.classList.contains('text-center');
 
                 document.querySelector('button[title="Bold"]').classList.toggle('bg-primaryLight', isBold);
                 document.querySelector('button[title="Italic"]').classList.toggle('bg-primaryLight', isItalic);
-                document.querySelector('button[title="List"]').classList.toggle('bg-primaryLight', isUnorderedList);
                 document.querySelector('button[title="Heading"]').classList.toggle('bg-primaryLight', isHeading);
             }
 
@@ -1610,9 +1643,17 @@
                     <button class="toolbar-btn" title="Heading">
                         <i class="fas fa-heading"></i>
                     </button>
-                    <button class="toolbar-btn" title="List">
-                        <i class="fas fa-list-ul"></i>
-                    </button>
+                    <div class="relative">
+                        <button class="toolbar-btn" title="Font Size">
+                            <i class="fas fa-text-height"></i>
+                        </button>
+                        <div class="font-size-dropdown hidden absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
+                            <button class="block w-full px-4 py-1 text-left hover:bg-primaryLight" data-size="1">Small</button>
+                            <button class="block w-full px-4 py-1 text-left hover:bg-primaryLight" data-size="3">Normal</button>
+                            <button class="block w-full px-4 py-1 text-left hover:bg-primaryLight" data-size="5">Large</button>
+                            <button class="block w-full px-4 py-1 text-left hover:bg-primaryLight" data-size="7">Huge</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="h-6 w-px bg-gray-200 mx-2"></div>
                 <!-- AI Assistant Button -->
