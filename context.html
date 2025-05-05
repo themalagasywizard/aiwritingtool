@@ -444,685 +444,139 @@
         }
 
         // Initialize app data when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize auth and data loading first
-            (async function() {
-                try {
-                    // Check if user is authenticated
-                    const { data: { user } } = await window.supabaseServices.auth.getUser();
-                    if (!user) {
-                        window.location.href = '/auth/auth.html';
-                        return;
-                    }
-                    
-                    // Load project data
-                    const projectLoaded = await loadCurrentProject();
-                    if (!projectLoaded) return;
-                    
-                    // Load all data
-                    await Promise.all([
-                        loadCharacters(),
-                        loadLocations(),
-                        loadTimelineEvents()
-                    ]);
-                    
-                    // Initialize the character tree
-                    refreshCharacterTree();
-
-                    // Initialize location modal handlers
-                    const addLocationBtn = document.getElementById('addLocationBtn');
-                    const closeLocationModalBtn = document.getElementById('closeLocationModal');
-                    const cancelLocationBtn = document.getElementById('cancelLocation');
-                    const createLocationBtn = document.getElementById('createLocation');
-
-                    if (addLocationBtn) {
-                        addLocationBtn.addEventListener('click', handleAddLocationClick);
-                    }
-                    
-                    if (closeLocationModalBtn) {
-                        closeLocationModalBtn.addEventListener('click', closeLocationModal);
-                    }
-                    
-                    if (cancelLocationBtn) {
-                        cancelLocationBtn.addEventListener('click', closeLocationModal);
-                    }
-                    
-                    if (createLocationBtn) {
-                        createLocationBtn.addEventListener('click', handleCreateLocationClick);
-                    }
-
-                    // Initialize event modal handlers
-                    const closeEventModalBtn = document.getElementById('closeEventModal');
-                    const cancelEventBtn = document.getElementById('cancelEvent');
-                    const createEventBtn = document.getElementById('createEvent');
-                    
-                    if (closeEventModalBtn) {
-                        closeEventModalBtn.addEventListener('click', () => {
-                            document.getElementById('eventCreationModal').classList.add('hidden');
-                            pendingEventCell = null;
-                            pendingEventCharacters = [];
-                        });
-                    }
-                    
-                    if (cancelEventBtn) {
-                        cancelEventBtn.addEventListener('click', () => {
-                            document.getElementById('eventCreationModal').classList.add('hidden');
-                            pendingEventCell = null;
-                            pendingEventCharacters = [];
-                        });
-                    }
-                    
-                    if (createEventBtn) {
-                        createEventBtn.addEventListener('click', async () => {
-                            const name = document.getElementById('eventName').value;
-                            const description = document.getElementById('eventDescription').value;
-                            
-                            if (!name.trim()) {
-                                alert('Please enter an event name');
-                                return;
-                            }
-                            
-                            document.getElementById('eventCreationModal').classList.add('hidden');
-                            
-                            // Create the event
-                            await createEvent(
-                                name, 
-                                pendingEventTime, 
-                                description, 
-                                pendingEventCharacters,
-                                pendingEventLocation
-                            );
-                            
-                            // Reset state
-                            pendingEventCell = null;
-                            pendingEventCharacters = [];
-                        });
-                    }
-
-                    // Initialize edit event button
-                    const editEventBtn = document.getElementById('editEventBtn');
-                    if (editEventBtn) {
-                        editEventBtn.addEventListener('click', editEvent);
-                    }
-                } catch (error) {
-                    console.error('Error initializing app:', error);
-                    showToast('Error initializing application', 'error');
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Check if user is authenticated
+                const { data: { user }, error: authError } = await window.supabaseServices.auth.getUser();
+                
+                if (authError) {
+                    console.error('Auth error:', authError);
+                    showToast('Authentication error. Please try logging in again.', 'error');
+                    setTimeout(() => window.location.href = '/auth/auth.html', 2000);
+                    return;
                 }
-            })();
 
-            // Tab switching
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Remove active class from all buttons
-                    tabButtons.forEach(btn => {
-                        btn.classList.remove('active', 'border-primary', 'text-primary');
-                        btn.classList.add('border-transparent');
-                    });
-                    
-                    // Add active class to clicked button
-                    button.classList.add('active', 'border-primary', 'text-primary');
-                    button.classList.remove('border-transparent');
-                    
-                    // Hide all tab contents
-                    tabContents.forEach(content => {
-                        content.classList.add('hidden');
-                    });
-                    
-                    // Show the selected tab content
-                    const tabName = button.getAttribute('data-tab');
-                    document.getElementById(tabName + 'Tab').classList.remove('hidden');
-                    
-                    // Load appropriate data for each tab
-                    if (tabName === 'timeline') {
-                        loadLocations();
-                        loadTimelineEvents();
-                        loadCharacters(); // For the character sidebar
-                    } else if (tabName === 'characters') {
-                        refreshCharacterTree();
-                    }
-                });
-            });
-            
-            // Drag and drop functionality for timeline
-            const characterItems = document.querySelectorAll('.character-item');
-            const timelineCells = document.querySelectorAll('.timeline-cell');
-            let draggedItem = null;
-            let startX, startY;
-            let originalX, originalY;
-            
-            // Setup drag events for character items
-            characterItems.forEach(item => {
-                item.addEventListener('dragstart', function(e) {
-                    draggedItem = this;
-                    this.classList.add('dragging');
-                    
-                    // Store character data
-                    const charData = {
-                        name: this.getAttribute('data-name'),
-                        color: this.getAttribute('data-color'),
-                        role: this.getAttribute('data-role')
-                    };
-                    e.dataTransfer.setData('text/plain', JSON.stringify(charData));
-                    
-                    // Store initial mouse position
-                    startX = e.clientX;
-                    startY = e.clientY;
-                });
-            });
-            
-            // Setup drop zone for timeline
-            document.querySelector('.timeline-grid').addEventListener('dragover', function(e) {
-                e.preventDefault();
-                const rect = this.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                // Find the closest timeline cell
-                const cell = findClosestTimelineCell(e.clientX, e.clientY);
-                if (cell) {
-                    // Remove drag-over class from all cells
-                    document.querySelectorAll('.timeline-cell').forEach(c => c.classList.remove('drag-over'));
-                    // Add drag-over class to target cell
-                    cell.classList.add('drag-over');
-                }
-            });
-
-            document.querySelector('.timeline-grid').addEventListener('dragleave', function(e) {
-                // Remove drag-over class from all cells when dragging leaves the grid
-                document.querySelectorAll('.timeline-cell').forEach(c => c.classList.remove('drag-over'));
-            });
-
-            document.querySelector('.timeline-grid').addEventListener('drop', function(e) {
-                e.preventDefault();
-                
-                const cell = findClosestTimelineCell(e.clientX, e.clientY);
-                if (!cell) return;
-
-                document.querySelectorAll('.timeline-cell').forEach(c => c.classList.remove('drag-over'));
-
-                try {
-                    const charData = JSON.parse(e.dataTransfer.getData('text/plain'));
-                    
-                    // Check if dropping onto an existing event
-                    const existingEvent = cell.querySelector('.timeline-event');
-                    if (existingEvent) {
-                        // Add character to existing event
-                        const eventId = existingEvent.getAttribute('data-event-id');
-                        addCharacterToEvent(eventId, charData);
-                    } else {
-                        // Create new event
-                        pendingEventCell = cell;
-                        pendingEventCharacters = [charData];
-                        
-                        // Get time value from the cell
-                        const timeValue = cell.getAttribute('data-time') || "0";
-                        const locationName = cell.getAttribute('data-location') || "Unknown";
-                        const currentDay = document.getElementById('daySelector').value || "1";
-                        
-                        // Store the location for the event
-                        pendingEventLocation = locationName;
-                        pendingEventTime = `Day ${currentDay} ${timeValue}:00`;
-                        
-                        showEventCreationModal(timeValue);
-                    }
-                } catch (error) {
-                    console.error('Error handling drop:', error);
-                }
-            });
-
-            // Helper function to find the closest timeline cell
-            function findClosestTimelineCell(x, y) {
-                const cells = document.querySelectorAll('.timeline-cell');
-                let closestCell = null;
-                let closestDistance = Infinity;
-
-                cells.forEach(cell => {
-                    const rect = cell.getBoundingClientRect();
-                    const centerX = rect.left + rect.width / 2;
-                    const centerY = rect.top + rect.height / 2;
-                    const distance = Math.sqrt(
-                        Math.pow(x - centerX, 2) + 
-                        Math.pow(y - centerY, 2)
-                    );
-
-                    if (distance < closestDistance) {
-                        closestDistance = distance;
-                        closestCell = cell;
-                    }
-                });
-
-                return closestCell;
-            }
-
-            // Add styles for drag and drop
-            const style = document.createElement('style');
-            style.textContent = `
-                .timeline-cell {
-                    position: relative;
-                    min-height: 70px;
-                    transition: background-color 0.2s;
-                }
-                
-                .timeline-cell.drag-over {
-                    background-color: rgba(75, 94, 170, 0.1);
-                }
-                
-                .character-tag {
-                    position: absolute;
-                    min-width: 60px;
-                    z-index: 10;
-                    cursor: move;
-                    transition: transform 0.2s;
-                }
-                
-                .character-tag:hover {
-                    transform: translateY(-2px);
-                    z-index: 20;
-                }
-            `;
-            document.head.appendChild(style);
-
-            // Add these character tree functions
-            let networkClickPosition = { x: 0, y: 0 };
-
-            function showCharacterDetails(node) {
-                // Remove highlight from all nodes
-                document.querySelectorAll('.character-node').forEach(n => {
-                    n.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                });
-                
-                // Highlight the selected node
-                node.style.boxShadow = '0 0 0 2px white, 0 0 0 4px var(--primary)';
-                
-                // Rest of the existing function...
-                const panel = document.getElementById('characterDetailsPanel');
-                const name = node.getAttribute('data-name');
-                const role = node.getAttribute('data-role');
-                const traits = node.getAttribute('data-traits');
-                const backstory = node.getAttribute('data-backstory');
-                
-                // Store current character data
-                currentCharacterData = {
-                    name,
-                    role,
-                    traits,
-                    backstory
-                };
-                
-                // Update panel content
-                document.getElementById('characterDetailName').textContent = name;
-                
-                const roleElement = document.getElementById('characterDetailRole');
-                roleElement.textContent = role;
-                roleElement.className = `role-badge ${role.toLowerCase()}`;
-                
-                document.getElementById('characterDetailTraits').textContent = traits || 'No traits specified';
-                document.getElementById('characterDetailBackstory').textContent = backstory || 'No backstory available';
-                
-                // Show panel
-                panel.classList.remove('translate-x-full');
-            }
-
-            function closeCharacterDetails() {
-                const panel = document.getElementById('characterDetailsPanel');
-                panel.classList.add('translate-x-full');
-                currentCharacterData = null;
-            }
-
-            function refreshCharacterTree() {
-                const container = document.getElementById('characterTreeContainer');
-                const nodes = container.querySelectorAll('.character-node');
-                
-                // Add click handlers to nodes
-                nodes.forEach(node => {
-                    node.onclick = function(e) {
-                        e.stopPropagation();
-                        showCharacterDetails(this);
-                    };
-                });
-
-                // Update relationship lines
-                updateRelationshipLines();
-            }
-
-            function updateRelationshipLines() {
-                const container = document.getElementById('characterTreeContainer');
-                if (!container) return;
-                
-                const nodes = container.querySelectorAll('.character-node');
-                
-                // Remove all existing dynamic lines
-                container.querySelectorAll('.character-link:not([data-static="true"])').forEach(link => link.remove());
-                
-                // Create a map of node positions
-                const nodePositions = {};
-                nodes.forEach(node => {
-                    const rect = node.getBoundingClientRect();
-                    const containerRect = container.getBoundingClientRect();
-                    
-                    // Get node center position relative to container
-                    const centerX = rect.left + rect.width/2 - containerRect.left;
-                    const centerY = rect.top + rect.height/2 - containerRect.top;
-                    
-                    nodePositions[node.getAttribute('data-name')] = {
-                        x: centerX,
-                        y: centerY,
-                        element: node
-                    };
-                });
-                
-                // Define the connections based on the reference image
-                const connections = [
-                    { from: "John Doe", to: "Mystery Figure" },
-                    { from: "John Doe", to: "Sarah" }
-                ];
-                
-                // Create connection lines
-                connections.forEach(conn => {
-                    const fromPos = nodePositions[conn.from];
-                    const toPos = nodePositions[conn.to];
-                    
-                    if (fromPos && toPos) {
-                        // Calculate line properties
-                        const dx = toPos.x - fromPos.x;
-                        const dy = toPos.y - fromPos.y;
-                        const length = Math.sqrt(dx * dx + dy * dy);
-                        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-                        
-                        // Create the line element
-                        const line = document.createElement('div');
-                        line.className = 'character-link';
-                        line.style.width = `${length}px`;
-                        line.style.left = `${fromPos.x}px`;
-                        line.style.top = `${fromPos.y}px`;
-                        line.style.transform = `rotate(${angle}deg)`;
-                        
-                        // Add to container
-                        container.appendChild(line);
-                    }
-                });
-            }
-
-            // Character Tree container click handler for adding new characters
-            const characterTreeContainer = document.getElementById('characterTreeContainer');
-            if (characterTreeContainer) {
-                characterTreeContainer.addEventListener('click', function(e) {
-                    // Only register clicks directly on the container (not on nodes)
-                    if (e.target === this || e.target.classList.contains('character-tree')) {
-                        // Store the click position for potential character placement
-                        const rect = this.getBoundingClientRect();
-                        networkClickPosition = {
-                            x: e.clientX - rect.left,
-                            y: e.clientY - rect.top
-                        };
-                        
-                        // Show the interaction overlay
-                        const overlay = document.getElementById('networkInteractionOverlay');
-                        overlay.style.display = 'block';
-                        
-                        // Position the overlay interaction button near the click
-                        const overlayBtn = overlay.querySelector('div');
-                        overlayBtn.style.left = networkClickPosition.x + 'px';
-                        overlayBtn.style.top = networkClickPosition.y + 'px';
-                    }
-                });
-            }
-
-            // Add Character from Network button click handler
-            const addCharacterFromNetworkBtn = document.getElementById('addCharacterFromNetworkBtn');
-            if (addCharacterFromNetworkBtn) {
-                addCharacterFromNetworkBtn.addEventListener('click', function() {
-                    // Hide the overlay
-                    document.getElementById('networkInteractionOverlay').style.display = 'none';
-                    
-                    // Open the modal for new character
-                    openModal('character', {
-                        posX: networkClickPosition.x,
-                        posY: networkClickPosition.y
-                    });
-                });
-            }
-
-            // Initialize character tree
-            refreshCharacterTree();
-            
-            // Hide network overlay when clicking anywhere else
-            document.addEventListener('click', function(e) {
-                const overlay = document.getElementById('networkInteractionOverlay');
-                if (overlay && !e.target.closest('#characterTreeContainer')) {
-                    overlay.style.display = 'none';
-                }
-                
-                // Close character details panel when clicking outside
-                const panel = document.getElementById('characterDetailsPanel');
-                const characterNodes = document.querySelectorAll('.character-node');
-                
-                if (panel && !panel.contains(e.target) && 
-                    !Array.from(characterNodes).some(node => node.contains(e.target))) {
-                    closeCharacterDetails();
-                }
-            });
-
-            // Add openModal function definition
-            window.openModal = function(type, data = null) {
-                const modal = document.getElementById('addItemModal');
-                const titleElement = modal.querySelector('h2');
-                const typeSelectElement = modal.querySelector('select');
-                const nameInput = modal.querySelector('input[type="text"]');
-                const descriptionTextarea = modal.querySelector('textarea');
-                
-                if (type === 'character') {
-                    titleElement.textContent = data ? 'Edit Character' : 'Add New Character';
-                    
-                    if (data) {
-                        // Pre-fill with character data
-                        if (data.name) {
-                            nameInput.value = data.name;
-                        }
-                        
-                        if (data.traits || data.backstory) {
-                            let description = '';
-                            if (data.traits) description += `Traits: ${data.traits}\n`;
-                            if (data.backstory) description += `Backstory: ${data.backstory}`;
-                            descriptionTextarea.value = description.trim();
-                        }
-                    }
-                }
-                
-                // Show the modal
-                modal.classList.remove('hidden');
-            };
-            
-            // Ensure closeModal is also defined in the global scope
-            window.closeModal = function() {
-                const modal = document.getElementById('addItemModal');
-                modal.classList.add('hidden');
-                
-                // Reset form fields
-                modal.querySelectorAll('input[type="text"], textarea').forEach(input => {
-                    input.value = '';
-                });
-            };
-            
-            // Make sure other functions are available globally if needed
-            window.showCharacterDetails = showCharacterDetails;
-            window.closeCharacterDetails = closeCharacterDetails;
-            window.refreshCharacterTree = refreshCharacterTree;
-            window.updateRelationshipLines = updateRelationshipLines;
-
-            // Fix edit button event listener
-            const editCharacterBtn = document.getElementById('editCharacterBtn');
-            if (editCharacterBtn) {
-                editCharacterBtn.addEventListener('click', function() {
-                    if (currentCharacterData) {
-                        openModal('character', currentCharacterData);
-                    }
-                });
-            }
-
-            // Add these new functions and event handlers after the existing code
-            function showEventCreationModal(timeValue) {
-                const modal = document.getElementById('eventCreationModal');
-                const timeInput = document.getElementById('eventTime');
-                const charactersContainer = document.getElementById('eventCharacters');
-                
-                // Reset form state
-                document.getElementById('eventName').value = '';
-                document.getElementById('eventDescription').value = '';
-                document.querySelector('#eventCreationModal h2').textContent = 'Create Timeline Event';
-                
-                // Set default time from cell - ensure we have a valid format
-                const hourValue = parseInt(timeValue) || 0;
-                timeInput.value = hourValue.toString().padStart(2, '0') + ':00';
-                
-                // Display initial characters
-                charactersContainer.innerHTML = pendingEventCharacters.map(char => {
-                    const roleClass = getCharacterColorClass(char.role);
-                    return `
-                    <div class="flex items-center justify-between p-2 bg-white rounded">
-                        <span class="flex items-center">
-                            <div class="w-2 h-2 rounded-full ${roleClass} mr-2"></div>
-                            ${char.name}
-                        </span>
-                        <button class="text-error hover:text-opacity-80" onclick="removeCharacterFromPending('${char.name}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `}).join('');
-                
-                // Show the modal
-                modal.classList.remove('hidden');
-                modal.classList.add('flex');
-                document.getElementById('eventName').focus();
-            }
-
-            function getCharacterColorClass(role) {
-                if (!role) return 'bg-primary';
-                
-                const roleLower = role.toLowerCase();
-                if (roleLower.includes('protagonist')) return 'bg-primary';
-                if (roleLower.includes('antagonist')) return 'bg-error';
-                if (roleLower.includes('supporting')) return 'bg-accent';
-                return 'bg-secondary';
-            }
-
-            function closeEventDetails() {
-                const panel = document.getElementById('eventDetailsPanel');
-                panel.classList.add('translate-x-full');
-                currentEventData = null;
-            }
-
-            function removeCharacterFromPending(characterName) {
-                pendingEventCharacters = pendingEventCharacters.filter(char => char.name !== characterName);
-                const characterElements = document.querySelectorAll('#eventCharacters > div');
-                characterElements.forEach(el => {
-                    if (el.querySelector('span').textContent.trim() === characterName) {
-                        el.remove();
-                    }
-                });
-            }
-
-            function removeCharacterFromEvent(characterId, eventId) {
-                if (!currentEventData || currentEventData.id !== eventId) return;
-                
-                const event = appState.timelineEvents.find(e => e.id == eventId);
-                if (!event) return;
-                
-                // Parse the existing characters
-                const characters = event.characters ? JSON.parse(event.characters) : [];
-                const updatedCharacters = characters.filter(c => c.id != characterId);
-                
-                // Update the event in the database
-                updateEvent(eventId, { characters: JSON.stringify(updatedCharacters) })
-                    .then(() => {
-                        // Update UI
-                        updateEventDetailsCharacters(updatedCharacters);
-                        showToast('Character removed from event');
-                    })
-                    .catch(error => {
-                        console.error('Error removing character from event:', error);
-                        showToast('Error removing character', 'error');
-                    });
-            }
-
-            function updateEventDetailsCharacters(characters) {
-                const container = document.getElementById('eventDetailCharacters');
-                if (!container) return;
-                
-                container.innerHTML = '';
-                
-                if (!characters || characters.length === 0) {
-                    container.innerHTML = '<div class="text-sm text-gray-500">No characters in this event</div>';
+                if (!user) {
+                    console.log('No user found, redirecting to login');
+                    window.location.href = '/auth/auth.html';
                     return;
                 }
                 
-                characters.forEach(char => {
-                    const el = document.createElement('div');
-                    el.className = 'flex items-center justify-between bg-gray-50 p-2 rounded';
+                // Load project data
+                const projectLoaded = await loadCurrentProject();
+                if (!projectLoaded) {
+                    showToast('Error loading project. Please try again.', 'error');
+                    return;
+                }
+                
+                // Load all data
+                await Promise.all([
+                    loadCharacters(),
+                    loadLocations(),
+                    loadTimelineEvents()
+                ]);
+                
+                // Initialize the character tree
+                refreshCharacterTree();
+
+                // Initialize event handlers
+                initializeEventHandlers();
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showToast('Error initializing application. Please check your connection and try again.', 'error');
+            }
+        });
+
+        // Initialize all event handlers
+        function initializeEventHandlers() {
+            // Initialize location modal handlers
+            const addLocationBtn = document.getElementById('addLocationBtn');
+            const closeLocationModalBtn = document.getElementById('closeLocationModal');
+            const cancelLocationBtn = document.getElementById('cancelLocation');
+            const createLocationBtn = document.getElementById('createLocation');
+
+            if (addLocationBtn) {
+                addLocationBtn.addEventListener('click', handleAddLocationClick);
+            }
+            
+            if (closeLocationModalBtn) {
+                closeLocationModalBtn.addEventListener('click', closeLocationModal);
+            }
+            
+            if (cancelLocationBtn) {
+                cancelLocationBtn.addEventListener('click', closeLocationModal);
+            }
+            
+            if (createLocationBtn) {
+                createLocationBtn.addEventListener('click', handleCreateLocationClick);
+            }
+
+            // Initialize event modal handlers
+            const closeEventModalBtn = document.getElementById('closeEventModal');
+            const cancelEventBtn = document.getElementById('cancelEvent');
+            const createEventBtn = document.getElementById('createEvent');
+            
+            if (closeEventModalBtn) {
+                closeEventModalBtn.addEventListener('click', () => {
+                    document.getElementById('eventCreationModal').classList.add('hidden');
+                    pendingEventCell = null;
+                    pendingEventCharacters = [];
+                });
+            }
+            
+            if (cancelEventBtn) {
+                cancelEventBtn.addEventListener('click', () => {
+                    document.getElementById('eventCreationModal').classList.add('hidden');
+                    pendingEventCell = null;
+                    pendingEventCharacters = [];
+                });
+            }
+            
+            if (createEventBtn) {
+                createEventBtn.addEventListener('click', async () => {
+                    const name = document.getElementById('eventName').value;
+                    const description = document.getElementById('eventDescription').value;
                     
-                    const roleClass = getCharacterColorClass(char.role);
+                    if (!name.trim()) {
+                        alert('Please enter an event name');
+                        return;
+                    }
                     
-                    el.innerHTML = `
-                        <div class="flex items-center">
-                            <div class="w-2 h-2 rounded-full ${roleClass} mr-2"></div>
-                            <span>${char.name}</span>
-                        </div>
-                        <button onclick="removeCharacterFromEvent('${char.id}', '${currentEventData.id}')" class="text-error hover:text-opacity-80">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    `;
+                    document.getElementById('eventCreationModal').classList.add('hidden');
                     
-                    container.appendChild(el);
+                    // Create the event
+                    await createEvent(
+                        name, 
+                        pendingEventTime, 
+                        description, 
+                        pendingEventCharacters,
+                        pendingEventLocation
+                    );
+                    
+                    // Reset state
+                    pendingEventCell = null;
+                    pendingEventCharacters = [];
                 });
             }
 
-            function showEventDetails() {
-                const eventElement = this;
-                const eventId = eventElement.getAttribute('data-event-id');
-                const event = appState.timelineEvents.find(e => e.id == eventId);
-                
-                if (!event) return;
-                
-                // Set current event
-                currentEventData = event;
-                
-                // Update panel content
-                document.getElementById('eventDetailName').textContent = event.name;
-                document.getElementById('eventDetailTime').textContent = `Time: ${event.date_time}`;
-                document.getElementById('eventDetailDescription').textContent = event.description || 'No description';
-                
-                // Update characters list
-                updateEventDetailsCharacters(JSON.parse(event.characters || '[]'));
-                
-                // Show panel
-                const panel = document.getElementById('eventDetailsPanel');
-                panel.classList.remove('translate-x-full');
+            // Initialize edit event button
+            const editEventBtn = document.getElementById('editEventBtn');
+            if (editEventBtn) {
+                editEventBtn.addEventListener('click', editEvent);
             }
 
-            function editEvent() {
-                if (!currentEventData) return;
-                
-                // TODO: Implement event editing
-                showToast('Event editing not implemented yet');
-            }
-
-            // ... existing code ...
-        });
-
-        // Make all necessary functions global for HTML access
-        window.closeEventDetails = closeEventDetails;
-        window.closeCharacterDetails = closeCharacterDetails;
-        window.editEvent = editEvent;
-        window.showToast = showToast;
-        window.handleDaySelectorChange = handleDaySelectorChange;
-        window.removeCharacterFromEvent = removeCharacterFromEvent;
-        window.removeCharacterFromPending = removeCharacterFromPending;
-        window.handleAddLocationClick = handleAddLocationClick;
-        window.closeLocationModal = closeLocationModal;
-        window.handleCreateLocationClick = handleCreateLocationClick;
+            // Make functions available globally
+            window.closeEventDetails = closeEventDetails;
+            window.closeCharacterDetails = closeCharacterDetails;
+            window.editEvent = editEvent;
+            window.showToast = showToast;
+            window.handleDaySelectorChange = handleDaySelectorChange;
+            window.removeCharacterFromEvent = removeCharacterFromEvent;
+            window.removeCharacterFromPending = removeCharacterFromPending;
+            window.handleAddLocationClick = handleAddLocationClick;
+            window.closeLocationModal = closeLocationModal;
+            window.handleCreateLocationClick = handleCreateLocationClick;
+        }
 
         // Location Functions
         function handleAddLocationClick() {
