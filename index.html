@@ -942,7 +942,13 @@
             updateWordCount();
             
             // Update toolbar button states
-            updateActiveFormatting();
+            try {
+                if (typeof updateActiveFormatting === 'function') {
+                    updateActiveFormatting();
+                }
+            } catch (error) {
+                console.warn('Could not update formatting buttons:', error);
+            }
         }
 
         async function createChapter(title, content, orderIndex) {
@@ -1575,6 +1581,9 @@
                 }
                 
                 appState.currentUser = user;
+                
+                // Initialize toolbar first
+                initToolbar();
                 
                 // Setup UI event listeners
                 setupEventListeners();
