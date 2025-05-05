@@ -1404,79 +1404,83 @@
             elements.editorContent.addEventListener('keyup', updateFormatButtons);
 
             // Project title rename functionality
-            elements.projectTitle.addEventListener('dblclick', async () => {
-                const currentTitle = elements.projectTitle.textContent;
-                
-                // Create input for editing
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'w-full p-0 border-none focus:ring-0 bg-primaryLight rounded text-primary font-medium';
-                input.value = currentTitle;
-                
-                // Replace h2 with input
-                elements.projectTitle.replaceWith(input);
-                input.focus();
-                input.select();
-                
-                // Save on blur or Enter key
-                const saveProjectTitle = async () => {
-                    const newTitle = input.value.trim();
-                    if (newTitle && newTitle !== currentTitle && appState.currentProject) {
-                        try {
-                            // Update project title in database
-                            const { data: updatedProject, error } = await projects.update(
-                                appState.currentProject.id,
-                                { title: newTitle }
-                            );
-                            
-                            if (error) throw error;
-                            
-                            // Update local state
-                            appState.currentProject = updatedProject[0];
-                            showToast('Project renamed', 'success');
-                        } catch (error) {
-                            console.error('Error renaming project:', error);
-                            showToast('Failed to rename project', 'error');
+            function setupProjectTitleRename() {
+                function handleProjectRename() {
+                    const currentTitle = elements.projectTitle.textContent;
+                    
+                    // Create input for editing
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'w-full p-0 border-none focus:ring-0 bg-primaryLight rounded text-primary font-medium';
+                    input.value = currentTitle;
+                    
+                    // Replace h2 with input
+                    elements.projectTitle.replaceWith(input);
+                    input.focus();
+                    input.select();
+                    
+                    // Save on blur or Enter key
+                    const saveProjectTitle = async () => {
+                        const newTitle = input.value.trim();
+                        if (newTitle && newTitle !== currentTitle && appState.currentProject) {
+                            try {
+                                // Update project title in database
+                                const { data: updatedProject, error } = await projects.update(
+                                    appState.currentProject.id,
+                                    { title: newTitle }
+                                );
+                                
+                                if (error) throw error;
+                                
+                                // Update local state
+                                appState.currentProject = updatedProject[0];
+                                showToast('Project renamed', 'success');
+                            } catch (error) {
+                                console.error('Error renaming project:', error);
+                                showToast('Failed to rename project', 'error');
+                            }
                         }
-                    }
-                    
-                    // Restore h2 with updated or original title
-                    const newH2 = document.createElement('h2');
-                    newH2.id = 'projectTitle';
-                    newH2.className = 'text-primary font-medium mb-1 cursor-pointer';
-                    newH2.title = 'Double-click to rename';
-                    newH2.textContent = newTitle || currentTitle;
-                    input.replaceWith(newH2);
-                    
-                    // Update elements reference
-                    elements.projectTitle = newH2;
-                    
-                    // Reattach double-click event listener
-                    elements.projectTitle.addEventListener('dblclick', arguments.callee);
-                };
-                
-                input.addEventListener('blur', saveProjectTitle);
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        saveProjectTitle();
-                    } else if (e.key === 'Escape') {
-                        e.preventDefault();
+                        
+                        // Restore h2 with updated or original title
                         const newH2 = document.createElement('h2');
                         newH2.id = 'projectTitle';
                         newH2.className = 'text-primary font-medium mb-1 cursor-pointer';
                         newH2.title = 'Double-click to rename';
-                        newH2.textContent = currentTitle;
+                        newH2.textContent = newTitle || currentTitle;
                         input.replaceWith(newH2);
                         
-                        // Update elements reference
+                        // Update elements reference and reattach event listener
                         elements.projectTitle = newH2;
-                        
-                        // Reattach double-click event listener
-                        elements.projectTitle.addEventListener('dblclick', arguments.callee);
-                    }
-                });
-            });
+                        elements.projectTitle.addEventListener('dblclick', handleProjectRename);
+                    };
+                    
+                    input.addEventListener('blur', saveProjectTitle);
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveProjectTitle();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            const newH2 = document.createElement('h2');
+                            newH2.id = 'projectTitle';
+                            newH2.className = 'text-primary font-medium mb-1 cursor-pointer';
+                            newH2.title = 'Double-click to rename';
+                            newH2.textContent = currentTitle;
+                            input.replaceWith(newH2);
+                            
+                            // Update elements reference and reattach event listener
+                            elements.projectTitle = newH2;
+                            elements.projectTitle.addEventListener('dblclick', handleProjectRename);
+                        }
+                    });
+                }
+
+                // Initial event listener attachment
+                elements.projectTitle.addEventListener('dblclick', handleProjectRename);
+            }
+
+            // Call the setup function
+            setupProjectTitleRename();
         }
 
         // Initialization
