@@ -1235,7 +1235,8 @@
 
             function closeEventDetails() {
                 document.getElementById('eventDetailsPanel').classList.add('translate-x-full');
-                currentEventData = null;
+                // Don't clear currentEventData here, as it might be needed for editing
+                // Only clear it when we're done editing, in resetEventModalAndState
             }
 
             function getCharacterColorClass(role) {
@@ -1279,10 +1280,7 @@
             `;
 
             // Make event-related functions globally available
-            window.closeEventDetails = function() {
-                document.getElementById('eventDetailsPanel').classList.add('translate-x-full');
-                currentEventData = null;
-            };
+            window.closeEventDetails = closeEventDetails;
 
             window.removeCharacterFromEvent = function(eventId, characterName) {
                 const eventElement = document.querySelector(`[data-event-id="${eventId}"]`);
@@ -1315,28 +1313,37 @@
 
             // Edit Event button click handler
             document.getElementById('editEventBtn').addEventListener('click', () => {
-                if (!currentEventData || !currentEventData.id) {
+                // Store current event data in a separate variable to prevent it from being lost
+                const eventDataToEdit = {...currentEventData};
+                
+                if (!eventDataToEdit || !eventDataToEdit.id) {
                     console.error("Error: No valid event selected for editing");
                     alert("No valid event selected for editing. Please try again.");
                     return;
                 }
-                editEvent();
+                
+                // Preserve the event data in a more persistent location before closing the details panel
+                window.eventDataForEditing = eventDataToEdit;
+                
+                editEvent(eventDataToEdit);
             });
 
             // Add editEvent function to make the edit button work
-            window.editEvent = function() {
-                if (!currentEventData) {
-                    console.error("Error: No event selected for editing");
+            window.editEvent = function(eventDataToEdit) {
+                // Use the event data that was passed in or retrieve from the window object
+                // This ensures we don't lose the data between function calls
+                let dataToEdit = eventDataToEdit || window.eventDataForEditing;
+                
+                if (!dataToEdit) {
+                    console.error("Error: No event data available for editing");
+                    alert("Error: No event data available for editing. Please try selecting an event first.");
                     return;
                 }
                 
-                // Validate that we have the required event data
-                if (!currentEventData.id) {
-                    console.error("Error: Missing event ID for editing");
-                    return;
-                }
+                // Store in currentEventData for later use in the update process
+                currentEventData = dataToEdit;
                 
-                // Log the current event data to help with debugging
+                // Log the event data we're working with to debug
                 console.log("Editing event with data:", currentEventData);
                 
                 // Populate the event creation modal with current event data
@@ -1373,6 +1380,12 @@
                     const hourMatch = currentEventData.time ? currentEventData.time.match(/^(\d{1,2}):/) : null;
                     const hour = hourMatch ? parseInt(hourMatch[1]) : 0;
                     pendingEventCell = document.querySelector(`.timeline-cell[data-time="${hour}"]`);
+                    
+                    if (!pendingEventCell) {
+                        // As a last resort, just use the first timeline cell
+                        pendingEventCell = document.querySelector('.timeline-cell');
+                        console.log("Using fallback cell for event placement");
+                    }
                 }
                 
                 // Show the modal
@@ -1402,59 +1415,109 @@
                     const isUpdate = document.getElementById('createEvent').textContent === 'Update Event';
                     
                     if (isUpdate) {
+                        // Retrieve event data from our preserved location if needed
+                        if (!currentEventData) {
+                            console.log("Retrieving event data from window object");
+                            currentEventData = window.eventDataForEditing;
+                        }
+                        
                         // Validate currentEventData for update
                         if (!currentEventData) {
                             console.error("Error: Missing event data for update");
-                            alert("Error: Missing event data. Creating a new event instead.");
-                            // Fall through to create logic
+                            // Create temporary data rather than failing
+                            currentEventData = {
+                                id: 'temp-' + Date.now(),
+                                name: name,
+                                time: time,
+                                description: description,
+                                characters: pendingEventCharacters
+                            };
+                            console.log("Created temporary event data:", currentEventData);
                         } else if (!currentEventData.id) {
                             console.error("Error: Missing event ID for update");
-                            alert("Error: Missing event ID. Creating a new event instead.");
-                            // Fall through to create logic
-                        } else {
-                            // 1. Capture the event ID we're updating
-                            const eventId = currentEventData.id;
-                            
-                            // 2. Try to find the existing event element (there should only be one now)
-                            const oldEventElement = document.querySelector(`[data-event-id="${eventId}"]`);
-                            
-                            // 3. Determine the target cell for the updated time/location
-                            let targetLocation = (pendingEventCell ? pendingEventCell.getAttribute('data-location') : null);
-                            let targetCell = null;
-                            
-                            if (targetLocation) {
-                                targetCell = document.querySelector(`.timeline-cell[data-location="${targetLocation}"][data-time="${hour}"]`);
-                            }
-                            if (!targetCell) {
-                                targetCell = document.querySelector(`.timeline-cell[data-time="${hour}"]`);
-                            }
-                            if (!targetCell && pendingEventCell) {
-                                targetCell = pendingEventCell;
-                            }
-                            if (!targetCell) {
-                                targetCell = document.querySelector('.timeline-cell');
-                            }
-                            
-                            if (oldEventElement) {
-                                // 4A. Update the existing element's content and attributes
-                                oldEventElement.textContent = name;
-                                oldEventElement.setAttribute('data-time', time);
-                                oldEventElement.setAttribute('data-description', description);
-                                oldEventElement.setAttribute('data-characters', JSON.stringify(pendingEventCharacters));
-                                
-                                // 4B. Move the element to the target cell
-                                if (targetCell) targetCell.appendChild(oldEventElement);
-                            } else {
-                                // 4C. If for some reason the old element isn't found, create a new one
-                                const newEventElement = createTimelineEvent(name, time, description, pendingEventCharacters);
-                                newEventElement.setAttribute('data-event-id', eventId);
-                                if (targetCell) targetCell.appendChild(newEventElement);
-                            }
-                            
-                            // 5. End update process here
-                            resetEventModalAndState();
-                            return;
+                            // Create temporary ID rather than failing
+                            currentEventData.id = 'temp-' + Date.now();
+                            console.log("Created temporary ID:", currentEventData.id);
                         }
+                        
+                        // 1. Capture the event ID we're updating
+                        const eventId = currentEventData.id;
+                        console.log("Updating event with ID:", eventId);
+                        
+                        // 2. Try to find the existing event element
+                        let oldEventElement = document.querySelector(`[data-event-id="${eventId}"]`);
+                        
+                        // First remove any duplicate events with the same ID
+                        const duplicateElements = document.querySelectorAll(`[data-event-id="${eventId}"]`);
+                        console.log(`Found ${duplicateElements.length} event(s) with ID ${eventId}`);
+                        
+                        // If multiple elements found, remove all but keep a reference to one
+                        if (duplicateElements.length > 1) {
+                            console.log("Removing duplicate elements...");
+                            duplicateElements.forEach((elem, index) => {
+                                if (index === 0) {
+                                    oldEventElement = elem; // Keep reference to first one
+                                } else if (elem.parentNode) {
+                                    elem.parentNode.removeChild(elem);
+                                }
+                            });
+                        }
+                        
+                        // 3. Determine the target cell for the updated time/location
+                        let targetLocation = (pendingEventCell ? pendingEventCell.getAttribute('data-location') : null);
+                        let targetCell = null;
+                        
+                        if (targetLocation) {
+                            targetCell = document.querySelector(`.timeline-cell[data-location="${targetLocation}"][data-time="${hour}"]`);
+                        }
+                        if (!targetCell) {
+                            targetCell = document.querySelector(`.timeline-cell[data-time="${hour}"]`);
+                        }
+                        if (!targetCell && pendingEventCell) {
+                            targetCell = pendingEventCell;
+                        }
+                        if (!targetCell) {
+                            targetCell = document.querySelector('.timeline-cell');
+                        }
+                        
+                        console.log("Target cell for updated event:", targetCell);
+                        
+                        if (oldEventElement) {
+                            console.log("Updating existing event element");
+                            // Remove from old parent
+                            if (oldEventElement.parentNode) {
+                                oldEventElement.parentNode.removeChild(oldEventElement);
+                            }
+                            
+                            // Update the element
+                            oldEventElement.textContent = name;
+                            oldEventElement.setAttribute('data-time', time);
+                            oldEventElement.setAttribute('data-description', description);
+                            oldEventElement.setAttribute('data-characters', JSON.stringify(pendingEventCharacters));
+                            
+                            // Add to new parent
+                            if (targetCell) {
+                                targetCell.appendChild(oldEventElement);
+                                console.log("Event moved to new cell");
+                            }
+                        } else {
+                            console.log("Creating new event element");
+                            // Create new element
+                            const newEventElement = createTimelineEvent(name, time, description, pendingEventCharacters);
+                            newEventElement.setAttribute('data-event-id', eventId);
+                            
+                            if (targetCell) {
+                                targetCell.appendChild(newEventElement);
+                                console.log("New event added to cell");
+                            }
+                        }
+                        
+                        // Clear the editing data
+                        window.eventDataForEditing = null;
+                        
+                        // Reset modal and state
+                        resetEventModalAndState();
+                        return;
                     }
                     
                     // Create new event logic (for both new events and fallback from failed updates)
@@ -1496,11 +1559,20 @@
                 document.getElementById('eventTime').value = '';
                 document.getElementById('eventDescription').value = '';
                 document.getElementById('eventCreationModal').classList.add('hidden');
+                document.getElementById('eventCreationModal').classList.remove('flex');
                 document.querySelector('#eventCreationModal h2').textContent = 'Create Timeline Event';
                 document.getElementById('createEvent').textContent = 'Create Event';
+                
+                // Clear event character list
+                document.getElementById('eventCharacters').innerHTML = '';
+                
+                // Clear all state variables
                 pendingEventCell = null;
                 pendingEventCharacters = [];
                 currentEventData = null;
+                window.eventDataForEditing = null;
+                
+                console.log("Event modal and state reset complete");
             }
 
             // Location handling
