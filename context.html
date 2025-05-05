@@ -594,14 +594,16 @@
                 // Add event listeners
                 eventElement.addEventListener('click', showEventDetails);
                 
-                // Add drag and drop event listeners
+                // Add drag and drop event listeners with stopPropagation to prevent bubbling
                 eventElement.addEventListener('dragover', e => {
                     e.preventDefault();
+                    e.stopPropagation(); // Stop event from bubbling to cell
                     eventElement.classList.add('bg-opacity-70');
                     e.dataTransfer.dropEffect = 'link';
                 });
                 
-                eventElement.addEventListener('dragleave', () => {
+                eventElement.addEventListener('dragleave', e => {
+                    e.stopPropagation(); // Stop event from bubbling to cell
                     eventElement.classList.remove('bg-opacity-70');
                 });
                 
@@ -1279,7 +1281,10 @@
                 // Update footer buttons for save/cancel
                 const editBtn = document.getElementById('editEventBtn');
                 editBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
+                
+                // Remove any existing event listeners and add the save listener
                 editBtn.removeEventListener('click', editEvent);
+                editBtn.removeEventListener('click', saveEventChanges);
                 editBtn.addEventListener('click', saveEventChanges);
                 
                 // Add cancel button
@@ -1356,6 +1361,15 @@
                     if (charError) throw charError;
                 }
                 
+                // Reset the event edit UI properly
+                saveBtn.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Event';
+                saveBtn.disabled = false;
+                
+                // Remove any existing event listeners and restore the edit listener
+                saveBtn.removeEventListener('click', saveEventChanges);
+                saveBtn.removeEventListener('click', editEvent);
+                saveBtn.addEventListener('click', editEvent);
+                
                 // Reload the timeline events to refresh the display
                 await loadTimelineEvents();
                 
@@ -1414,7 +1428,11 @@
                     
                     // Reset the edit button to its original state
                     editBtn.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Event';
+                    
+                    // Make sure we remove any existing event listener before adding the new one
                     editBtn.removeEventListener('click', saveEventChanges);
+                    editBtn.removeEventListener('click', editEvent);
+                    // Add the edit event listener back
                     editBtn.addEventListener('click', editEvent);
                     
                     // Reset the edited fields if they exist
@@ -1431,22 +1449,22 @@
                     }
                     
                     if (descriptionTextarea) {
-                        const descriptionElement = document.createElement('p');
+                        const descriptionElement = document.createElement('div');
                         descriptionElement.id = 'eventDetailDescription';
-                        descriptionElement.className = 'text-gray-700';
-                        descriptionElement.textContent = 'Event description will appear here';
+                        descriptionElement.className = 'mt-4 text-gray-700 text-sm whitespace-pre-wrap';
+                        descriptionElement.textContent = 'Description';
                         descriptionTextarea.replaceWith(descriptionElement);
                     }
                     
                     if (timeContainer) {
                         const timeElement = document.createElement('div');
                         timeElement.id = 'eventDetailTime';
-                        timeElement.className = 'text-sm text-gray-500';
-                        timeElement.textContent = 'Time: --:--';
+                        timeElement.className = 'mt-2 text-sm text-gray-500';
+                        timeElement.textContent = 'Time: 00:00';
                         timeContainer.replaceWith(timeElement);
                     }
                 } catch (error) {
-                    console.error('Error resetting panel after close:', error);
+                    console.error('Error resetting event details panel:', error);
                 }
             }, 300);
         }
@@ -1670,6 +1688,8 @@
         // Handle drop on events
         function handleDropOnEvent(e) {
             e.preventDefault();
+            // Stop event from bubbling up to the timeline cell
+            e.stopPropagation();
             
             try {
                 // Get the dropped character data
