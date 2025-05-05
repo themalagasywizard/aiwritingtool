@@ -1283,6 +1283,92 @@
                 const searchTerm = e.target.value.toLowerCase();
                 filterProjects(searchTerm);
             });
+
+            // Formatting buttons
+            document.querySelector('button[title="Bold"]').addEventListener('click', () => {
+                document.execCommand('bold', false, null);
+                updateSaveStatus(true);
+            });
+
+            document.querySelector('button[title="Italic"]').addEventListener('click', () => {
+                document.execCommand('italic', false, null);
+                updateSaveStatus(true);
+            });
+
+            document.querySelector('button[title="Heading"]').addEventListener('click', () => {
+                // Toggle between h1 and normal paragraph
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const container = range.commonAncestorContainer.parentElement;
+                
+                if (container.tagName === 'H1' || container.parentElement.tagName === 'H1') {
+                    document.execCommand('formatBlock', false, 'p');
+                } else {
+                    document.execCommand('formatBlock', false, 'h1');
+                }
+                updateSaveStatus(true);
+            });
+
+            document.querySelector('button[title="List"]').addEventListener('click', () => {
+                document.execCommand('insertUnorderedList', false, null);
+                updateSaveStatus(true);
+            });
+
+            // Full Screen button
+            document.querySelector('button[title="Full Screen"]').addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast(`Error attempting to enable full-screen mode: ${err.message}`, 'error');
+                    });
+                } else {
+                    document.exitFullscreen().catch(err => {
+                        showToast(`Error attempting to exit full-screen mode: ${err.message}`, 'error');
+                    });
+                }
+            });
+
+            // Keyboard shortcuts for formatting
+            elements.editorContent.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key.toLowerCase()) {
+                        case 'b':
+                            e.preventDefault();
+                            document.execCommand('bold', false, null);
+                            updateSaveStatus(true);
+                            break;
+                        case 'i':
+                            e.preventDefault();
+                            document.execCommand('italic', false, null);
+                            updateSaveStatus(true);
+                            break;
+                    }
+                }
+            });
+
+            // Update formatting buttons state based on current selection
+            function updateFormatButtons() {
+                const isBold = document.queryCommandState('bold');
+                const isItalic = document.queryCommandState('italic');
+                const isUnorderedList = document.queryCommandState('insertUnorderedList');
+                const container = window.getSelection().getRangeAt(0).commonAncestorContainer;
+                const isHeading = container.nodeType === 1 ? container.tagName === 'H1' : container.parentElement.tagName === 'H1';
+
+                document.querySelector('button[title="Bold"]').classList.toggle('bg-primaryLight', isBold);
+                document.querySelector('button[title="Italic"]').classList.toggle('bg-primaryLight', isItalic);
+                document.querySelector('button[title="List"]').classList.toggle('bg-primaryLight', isUnorderedList);
+                document.querySelector('button[title="Heading"]').classList.toggle('bg-primaryLight', isHeading);
+            }
+
+            // Add selectionchange event listener to update formatting buttons
+            document.addEventListener('selectionchange', () => {
+                if (document.activeElement === elements.editorContent) {
+                    updateFormatButtons();
+                }
+            });
+
+            // Update format buttons when clicking in the editor
+            elements.editorContent.addEventListener('click', updateFormatButtons);
+            elements.editorContent.addEventListener('keyup', updateFormatButtons);
         }
 
         // Initialization
