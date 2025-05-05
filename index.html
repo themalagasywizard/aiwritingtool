@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AIStoryCraft</title>
     <!-- Supabase Configuration -->
-    <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
-    <meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
+    <meta name="supabase-url" content="https://tadqfmqlqlahoknivhds.supabase.co">
+    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhZHFmbXFscWxhaG9rbml2aGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTY0MTAsImV4cCI6MjA2MTg5MjQxMH0.6afLHxoHlX3U3JzsqX6d61mpmiu3bICkbHgb1XDY7V0">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
@@ -39,16 +39,6 @@
         import * as supabaseModule from './lib/supabase.js';
         // Make it available globally
         window.supabaseModule = supabaseModule;
-        
-        // Set a default project ID if none exists
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if we have a project ID in localStorage
-            if (!localStorage.getItem('currentProjectId')) {
-                // Set a default project ID (this would be replaced with actual project creation in a real app)
-                localStorage.setItem('currentProjectId', 'default-project-1');
-                console.log('Set default project ID in localStorage');
-            }
-        });
     </script>
     <script>
         tailwind.config = {
@@ -543,14 +533,16 @@
         };
 
         // Add sign out handler
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const signOutBtn = document.querySelector('#signOutBtn');
             if (signOutBtn) {
                 signOutBtn.addEventListener('click', handleSignOut);
             }
             
             // Check authentication state
-            auth.getUser().then(({ data: { user } }) => {
+            try {
+                const { data: { user } } = await auth.getUser();
+                
                 if (user) {
                     // Update avatar with user email or name
                     const nameInitial = user.email ? user.email.charAt(0).toUpperCase() : 'G';
@@ -561,14 +553,172 @@
                     if (userDisplayName) {
                         userDisplayName.textContent = user.email || 'Signed In User';
                     }
+                    
+                    // Get user projects and load the last edited one
+                    await loadLastEditedProject(user.id);
                 } else {
                     // Not logged in, redirect to auth page
                     window.location.href = '/auth/auth.html';
                 }
-            }).catch(error => {
+            } catch (error) {
                 console.error('Auth check error:', error);
-            });
+                
+                // Even if auth fails, try to load project
+                await loadLastEditedProject();
+            }
         });
+        
+        async function loadLastEditedProject(userId) {
+            try {
+                // Get current project ID from localStorage
+                let currentProjectId = localStorage.getItem('currentProjectId');
+                
+                // If there's no project ID stored, try to get the most recently edited project
+                if (!currentProjectId && userId) {
+                    const { data, error } = await projects.getAll();
+                    
+                    if (error) throw error;
+                    
+                    if (data && data.length > 0) {
+                        // Sort by updated_at (most recent first)
+                        data.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+                        currentProjectId = data[0].id;
+                        
+                        // Save to localStorage
+                        localStorage.setItem('currentProjectId', currentProjectId);
+                    } else {
+                        // Create a default project if none exists
+                        const { data: newProject, error: createError } = await projects.create('My Novel', 'A new story');
+                        
+                        if (createError) throw createError;
+                        
+                        if (newProject && newProject.length > 0) {
+                            currentProjectId = newProject[0].id;
+                            localStorage.setItem('currentProjectId', currentProjectId);
+                        } else {
+                            // Use default ID as fallback
+                            currentProjectId = 'default-project-1';
+                            localStorage.setItem('currentProjectId', currentProjectId);
+                        }
+                    }
+                } else if (!currentProjectId) {
+                    // Set a default project ID if not logged in
+                    currentProjectId = 'default-project-1';
+                    localStorage.setItem('currentProjectId', currentProjectId);
+                }
+                
+                // Load and display project data
+                await displayProjectData(currentProjectId);
+            } catch (error) {
+                console.error('Error loading last edited project:', error);
+                
+                // Set a default project ID as fallback
+                localStorage.setItem('currentProjectId', 'default-project-1');
+            }
+        }
+        
+        async function displayProjectData(projectId) {
+            try {
+                // Check if we have a valid project ID
+                if (!projectId) return;
+                
+                // Get project data
+                const { data: project, error } = await projects.getById(projectId);
+                
+                if (error) throw error;
+                
+                if (project) {
+                    // Update project title
+                    const projectTitle = document.querySelector('.sidebar h2');
+                    if (projectTitle) {
+                        projectTitle.textContent = project.title || 'My Novel';
+                    }
+                    
+                    // Update last edited timestamp
+                    const lastEdited = document.querySelector('.sidebar .text-xs');
+                    if (lastEdited && project.updated_at) {
+                        const date = new Date(project.updated_at);
+                        const formattedDate = date.toLocaleString('en-US', {
+                            weekday: 'short',
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                        });
+                        lastEdited.textContent = `Last edited: ${formattedDate}`;
+                    }
+                    
+                    // Load chapters
+                    await loadChapters(projectId);
+                }
+            } catch (error) {
+                console.error('Error displaying project data:', error);
+            }
+        }
+        
+        async function loadChapters(projectId) {
+            try {
+                const { data: chaptersData, error } = await chapters.getByProject(projectId);
+                
+                if (error) throw error;
+                
+                // Get chapters container
+                const chaptersContainer = document.querySelector('.sidebar .space-y-1');
+                
+                if (chaptersContainer) {
+                    // Clear current chapters except the first one which is the template
+                    const firstChapter = chaptersContainer.querySelector('.chapter-item');
+                    chaptersContainer.innerHTML = '';
+                    
+                    if (chaptersData && chaptersData.length > 0) {
+                        // Add real chapters from database
+                        chaptersData.forEach((chapter, index) => {
+                            const chapterEl = document.createElement('div');
+                            chapterEl.className = `chapter-item p-2 pl-3 rounded cursor-pointer ${index === 0 ? 'active' : ''}`;
+                            chapterEl.innerHTML = `
+                                <div class="flex items-center justify-between">
+                                    <span>${chapter.title}</span>
+                                    <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
+                                </div>
+                            `;
+                            chaptersContainer.appendChild(chapterEl);
+                            
+                            // Add click handler to load chapter content
+                            chapterEl.addEventListener('click', () => loadChapterContent(chapter));
+                        });
+                    } else if (firstChapter) {
+                        // If no chapters found, display template chapter
+                        chaptersContainer.appendChild(firstChapter);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading chapters:', error);
+            }
+        }
+        
+        function loadChapterContent(chapter) {
+            // Update editor content with chapter content
+            const editorContent = document.querySelector('.editor-content');
+            if (editorContent) {
+                // Set chapter title
+                const chapterTitle = editorContent.querySelector('h1');
+                if (chapterTitle) {
+                    chapterTitle.textContent = chapter.title;
+                }
+                
+                // Set chapter content
+                const paragraphs = editorContent.querySelectorAll('p');
+                if (paragraphs.length > 0) {
+                    // Remove existing paragraphs except the first one
+                    Array.from(paragraphs).slice(1).forEach(p => p.remove());
+                    
+                    // Set content to first paragraph
+                    if (paragraphs[0]) {
+                        paragraphs[0].textContent = chapter.content || 'Start writing your story here...';
+                    }
+                }
+            }
+        }
     </script>
 
     <!-- Top Bar -->

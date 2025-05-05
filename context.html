@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-                    <script>
-                        window.ENV = {
-                            SUPABASE_URL: '',
-                            SUPABASE_ANON_KEY: ''
-                        };
-                    </script>
-                
+    <script>
+        window.ENV = {
+            SUPABASE_URL: 'https://tadqfmqlqlahoknivhds.supabase.co',
+            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhZHFmbXFscWxhaG9rbml2aGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTY0MTAsImV4cCI6MjA2MTg5MjQxMH0.6afLHxoHlX3U3JzsqX6d61mpmiu3bICkbHgb1XDY7V0'
+        };
+    </script>
+                 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Context Manager - AIStoryCraft</title>
     <!-- Supabase Configuration -->
-    <meta name="supabase-url" content="">
-    <meta name="supabase-anon-key" content="">
+    <meta name="supabase-url" content="https://tadqfmqlqlahoknivhds.supabase.co">
+    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhZHFmbXFscWxhaG9rbml2aGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTY0MTAsImV4cCI6MjA2MTg5MjQxMH0.6afLHxoHlX3U3JzsqX6d61mpmiu3bICkbHgb1XDY7V0">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
@@ -772,11 +772,10 @@
                     currentProjectId = urlParams.get('project') || localStorage.getItem('currentProjectId');
                     
                     if (!currentProjectId) {
-                        // Redirect back to the main page if no project ID with error message
-                        console.error("No project ID found in URL or localStorage");
-                        alert("No project ID found. Redirecting to main page.");
-                        window.location.href = 'index.html';
-                        return;
+                        // Set a default project ID if none found
+                        currentProjectId = 'default-project-1';
+                        localStorage.setItem('currentProjectId', currentProjectId);
+                        console.warn("No project ID found, using default project ID");
                     }
                     
                     // Save project ID to localStorage for persistence
@@ -785,14 +784,55 @@
                     // 2. Load project data
                     const { data: project, error: projectError } = await projects.getById(currentProjectId);
                     
-                    if (projectError || !project) {
+                    if (projectError) {
                         console.error("Error loading project:", projectError);
+                        
+                        // Try to create a default project if one doesn't exist
+                        try {
+                            const { data: newProject, error: createError } = await projects.create(
+                                'My Story',
+                                'A new creative writing project'
+                            );
+                            
+                            if (createError) throw createError;
+                            
+                            if (newProject && newProject.length > 0) {
+                                currentProjectId = newProject[0].id;
+                                localStorage.setItem('currentProjectId', currentProjectId);
+                                
+                                // Now we have a project
+                                await initializeWithProject(newProject[0]);
+                                return;
+                            }
+                        } catch (createError) {
+                            console.error("Failed to create default project:", createError);
+                        }
+                        
                         hideLoadingOverlay();
                         showError("Failed to load project data. Please try again.");
                         return;
                     }
                     
-                    // 3. Set project title
+                    if (!project) {
+                        console.error("Project not found");
+                        hideLoadingOverlay();
+                        showError("Project not found. Please select another project.");
+                        return;
+                    }
+                    
+                    // Continue with project data
+                    await initializeWithProject(project);
+                } catch (error) {
+                    console.error("Initialization error:", error);
+                    hideLoadingOverlay();
+                    showError("An error occurred during initialization. Please try again.");
+                }
+            }
+            
+            // Initialize with project data
+            async function initializeWithProject(project) {
+                try {
+                    // Set project title
                     const projectTitleEl = document.querySelector('#projectTitle');
                     if (projectTitleEl) {
                         projectTitleEl.textContent = project.title || 'Story Context';
@@ -800,23 +840,23 @@
                         console.warn("Project title element not found");
                     }
                     
-                    // 4. Load data in parallel
+                    // Load data in parallel
                     await Promise.all([
                         loadLocations(),
                         loadCharacters(),
                         loadTimelineEvents()
                     ]);
                     
-                    // 5. Initialize UI components
+                    // Initialize UI components
                     initTabs();
                     initializeCharacterDragEvents();
                     
                     // Hide loading overlay
                     hideLoadingOverlay();
                 } catch (error) {
-                    console.error("Initialization error:", error);
+                    console.error("Error in initializeWithProject:", error);
                     hideLoadingOverlay();
-                    showError("An error occurred during initialization. Please try again.");
+                    showError("An error occurred while loading project data.");
                 }
             }
             
