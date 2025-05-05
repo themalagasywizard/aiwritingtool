@@ -496,6 +496,126 @@
     </style>
 </head>
 <body class="h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-100">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-xl font-semibold text-primary">AIStoryCraft</h1>
+                <div class="flex items-center space-x-4">
+                    <img id="userAvatar" class="w-8 h-8 rounded-full" src="" alt="User avatar">
+                    <span id="userDisplayName" class="text-sm text-gray-600">Loading...</span>
+                    <button id="signOutBtn" class="text-sm text-gray-500 hover:text-primary">
+                        <i class="fas fa-sign-out-alt mr-1"></i>Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex">
+        <!-- Sidebar -->
+        <aside class="sidebar bg-white border-r border-gray-100 p-4 flex flex-col">
+            <!-- Project Info -->
+            <div class="bg-white rounded-lg p-3 shadow-sm-custom mb-4">
+                <h2 class="text-lg font-semibold mb-1">My Novel</h2>
+                <div class="text-xs text-textSecondary">
+                    <span>Last edited: Never</span>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div class="bg-white rounded-lg p-3 shadow-sm-custom mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-medium">Word Count</h3>
+                    <span class="text-xl font-semibold">0</span>
+                </div>
+                <div class="relative">
+                    <svg class="w-full" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#E6E9F0" stroke-width="10"/>
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#4B5EAA" stroke-width="10" stroke-dasharray="0 100"/>
+                    </svg>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center">
+                        <span class="text-xs text-textSecondary">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chapters -->
+            <div class="mb-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-medium">Chapters</h3>
+                    <span class="text-xs text-textSecondary">0 chapters</span>
+                </div>
+            </div>
+            <div class="space-y-1 mb-4">
+                <!-- Chapters will be added here -->
+            </div>
+            <button class="btn btn-primary w-full">
+                <i class="fas fa-plus text-sm mr-1"></i>
+                Add Chapter
+            </button>
+
+            <!-- Context -->
+            <div class="mt-6 mb-3">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-medium">Context</h3>
+                    <span class="text-xs text-textSecondary">0 items</span>
+                </div>
+            </div>
+            <div class="space-y-1 mb-4">
+                <!-- Context items will be added here -->
+            </div>
+            <button id="manageContextBtn" class="btn btn-primary w-full">
+                <i class="fas fa-cog text-sm mr-1"></i>
+                Manage Context
+            </button>
+        </aside>
+
+        <!-- Editor Area -->
+        <main class="flex-1 flex flex-col">
+            <!-- Toolbar -->
+            <div class="bg-white border-b border-gray-100 p-4">
+                <div class="flex items-center space-x-2">
+                    <!-- Text formatting buttons -->
+                    <button class="toolbar-btn" title="Bold">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="toolbar-btn" title="Italic">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="toolbar-btn" title="Underline">
+                        <i class="fas fa-underline"></i>
+                    </button>
+                    <div class="w-px h-6 bg-gray-200 mx-2"></div>
+                    <!-- Alignment buttons -->
+                    <button class="toolbar-btn" title="Align Left">
+                        <i class="fas fa-align-left"></i>
+                    </button>
+                    <button class="toolbar-btn" title="Align Center">
+                        <i class="fas fa-align-center"></i>
+                    </button>
+                    <button class="toolbar-btn" title="Align Right">
+                        <i class="fas fa-align-right"></i>
+                    </button>
+                    <div class="w-px h-6 bg-gray-200 mx-2"></div>
+                    <!-- AI Assistant button -->
+                    <button class="toolbar-btn text-primary" title="AI Assistant">
+                        <i class="fas fa-robot"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Editor Content -->
+            <div class="flex-1 overflow-auto p-8">
+                <div class="editor-content max-w-3xl mx-auto" contenteditable="true">
+                    <h1 class="text-3xl font-bold mb-6">Chapter 1: Introduction</h1>
+                    <p class="mb-4">Start writing your story here...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
     <script type="module">
         import { auth, projects, chapters, characters, getClient } from './lib/supabase.js';
         
