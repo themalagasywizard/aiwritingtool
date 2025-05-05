@@ -524,7 +524,8 @@
             
             // Loading overlay
             loadingOverlay: document.getElementById('loadingOverlay'),
-            loadingMessage: document.getElementById('loadingMessage')
+            loadingMessage: document.getElementById('loadingMessage'),
+            loadProjectBtn: document.getElementById('loadProjectBtn'),
         };
 
         // Helper Functions
@@ -584,8 +585,20 @@
                     return;
                 }
                 
-                // Set the first project as current
-                appState.currentProject = userProjects[0];
+                // Get the last loaded project ID from localStorage
+                const lastProjectId = localStorage.getItem('lastProjectId');
+                
+                // Find the last loaded project or default to the first project
+                let currentProject = userProjects[0];
+                if (lastProjectId) {
+                    const foundProject = userProjects.find(p => p.id === lastProjectId);
+                    if (foundProject) {
+                        currentProject = foundProject;
+                    }
+                }
+                
+                // Set the current project
+                appState.currentProject = currentProject;
                 
                 // Update UI with project info
                 updateProjectUI(appState.currentProject);
@@ -623,6 +636,9 @@
                 
                 // Set as current project
                 appState.currentProject = newProject[0];
+                
+                // Save the new project ID to localStorage
+                localStorage.setItem('lastProjectId', newProject[0].id);
                 
                 // Update UI
                 updateProjectUI(appState.currentProject);
@@ -863,6 +879,169 @@
             }
         }
 
+        // Show toast message
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('aiToast');
+            if (!toast) return; // Exit if toast element isn't available
+            
+            const toastText = toast.querySelector('p');
+            if (toastText) toastText.textContent = message;
+            
+            toast.classList.remove('hidden');
+            toast.classList.add('transform', 'translate-y-0');
+            
+            if (type === 'success') {
+                toast.classList.add('bg-success');
+                toast.classList.remove('bg-error');
+            } else {
+                toast.classList.add('bg-error');
+                toast.classList.remove('bg-success');
+            }
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-full');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('translate-y-full', 'bg-success', 'bg-error');
+                }, 300);
+            }, 3000);
+        }
+
+        // Toggle Load Project Panel
+        function toggleLoadProjectPanel() {
+            const panel = document.getElementById('loadProjectPanel');
+            const overlay = document.getElementById('loadProjectOverlay');
+            const isOpen = !panel.classList.contains('translate-x-full');
+
+            if (isOpen) {
+                panel.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+            } else {
+                panel.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+            }
+        }
+
+        // Load User Projects
+        async function loadUserProjects() {
+            const projectsList = document.getElementById('projectsList');
+            projectsList.innerHTML = '<div class="text-center text-gray-500"><i class="fas fa-spinner fa-spin"></i> Loading projects...</div>';
+
+            try {
+                const { data: userProjects, error } = await projects.getAll();
+                
+                if (error) throw error;
+
+                if (!userProjects || userProjects.length === 0) {
+                    projectsList.innerHTML = `
+                        <div class="text-center text-gray-500">
+                            <i class="fas fa-folder-open text-2xl mb-2"></i>
+                            <p>No projects found</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort projects by last updated
+                userProjects.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+                // Create project list HTML
+                projectsList.innerHTML = userProjects.map(project => `
+                    <div class="project-item bg-white rounded-lg p-4 border border-gray-200 hover:border-primary cursor-pointer transition-colors"
+                         data-project-id="${project.id}">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-medium text-primary">${project.title}</h3>
+                            ${project.id === appState.currentProject?.id ? 
+                                '<span class="text-xs bg-primary text-white px-2 py-1 rounded">Current</span>' : 
+                                ''}
+                        </div>
+                        <p class="text-sm text-gray-500 mb-2 line-clamp-2">${project.description || 'No description'}</p>
+                        <div class="flex items-center justify-between text-xs text-gray-400">
+                            <span>
+                                <i class="fas fa-clock mr-1"></i>
+                                ${formatDate(project.updated_at)}
+                            </span>
+                            <span>
+                                <i class="fas fa-book mr-1"></i>
+                                ${project.chapter_count || 0} chapters
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Add click handlers to project items
+                document.querySelectorAll('.project-item').forEach(item => {
+                    item.addEventListener('click', async () => {
+                        const projectId = item.dataset.projectId;
+                        await switchProject(projectId);
+                        toggleLoadProjectPanel();
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                projectsList.innerHTML = `
+                    <div class="text-center text-error">
+                        <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                        <p>Error loading projects</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Filter Projects
+        function filterProjects(searchTerm) {
+            const projectItems = document.querySelectorAll('.project-item');
+            projectItems.forEach(item => {
+                const title = item.querySelector('h3').textContent.toLowerCase();
+                const description = item.querySelector('p').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Switch Project
+        async function switchProject(projectId) {
+            try {
+                showLoading('Loading project...');
+
+                // Save current project if there are unsaved changes
+                if (appState.isDirty && appState.currentChapter) {
+                    await saveCurrentChapter();
+                }
+
+                // Get the new project
+                const { data: project, error } = await projects.getById(projectId);
+                
+                if (error) throw error;
+                if (!project) throw new Error('Project not found');
+
+                // Update app state
+                appState.currentProject = project;
+                appState.currentChapter = null;
+                appState.isDirty = false;
+
+                // Save the current project ID to localStorage
+                localStorage.setItem('lastProjectId', project.id);
+
+                // Update UI
+                updateProjectUI(project);
+                await loadChapters(project.id);
+                await loadContextItems();
+
+                hideLoading();
+                showToast('Project loaded successfully', 'success');
+            } catch (error) {
+                console.error('Error switching project:', error);
+                hideLoading();
+                showToast('Error loading project', 'error');
+            }
+        }
+
         // Event Listeners
         function setupEventListeners() {
             // New Project Button
@@ -939,6 +1118,22 @@
                     saveCurrentChapter();
                 }
             }, 60000); // Auto-save every minute if there are changes
+
+            // Load Project Button
+            elements.loadProjectBtn.addEventListener('click', () => {
+                toggleLoadProjectPanel();
+                loadUserProjects();
+            });
+
+            // Close Load Project Panel
+            document.getElementById('closeLoadProjectPanel').addEventListener('click', toggleLoadProjectPanel);
+            document.getElementById('loadProjectOverlay').addEventListener('click', toggleLoadProjectPanel);
+
+            // Project Search
+            document.getElementById('projectSearch').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterProjects(searchTerm);
+            });
         }
 
         // Initialization
@@ -1026,6 +1221,10 @@
                 <i class="fas fa-save mr-1"></i>
                 Save
             </button>
+            <button id="loadProjectBtn" class="btn btn-primary">
+                <i class="fas fa-folder-open mr-1"></i>
+                Load Project
+            </button>
             <button id="newProjectBtn" class="btn btn-success">
                 <i class="fas fa-plus mr-1"></i>
                 New Project
@@ -1051,6 +1250,37 @@
             </div>
         </div>
     </header>
+
+    <!-- Load Project Panel -->
+    <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+        <div class="h-full flex flex-col">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-primary">Load Project</h2>
+                    <button id="closeLoadProjectPanel" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="relative">
+                    <input type="text" id="projectSearch" class="w-full border border-gray-200 rounded-lg pl-10 pr-4 py-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Search projects...">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-6">
+                <div id="projectsList" class="space-y-3">
+                    <!-- Projects will be loaded here -->
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Loading projects...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Panel Overlay -->
+    <div id="loadProjectOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
 
     <!-- Main Content -->
     <div class="flex flex-1 overflow-hidden">
@@ -2743,6 +2973,5 @@
             <p id="loadingMessage">Loading...</p>
         </div>
     </div>
-
 </body>
 </html> 
