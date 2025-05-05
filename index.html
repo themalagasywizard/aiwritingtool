@@ -488,524 +488,49 @@
     <script type="module">
         import { projects, chapters, characters, auth } from './lib/supabase.js';
         
-        // Global state management
-        const appState = {
-            currentProject: null,
-            currentChapter: null,
-            currentUser: null,
-            isDirty: false, // Track if editor has unsaved changes
-            wordTarget: 1000, // Default target word count
+        // Initialize with a default user avatar
+        const userAvatar = document.querySelector('#userAvatar');
+        if (userAvatar) {
+            userAvatar.src = `https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff`;
+        }
+
+        // Handle sign out using Supabase auth
+        const handleSignOut = async () => {
+            try {
+                await auth.signOut();
+                window.location.href = '/auth/auth.html';
+            } catch (error) {
+                console.error('Error signing out:', error);
+                window.location.reload();
+            }
         };
 
-        // DOM Elements
-        const elements = {
-            projectTitle: document.getElementById('projectTitle'),
-            lastEdited: document.getElementById('lastEdited'),
-            chaptersList: document.getElementById('chaptersList'),
-            addChapterBtn: document.getElementById('addChapterBtn'),
-            saveBtn: document.getElementById('saveBtn'),
-            newProjectBtn: document.getElementById('newProjectBtn'),
-            editorContent: document.getElementById('editorContent'),
-            chapterTitle: document.getElementById('chapterTitle'),
-            wordCount: document.getElementById('wordCount'),
-            wordCountProgress: document.getElementById('wordCountProgress'),
-            wordCountPercent: document.getElementById('wordCountPercent'),
-            contextCount: document.getElementById('contextCount'),
-            contextList: document.getElementById('contextList'),
-            saveStatus: document.getElementById('saveStatus'),
-            
-            // New Project Modal
-            newProjectModal: document.getElementById('newProjectModal'),
-            newProjectTitle: document.getElementById('newProjectTitle'),
-            newProjectDescription: document.getElementById('newProjectDescription'),
-            closeNewProjectModal: document.getElementById('closeNewProjectModal'),
-            cancelNewProject: document.getElementById('cancelNewProject'),
-            createNewProject: document.getElementById('createNewProject'),
-            
-            // Loading overlay
-            loadingOverlay: document.getElementById('loadingOverlay'),
-            loadingMessage: document.getElementById('loadingMessage')
-        };
-
-        // Helper Functions
-        function showLoading(message = 'Loading...') {
-            elements.loadingMessage.textContent = message;
-            elements.loadingOverlay.classList.remove('hidden');
-            elements.loadingOverlay.classList.add('flex');
-        }
-
-        function hideLoading() {
-            elements.loadingOverlay.classList.add('hidden');
-            elements.loadingOverlay.classList.remove('flex');
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return 'Never';
-            const date = new Date(dateString);
-            return date.toLocaleString();
-        }
-
-        function countWords(text) {
-            // Remove HTML tags and count words
-            const cleanText = text.replace(/<[^>]*>/g, '');
-            const words = cleanText.trim().split(/\s+/);
-            return words.length;
-        }
-
-        function updateWordCount() {
-            if (!appState.currentChapter) return;
-            
-            const content = elements.editorContent.innerHTML;
-            const count = countWords(content);
-            
-            // Update the display
-            elements.wordCount.textContent = count.toLocaleString();
-            
-            // Calculate percentage of target
-            const percentage = Math.min(Math.round((count / appState.wordTarget) * 100), 100);
-            elements.wordCountProgress.setAttribute('stroke-dasharray', `${percentage} 100`);
-            elements.wordCountPercent.textContent = `${percentage}%`;
-        }
-
-        // Project Functions
-        async function loadProjects() {
-            try {
-                showLoading('Loading projects...');
-                
-                const { data: userProjects, error } = await projects.getAll();
-                
-                if (error) throw error;
-                
-                if (!userProjects || userProjects.length === 0) {
-                    // No projects yet, show empty state
-                    elements.projectTitle.textContent = 'No projects yet';
-                    elements.lastEdited.textContent = 'Create a new project to get started';
-                    hideLoading();
-                    return;
-                }
-                
-                // Set the first project as current
-                appState.currentProject = userProjects[0];
-                
-                // Update UI with project info
-                updateProjectUI(appState.currentProject);
-                
-                // Load chapters for this project
-                await loadChapters(appState.currentProject.id);
-                
-                hideLoading();
-            } catch (error) {
-                console.error('Error loading projects:', error);
-                elements.projectTitle.textContent = 'Error loading projects';
-                elements.lastEdited.textContent = 'Please try again';
-                hideLoading();
-            }
-        }
-
-        function updateProjectUI(project) {
-            if (!project) return;
-            
-            elements.projectTitle.textContent = project.title;
-            elements.lastEdited.textContent = 'Last edited: ' + formatDate(project.updated_at);
-        }
-
-        async function createProject(title, description) {
-            try {
-                showLoading('Creating project...');
-                
-                const { data: newProject, error } = await projects.create(title, description);
-                
-                if (error) throw error;
-                
-                if (!newProject || newProject.length === 0) {
-                    throw new Error('Failed to create project');
-                }
-                
-                // Set as current project
-                appState.currentProject = newProject[0];
-                
-                // Update UI
-                updateProjectUI(appState.currentProject);
-                
-                // Create first chapter
-                await createChapter('Chapter 1: Introduction', '', 0);
-                
-                hideLoading();
-                
-                return newProject[0];
-            } catch (error) {
-                console.error('Error creating project:', error);
-                hideLoading();
-                return null;
-            }
-        }
-
-        // Chapter Functions
-        async function loadChapters(projectId) {
-            try {
-                if (!projectId) return;
-                
-                elements.chaptersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Loading chapters...</div>';
-                
-                const { data: projectChapters, error } = await chapters.getByProject(projectId);
-                
-                if (error) throw error;
-                
-                // Clear chapters list
-                elements.chaptersList.innerHTML = '';
-                
-                if (!projectChapters || projectChapters.length === 0) {
-                    elements.chaptersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No chapters yet</div>';
-                    return;
-                }
-                
-                // Sort chapters by order_index
-                projectChapters.sort((a, b) => a.order_index - b.order_index);
-                
-                // Add chapters to the list
-                projectChapters.forEach((chapter, index) => {
-                    const chapterElement = document.createElement('div');
-                    chapterElement.className = 'chapter-item p-2 pl-3 rounded cursor-pointer';
-                    
-                    chapterElement.innerHTML = `
-                        <div class="flex items-center justify-between">
-                            <span>${chapter.title}</span>
-                            <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
-                        </div>
-                    `;
-                    
-                    // Add click handler
-                    chapterElement.addEventListener('click', () => selectChapter(chapter));
-                    
-                    elements.chaptersList.appendChild(chapterElement);
-                });
-                
-                // Select the first chapter by default
-                if (projectChapters.length > 0) {
-                    selectChapter(projectChapters[0]);
-                }
-            } catch (error) {
-                console.error('Error loading chapters:', error);
-                elements.chaptersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-exclamation-circle mr-2 text-error"></i>Error loading chapters</div>';
-            }
-        }
-
-        function selectChapter(chapter) {
-            if (!chapter) return;
-            
-            // Save current chapter if it exists and has changes
-            if (appState.currentChapter && appState.isDirty) {
-                saveCurrentChapter();
-            }
-            
-            // Set as current chapter
-            appState.currentChapter = chapter;
-            
-            // Highlight the selected chapter
-            const chapterItems = document.querySelectorAll('.chapter-item');
-            chapterItems.forEach(item => {
-                item.classList.remove('active');
-                if (item.querySelector('span').textContent === chapter.title) {
-                    item.classList.add('active');
-                }
-            });
-            
-            // Update editor content
-            elements.chapterTitle.textContent = chapter.title;
-            elements.editorContent.innerHTML = chapter.content || '<p class="mb-4">Start writing your story here...</p>';
-            
-            // Reset dirty state
-            appState.isDirty = false;
-            updateSaveStatus(false);
-            
-            // Update word count
-            updateWordCount();
-        }
-
-        async function createChapter(title, content, orderIndex) {
-            try {
-                if (!appState.currentProject) {
-                    throw new Error('No current project');
-                }
-                
-                showLoading('Creating chapter...');
-                
-                const { data: newChapter, error } = await chapters.create(
-                    appState.currentProject.id,
-                    title, 
-                    content || '', 
-                    orderIndex
-                );
-                
-                if (error) throw error;
-                
-                if (!newChapter || newChapter.length === 0) {
-                    throw new Error('Failed to create chapter');
-                }
-                
-                // Reload chapters
-                await loadChapters(appState.currentProject.id);
-                
-                // Select the new chapter
-                selectChapter(newChapter[0]);
-                
-                hideLoading();
-                
-                return newChapter[0];
-            } catch (error) {
-                console.error('Error creating chapter:', error);
-                hideLoading();
-                return null;
-            }
-        }
-
-        async function saveCurrentChapter() {
-            try {
-                if (!appState.currentChapter) return;
-                
-                updateSaveStatus(true, 'Saving...');
-                
-                // Get content from editor
-                const content = elements.editorContent.innerHTML;
-                
-                const { data: updatedChapter, error } = await chapters.update(
-                    appState.currentChapter.id,
-                    {
-                        content: content,
-                        updated_at: new Date().toISOString()
-                    }
-                );
-                
-                if (error) throw error;
-                
-                // Update current chapter
-                appState.currentChapter = updatedChapter[0];
-                
-                // Reset dirty state
-                appState.isDirty = false;
-                
-                // Update UI
-                updateSaveStatus(false);
-                
-                // Update project last edited time (backend will handle this)
-                elements.lastEdited.textContent = 'Last edited: ' + formatDate(new Date());
-                
-                // Update word count
-                updateWordCount();
-                
-                return updatedChapter[0];
-            } catch (error) {
-                console.error('Error saving chapter:', error);
-                updateSaveStatus(false, 'Error saving');
-                return null;
-            }
-        }
-
-        function updateSaveStatus(isDirty, message) {
-            appState.isDirty = isDirty;
-            
-            if (message) {
-                elements.saveStatus.textContent = message;
-            } else if (isDirty) {
-                elements.saveStatus.textContent = 'Unsaved changes';
-                elements.saveStatus.classList.add('text-warning');
-                elements.saveStatus.classList.remove('text-success');
-            } else {
-                elements.saveStatus.textContent = 'Saved';
-                elements.saveStatus.classList.remove('text-warning');
-                elements.saveStatus.classList.add('text-success');
-            }
-        }
-
-        // Context Management
-        async function loadContextItems() {
-            try {
-                if (!appState.currentProject) return;
-                
-                // Load characters
-                const { data: projectCharacters, error: charError } = await characters.getByProject(appState.currentProject.id);
-                
-                if (charError) throw charError;
-                
-                // TODO: Load settings and timeline events when those functions are implemented
-                
-                // Clear context list
-                elements.contextList.innerHTML = '';
-                
-                // Count total context items
-                const totalItems = (projectCharacters?.length || 0);
-                elements.contextCount.textContent = totalItems + ' items';
-                
-                if (totalItems === 0) {
-                    elements.contextList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No context items yet</div>';
-                    return;
-                }
-                
-                // Add characters to the list
-                if (projectCharacters && projectCharacters.length > 0) {
-                    projectCharacters.forEach(character => {
-                        const itemElement = document.createElement('div');
-                        itemElement.className = 'p-2 text-sm hover:bg-gray-50 rounded cursor-pointer';
-                        
-                        itemElement.innerHTML = `
-                            <div class="font-medium">${character.name}</div>
-                            <div class="text-xs text-textSecondary">${character.role}</div>
-                        `;
-                        
-                        elements.contextList.appendChild(itemElement);
-                    });
-                }
-                
-                // TODO: Add settings and timeline events to the list
-            } catch (error) {
-                console.error('Error loading context items:', error);
-                elements.contextList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-exclamation-circle mr-2 text-error"></i>Error loading context</div>';
-            }
-        }
-
-        // Event Listeners
-        function setupEventListeners() {
-            // New Project Button
-            elements.newProjectBtn.addEventListener('click', () => {
-                elements.newProjectModal.classList.remove('hidden');
-                elements.newProjectModal.classList.add('flex');
-                elements.newProjectTitle.focus();
-            });
-            
-            // Close New Project Modal
-            elements.closeNewProjectModal.addEventListener('click', () => {
-                elements.newProjectModal.classList.add('hidden');
-                elements.newProjectModal.classList.remove('flex');
-            });
-            
-            // Cancel New Project
-            elements.cancelNewProject.addEventListener('click', () => {
-                elements.newProjectModal.classList.add('hidden');
-                elements.newProjectModal.classList.remove('flex');
-            });
-            
-            // Create New Project
-            elements.createNewProject.addEventListener('click', async () => {
-                const title = elements.newProjectTitle.value.trim();
-                const description = elements.newProjectDescription.value.trim();
-                
-                if (!title) {
-                    alert('Please enter a project title');
-                    return;
-                }
-                
-                elements.newProjectModal.classList.add('hidden');
-                elements.newProjectModal.classList.remove('flex');
-                
-                const newProject = await createProject(title, description);
-                
-                if (newProject) {
-                    // Successfully created project
-                    elements.newProjectTitle.value = '';
-                    elements.newProjectDescription.value = '';
-                }
-            });
-            
-            // Add Chapter Button
-            elements.addChapterBtn.addEventListener('click', async () => {
-                if (!appState.currentProject) {
-                    alert('Please create a project first');
-                    return;
-                }
-                
-                // Get the number of existing chapters
-                const chapterCount = elements.chaptersList.querySelectorAll('.chapter-item').length;
-                const newChapterTitle = `Chapter ${chapterCount + 1}`;
-                
-                await createChapter(newChapterTitle, '', chapterCount);
-            });
-            
-            // Save Button
-            elements.saveBtn.addEventListener('click', () => {
-                if (appState.currentChapter) {
-                    saveCurrentChapter();
-                }
-            });
-            
-            // Editor Content Change
-            elements.editorContent.addEventListener('input', () => {
-                updateSaveStatus(true);
-                updateWordCount();
-            });
-            
-            // Auto-save timer
-            setInterval(() => {
-                if (appState.isDirty && appState.currentChapter) {
-                    saveCurrentChapter();
-                }
-            }, 60000); // Auto-save every minute if there are changes
-        }
-
-        // Initialization
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                // Check if user is authenticated
-                const { data: { user } } = await auth.getUser();
-                if (!user) {
-                    window.location.href = '/auth/auth.html';
-                    return;
-                }
-                
-                appState.currentUser = user;
-                
-                // Setup UI event listeners
-                setupEventListeners();
-                
-                // Load projects
-                await loadProjects();
-                
-                // Load context items
-                await loadContextItems();
-                
-            } catch (error) {
-                console.error('Error initializing app:', error);
-                hideLoading();
-            }
-        });
-    </script>
-
-    <script type="module">
-        import { auth } from './lib/supabase.js';
-        
-        // Initialize with a default user avatar and handle sign out
+        // Add sign out handler
         document.addEventListener('DOMContentLoaded', () => {
-            const userAvatar = document.querySelector('#userAvatar');
-            const userDisplayName = document.querySelector('#userDisplayName');
             const signOutBtn = document.querySelector('#signOutBtn');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', handleSignOut);
+            }
             
-            // Update user info if authenticated
+            // Check authentication state
             auth.getUser().then(({ data: { user } }) => {
-                if (user && userAvatar) {
+                if (user) {
                     // Update avatar with user email or name
                     const nameInitial = user.email ? user.email.charAt(0).toUpperCase() : 'G';
                     userAvatar.src = `https://ui-avatars.com/api/?name=${nameInitial}&background=4B5EAA&color=fff`;
                     
                     // Update user display name
+                    const userDisplayName = document.querySelector('#userDisplayName');
                     if (userDisplayName) {
                         userDisplayName.textContent = user.email || 'Signed In User';
                     }
+                } else {
+                    // Not logged in, redirect to auth page
+                    window.location.href = '/auth/auth.html';
                 }
             }).catch(error => {
                 console.error('Auth check error:', error);
             });
-            
-            // Add sign out handler
-            if (signOutBtn) {
-                signOutBtn.addEventListener('click', async () => {
-                    try {
-                        await auth.signOut();
-                        window.location.href = '/auth/auth.html';
-                    } catch (error) {
-                        console.error('Error signing out:', error);
-                        alert('Failed to sign out. Please try again.');
-                    }
-                });
-            }
         });
     </script>
 
@@ -1020,15 +545,11 @@
         <div class="flex items-center space-x-4">
             <div class="text-sm text-textSecondary flex items-center">
                 <i class="fas fa-cloud-upload-alt mr-2 text-success"></i>
-                <span id="saveStatus">Saved</span>
+                <span>Saved</span>
             </div>
-            <button id="saveBtn" class="btn btn-primary">
+            <button class="btn btn-primary">
                 <i class="fas fa-save mr-1"></i>
                 Save
-            </button>
-            <button id="newProjectBtn" class="btn btn-success">
-                <i class="fas fa-plus mr-1"></i>
-                New Project
             </button>
             <div class="relative group">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
@@ -1044,8 +565,8 @@
                         <span>Settings</span>
                     </div>
                     <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                        <i class="fas fa-sign-out-alt mr-2"></i>
-                        <span>Sign Out</span>
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        <span>Refresh</span>
                     </div>
                 </div>
             </div>
@@ -1059,10 +580,10 @@
             <!-- Project Info -->
             <div class="mb-6">
                 <div class="bg-white rounded-lg p-3 shadow-sm-custom mb-4">
-                    <h2 id="projectTitle" class="text-primary font-medium mb-1">Loading project...</h2>
+                    <h2 class="text-primary font-medium mb-1">My Novel</h2>
                     <div class="flex items-center text-xs text-textSecondary">
                         <i class="fas fa-clock mr-1"></i>
-                        <span id="lastEdited">Loading...</span>
+                        <span>Last edited: Today, 2:30 PM</span>
                     </div>
                 </div>
             </div>
@@ -1075,13 +596,27 @@
                         <i class="fas fa-compress-alt"></i>
                     </button>
                 </div>
-                <div id="chaptersList" class="space-y-1">
-                    <!-- Chapters will be loaded here dynamically -->
-                    <div class="text-center p-2 text-textSecondary text-sm">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>Loading chapters...
+                <div class="space-y-1">
+                    <div class="chapter-item active p-2 pl-3 rounded cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <span>Chapter 1: Introduction</span>
+                            <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
+                        </div>
+                    </div>
+                    <div class="chapter-item p-2 pl-3 rounded cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <span>Chapter 2: Rising Action</span>
+                            <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
+                        </div>
+                    </div>
+                    <div class="chapter-item p-2 pl-3 rounded cursor-pointer">
+                        <div class="flex items-center justify-between">
+                            <span>Chapter 3: Climax</span>
+                            <i class="fas fa-grip-lines text-gray-300 cursor-move"></i>
+                        </div>
                     </div>
                 </div>
-                <button id="addChapterBtn" class="btn btn-primary w-full mt-3">
+                <button class="btn btn-primary w-full mt-3">
                     <i class="fas fa-plus"></i>
                     Add Chapter
                 </button>
@@ -1091,13 +626,21 @@
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-sm font-semibold uppercase tracking-wider text-secondary">Story Context</h2>
-                    <span id="contextCount" class="text-xs text-textSecondary">0 items</span>
+                    <span class="text-xs text-textSecondary">3 items</span>
                 </div>
                 <div class="bg-white rounded-lg p-2 shadow-sm-custom mb-3">
-                    <div id="contextList" class="space-y-1">
-                        <!-- Context items will be loaded here -->
-                        <div class="text-center p-2 text-textSecondary text-sm">
-                            <i class="fas fa-info-circle mr-2"></i>No context items yet
+                    <div class="space-y-1">
+                        <div class="p-2 text-sm hover:bg-gray-50 rounded cursor-pointer">
+                            <div class="font-medium">John Doe</div>
+                            <div class="text-xs text-textSecondary">Protagonist</div>
+                        </div>
+                        <div class="p-2 text-sm hover:bg-gray-50 rounded cursor-pointer">
+                            <div class="font-medium">New York City</div>
+                            <div class="text-xs text-textSecondary">Setting</div>
+                        </div>
+                        <div class="p-2 text-sm hover:bg-gray-50 rounded cursor-pointer">
+                            <div class="font-medium">The Accident</div>
+                            <div class="text-xs text-textSecondary">Event</div>
                         </div>
                     </div>
                 </div>
@@ -1119,14 +662,14 @@
             <div class="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm-custom text-sm">
                 <div>
                     <div class="text-textSecondary">Total Words</div>
-                    <div id="wordCount" class="text-xl font-semibold text-primary">0</div>
+                    <div class="text-xl font-semibold text-primary">12,345</div>
                 </div>
                 <div class="h-12 w-12 relative">
                     <svg class="w-full h-full" viewBox="0 0 36 36">
                         <circle cx="18" cy="18" r="16" fill="none" stroke="#E6E9F0" stroke-width="2"></circle>
-                        <circle id="wordCountProgress" cx="18" cy="18" r="16" fill="none" stroke="#4B5EAA" stroke-width="2" stroke-dasharray="0 100" stroke-dashoffset="0" transform="rotate(-90 18 18)"></circle>
+                        <circle cx="18" cy="18" r="16" fill="none" stroke="#4B5EAA" stroke-width="2" stroke-dasharray="80 100" stroke-dashoffset="0" transform="rotate(-90 18 18)"></circle>
                     </svg>
-                    <div id="wordCountPercent" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-medium text-primary">0%</div>
+                    <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-medium text-primary">80%</div>
                 </div>
             </div>
         </aside>
@@ -1283,9 +826,10 @@
 
             <!-- Editor Content -->
             <div class="flex-1 overflow-y-auto p-8 bg-white">
-                <div id="editorContent" class="editor-content max-w-3xl mx-auto" contenteditable="true">
-                    <h1 id="chapterTitle" class="text-3xl font-bold mb-6">Loading chapter...</h1>
-                    <p class="mb-4 placeholder-text">Select a chapter to start writing, or create a new one.</p>
+                <div class="editor-content max-w-3xl mx-auto" contenteditable="true">
+                    <h1 class="text-3xl font-bold mb-6">Chapter 1: Introduction</h1>
+                    <p class="mb-4">Start writing your story here. The cursor blinked rhythmically against the blank page, taunting with its emptiness. Every great story begins with a single word, then another, until a world emerges from nothing but imagination.</p>
+                    <p class="mb-4">Use the AI tools in the toolbar to continue your story, rewrite sections, or get suggestions when you're stuck. Your story context is always at hand in the sidebar to maintain consistency.</p>
                 </div>
             </div>
         </main>
@@ -2709,40 +2253,5 @@
             }
         });
     </script>
-
-    <!-- New Project Modal -->
-    <div class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center modal" id="newProjectModal">
-        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-md-custom fade-in">
-            <div class="flex items-center justify-between mb-4">
-                <h2 class="text-xl font-bold text-primary">Create New Project</h2>
-                <button class="text-gray-400 hover:text-gray-600" id="closeNewProjectModal">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Project Title <span class="text-error">*</span></label>
-                    <input type="text" id="newProjectTitle" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Enter project title">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea id="newProjectDescription" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none h-24" placeholder="Enter project description (optional)"></textarea>
-                </div>
-                <div class="flex justify-end space-x-3 pt-4">
-                    <button id="cancelNewProject" class="btn btn-secondary">Cancel</button>
-                    <button id="createNewProject" class="btn btn-primary">Create Project</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white p-5 rounded-lg shadow-lg text-center">
-            <div class="animate-spin mb-3 mx-auto w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div>
-            <p id="loadingMessage">Loading...</p>
-        </div>
-    </div>
-
 </body>
 </html> 

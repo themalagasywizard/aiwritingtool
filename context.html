@@ -18,11 +18,9 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css">
     <!-- Supabase Module Import -->
     <script type="module">
-        import { supabase, projects, locations, characters, timelineEvents } from './lib/supabase.js';
-        
-        window.supabaseModule = {
-            supabase, projects, locations, characters, timelineEvents
-        };
+        import * as supabaseModule from './lib/supabase.js';
+        // Make it available globally
+        window.supabaseModule = supabaseModule;
     </script>
     <script>
         tailwind.config = {
@@ -839,9 +837,9 @@
                         newRow.querySelectorAll('.timeline-cell').forEach(cell => {
                             cell.addEventListener('dragover', e => e.preventDefault());
                             cell.addEventListener('drop', handleTimelineCellDrop);
-                        });
-                    });
-                    
+                });
+            });
+            
                     // Hide loading indicator
                     updateSectionLoadingState("locations", false);
                 } catch (error) {
@@ -1001,7 +999,7 @@
                                 const timeMatch = event.date_time.match(/^(\d{1,2}):/);
                                 if (timeMatch) {
                                     hour = parseInt(timeMatch[1]);
-                                } else {
+                    } else {
                                     // Try to parse as ISO date
                                     const date = new Date(event.date_time);
                                     if (!isNaN(date.getTime())) {
@@ -1174,30 +1172,30 @@
             
             // Add these styles needed for drag and drop
             function addDragDropStyles() {
-                const style = document.createElement('style');
-                style.textContent = `
-                    .timeline-cell {
-                        position: relative;
-                        min-height: 70px;
-                        transition: background-color 0.2s;
-                    }
-                    
-                    .timeline-cell.drag-over {
-                        background-color: rgba(75, 94, 170, 0.1);
-                    }
-                    
-                    .character-tag {
-                        position: absolute;
-                        min-width: 60px;
-                        z-index: 10;
-                        cursor: move;
-                        transition: transform 0.2s;
-                    }
-                    
-                    .character-tag:hover {
-                        transform: translateY(-2px);
-                        z-index: 20;
-                    }
+            const style = document.createElement('style');
+            style.textContent = `
+                .timeline-cell {
+                    position: relative;
+                    min-height: 70px;
+                    transition: background-color 0.2s;
+                }
+                
+                .timeline-cell.drag-over {
+                    background-color: rgba(75, 94, 170, 0.1);
+                }
+                
+                .character-tag {
+                    position: absolute;
+                    min-width: 60px;
+                    z-index: 10;
+                    cursor: move;
+                    transition: transform 0.2s;
+                }
+                
+                .character-tag:hover {
+                    transform: translateY(-2px);
+                    z-index: 20;
+                }
                     
                     .timeline-event {
                         position: absolute;
@@ -1214,8 +1212,8 @@
                         z-index: 20;
                         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                     }
-                `;
-                document.head.appendChild(style);
+            `;
+            document.head.appendChild(style);
             }
             
             // Helper to find the closest timeline cell
@@ -1450,17 +1448,17 @@
                 const modal = document.getElementById('eventCreationModal');
                 const timeInput = document.getElementById('eventTime');
                 const charactersContainer = document.getElementById('eventCharacters');
-                
+
                 // Reset form state first
                 document.getElementById('eventName').value = '';
                 document.getElementById('eventDescription').value = '';
                 document.querySelector('#eventCreationModal h2').textContent = 'Create Timeline Event';
                 document.getElementById('createEvent').textContent = 'Create Event';
-                
+
                 // Set default time from cell - ensure we have a valid format
                 const hourValue = parseInt(time) || 0;
                 timeInput.value = hourValue.toString().padStart(2, '0') + ':00';
-                
+
                 // Display initial characters
                 charactersContainer.innerHTML = pendingEventCharacters.map(char => `
                     <div class="flex items-center justify-between p-2 bg-white rounded">
@@ -1473,13 +1471,13 @@
                         </button>
                     </div>
                 `).join('');
-                
+
                 // Show the modal
                 modal.classList.remove('hidden');
                 modal.classList.add('flex');
                 document.getElementById('eventName').focus();
             }
-            
+
             async function createTimelineEvent(name, time, description, characters, isUpdate = false) {
                 try {
                     // Determine location ID from the cell
@@ -1524,38 +1522,38 @@
                     }
                     
                     // Create UI element
-                    const eventElement = document.createElement('div');
-                    eventElement.className = 'timeline-event bg-primary text-white p-1 text-xs rounded text-center cursor-pointer';
-                    eventElement.textContent = name;
+                const eventElement = document.createElement('div');
+                eventElement.className = 'timeline-event bg-primary text-white p-1 text-xs rounded text-center cursor-pointer';
+                eventElement.textContent = name;
                     eventElement.setAttribute('data-event-id', event.id);
-                    eventElement.setAttribute('data-characters', JSON.stringify(characters));
-                    eventElement.setAttribute('data-time', time);
-                    eventElement.setAttribute('data-description', description);
-                    
-                    // Make the event droppable for additional characters
-                    eventElement.addEventListener('dragover', e => e.preventDefault());
-                    eventElement.addEventListener('drop', handleEventDrop);
-                    eventElement.addEventListener('click', showEventDetails);
-                    
-                    return eventElement;
+                eventElement.setAttribute('data-characters', JSON.stringify(characters));
+                eventElement.setAttribute('data-time', time);
+                eventElement.setAttribute('data-description', description);
+
+                // Make the event droppable for additional characters
+                eventElement.addEventListener('dragover', e => e.preventDefault());
+                eventElement.addEventListener('drop', handleEventDrop);
+                eventElement.addEventListener('click', showEventDetails);
+
+                return eventElement;
                 } catch (error) {
                     console.error("Error in createTimelineEvent:", error);
                     showError("Failed to save timeline event.");
                     return null;
                 }
             }
-            
+
             async function addCharacterToEvent(eventId, charData) {
                 try {
                     // Find the event element in the DOM
-                    const eventElement = document.querySelector(`[data-event-id="${eventId}"]`);
+                const eventElement = document.querySelector(`[data-event-id="${eventId}"]`);
                     if (!eventElement) {
                         console.error("Event element not found for ID:", eventId);
                         return;
                     }
-                    
+
                     // Get current characters from the event
-                    const characters = JSON.parse(eventElement.getAttribute('data-characters') || '[]');
+                const characters = JSON.parse(eventElement.getAttribute('data-characters') || '[]');
                     
                     // Check if character already exists
                     if (characters.some(c => c.id === charData.id)) {
@@ -1595,7 +1593,7 @@
                     showError("Failed to add character to event.");
                 }
             }
-            
+
             function showEventDetails(e) {
                 const eventElement = e.currentTarget;
                 const panel = document.getElementById('eventDetailsPanel');
@@ -1607,7 +1605,7 @@
                     description: eventElement.getAttribute('data-description'),
                     characters: JSON.parse(eventElement.getAttribute('data-characters') || '[]')
                 };
-                
+
                 document.getElementById('eventDetailName').textContent = currentEventData.name;
                 document.getElementById('eventDetailTime').textContent = `Time: ${currentEventData.time}`;
                 document.getElementById('eventDetailDescription').textContent = currentEventData.description;
@@ -1616,7 +1614,7 @@
                 
                 panel.classList.remove('translate-x-full');
             }
-            
+
             function updateEventDetailsCharacters(characters) {
                 const container = document.getElementById('eventDetailCharacters');
                 container.innerHTML = characters.map(char => `
@@ -1631,7 +1629,7 @@
                     </div>
                 `).join('');
             }
-            
+
             function closeEventDetails() {
                 document.getElementById('eventDetailsPanel').classList.add('translate-x-full');
                 // Don't clear currentEventData here, as it might be needed for editing
@@ -1662,17 +1660,17 @@
             
             window.removeCharacterFromEvent = async function(eventId, characterId) {
                 try {
-                    const eventElement = document.querySelector(`[data-event-id="${eventId}"]`);
-                    if (!eventElement) return;
-                    
-                    const characters = JSON.parse(eventElement.getAttribute('data-characters') || '[]');
+                const eventElement = document.querySelector(`[data-event-id="${eventId}"]`);
+                if (!eventElement) return;
+
+                const characters = JSON.parse(eventElement.getAttribute('data-characters') || '[]');
                     const updatedCharacters = characters.filter(char => char.id !== characterId);
                     
                     // Update UI first for responsiveness
-                    eventElement.setAttribute('data-characters', JSON.stringify(updatedCharacters));
-                    
-                    if (currentEventData && currentEventData.id === eventId) {
-                        updateEventDetailsCharacters(updatedCharacters);
+                eventElement.setAttribute('data-characters', JSON.stringify(updatedCharacters));
+
+                if (currentEventData && currentEventData.id === eventId) {
+                    updateEventDetailsCharacters(updatedCharacters);
                         currentEventData.characters = updatedCharacters;
                     }
                     
@@ -1698,7 +1696,7 @@
                     showError("Failed to remove character from event.");
                 }
             };
-            
+
             window.removeCharacterFromPending = function(characterName) {
                 pendingEventCharacters = pendingEventCharacters.filter(char => char.name !== characterName);
                 const charactersContainer = document.getElementById('eventCharacters');
@@ -1714,7 +1712,7 @@
                     </div>
                 `).join('');
             };
-            
+
             window.editEvent = function() {
                 if (!currentEventData) {
                     console.error("Error: No event selected for editing");
@@ -1784,7 +1782,7 @@
                 // Close the details panel
                 closeEventDetails();
             };
-            
+
             // Add event listeners for events
             document.addEventListener('DOMContentLoaded', function() {
                 // Event Creation Modal Handlers
@@ -1805,14 +1803,14 @@
                 
                 // Create/Update Event button handler
                 document.getElementById('createEvent')?.addEventListener('click', async () => {
-                    const name = document.getElementById('eventName').value.trim();
-                    const time = document.getElementById('eventTime').value;
-                    const description = document.getElementById('eventDescription').value.trim();
-                    
-                    if (!name) {
-                        alert('Please enter an event name');
-                        return;
-                    }
+                const name = document.getElementById('eventName').value.trim();
+                const time = document.getElementById('eventTime').value;
+                const description = document.getElementById('eventDescription').value.trim();
+
+                if (!name) {
+                    alert('Please enter an event name');
+                    return;
+                }
                     
                     // Show loading state
                     const button = document.getElementById('createEvent');
@@ -1825,10 +1823,10 @@
                         const isUpdate = button.textContent.includes('Update');
                         
                         // Extract hour from the time for cell placement
-                        const hourMatch = time.match(/^(\d{1,2}):/);
-                        const hour = hourMatch ? parseInt(hourMatch[1]) : 0;
-                        
-                        if (isUpdate) {
+                    const hourMatch = time.match(/^(\d{1,2}):/);
+                    const hour = hourMatch ? parseInt(hourMatch[1]) : 0;
+                    
+                    if (isUpdate) {
                             // Handle event updates with Supabase
                             
                             // 1. Find the old event element
@@ -1860,14 +1858,14 @@
                             // Fallbacks if target cell not found
                             if (!targetCell) {
                                 if (pendingEventCell) {
-                                    targetCell = pendingEventCell;
+                                targetCell = pendingEventCell;
                                 } else {
                                     // Use first cell with matching time
                                     targetCell = document.querySelector(`.timeline-cell[data-time="${hour}"]`);
                                     
                                     // Last resort: any cell
-                                    if (!targetCell) {
-                                        targetCell = document.querySelector('.timeline-cell');
+                            if (!targetCell) {
+                                targetCell = document.querySelector('.timeline-cell');
                                     }
                                 }
                             }
@@ -1897,7 +1895,7 @@
                             let targetCell = pendingEventCell;
                             
                             // If time changed, need to find the right cell
-                            if (pendingEventCell) {
+                    if (pendingEventCell) {
                                 const currentCellHour = parseInt(pendingEventCell.getAttribute('data-time'));
                                 if (currentCellHour !== hour) {
                                     const location = pendingEventCell.getAttribute('data-location-id');
@@ -1928,14 +1926,14 @@
                             
                             // 3. Add to cell
                             if (targetCell) {
-                                targetCell.appendChild(eventElement);
+                        targetCell.appendChild(eventElement);
                             }
                         }
                         
                         // Reset modal and state
-                        resetEventModalAndState();
-                    } catch (error) {
-                        console.error("Error creating/updating event:", error);
+                    resetEventModalAndState();
+                } catch (error) {
+                    console.error("Error creating/updating event:", error);
                         showError("Failed to save event. Please try again.");
                         
                         // Reset button state
@@ -2316,7 +2314,7 @@
                                 characterId,
                                 characterData
                             );
-                        } else {
+                } else {
                             // Create new character
                             result = await window.supabaseModule.characters.create(characterData);
                         }
