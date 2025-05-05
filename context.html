@@ -1173,6 +1173,85 @@
                 showToast('Error removing character', 'error');
             }
         }
+
+        function closeCharacterDetails() {
+            const panel = document.getElementById('characterDetailsPanel');
+            if (panel) {
+                panel.classList.add('translate-x-full');
+                currentCharacterData = null;
+            }
+        }
+
+        function showCharacterDetails(characterNode) {
+            // Get character data from node attributes
+            const name = characterNode.getAttribute('data-name');
+            const role = characterNode.getAttribute('data-role');
+            const traits = characterNode.getAttribute('data-traits');
+            const backstory = characterNode.getAttribute('data-backstory');
+            const relationships = JSON.parse(characterNode.getAttribute('data-relationships') || '[]');
+
+            // Store current character data
+            currentCharacterData = {
+                name,
+                role,
+                traits,
+                backstory,
+                relationships
+            };
+
+            // Update panel content
+            document.getElementById('characterDetailName').textContent = name;
+            
+            // Update role badge
+            const roleBadge = document.querySelector('#characterDetailsPanel .inline-flex');
+            roleBadge.textContent = role;
+            roleBadge.className = `inline-flex items-center px-3 py-1 rounded-full text-sm role-badge ${role.toLowerCase()}`;
+
+            // Update traits and backstory
+            document.getElementById('characterDetailTraits').textContent = traits || 'No traits specified';
+            document.getElementById('characterDetailBackstory').textContent = backstory || 'No backstory provided';
+
+            // Update relationships list
+            const relationshipsList = document.getElementById('characterDetailRelationships');
+            relationshipsList.innerHTML = '';
+
+            if (relationships.length > 0) {
+                relationships.forEach(relatedName => {
+                    const relatedNode = document.querySelector(`.character-node[data-name="${relatedName}"]`);
+                    if (relatedNode) {
+                        const relatedRole = relatedNode.getAttribute('data-role');
+                        const relationshipEl = document.createElement('div');
+                        relationshipEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
+                        relationshipEl.innerHTML = `
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 rounded-full bg-${getRoleColor(relatedRole)} mr-2"></div>
+                                <span>${relatedName} (${relatedRole})</span>
+                            </div>
+                        `;
+                        relationshipsList.appendChild(relationshipEl);
+                    }
+                });
+            } else {
+                relationshipsList.innerHTML = '<div class="text-sm text-gray-500">No relationships defined</div>';
+            }
+
+            // Show the panel
+            const panel = document.getElementById('characterDetailsPanel');
+            panel.classList.remove('translate-x-full');
+        }
+
+        function getRoleColor(role) {
+            switch (role.toLowerCase()) {
+                case 'protagonist':
+                    return 'primary';
+                case 'antagonist':
+                    return 'error';
+                case 'supporting':
+                    return 'accent';
+                default:
+                    return 'secondary';
+            }
+        }
     </script>
 
     <!-- Header with tabs -->
