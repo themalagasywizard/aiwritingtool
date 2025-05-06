@@ -421,6 +421,53 @@
                 justify-content: space-between;
             }
 
+            /* Position save status indicator better for mobile */
+            #saveStatus {
+                position: absolute;
+                top: 12px;
+                left: 50px;
+                margin: 0;
+                padding: 0;
+                font-size: 0.7rem;
+                display: flex;
+                align-items: center;
+                background: rgba(255,255,255,0.9);
+                border-radius: 12px;
+                padding: 2px 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                z-index: 60;
+            }
+
+            /* Editor toolbar styling */
+            .editor-toolbar {
+                position: fixed;
+                top: 64px; /* Increased from 56px to add more space */
+                left: 0;
+                right: 0;
+                width: 100%;
+                background: white;
+                z-index: 49;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 48px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            /* Adjust main content area to account for new spacing */
+            main {
+                margin-top: 112px; /* Increased from 104px */
+                height: calc(100vh - 112px);
+                overflow-y: auto;
+                width: 100%;
+            }
+
+            /* Update sidebar top position to match new toolbar position */
+            .sidebar {
+                top: 112px; /* Increased from 104px */
+            }
+
             /* Clean up header for mobile */
             header .btn {
                 min-width: unset;
@@ -444,42 +491,6 @@
                 font-size: 1rem;
             }
 
-            /* Position save status indicator better */
-            header .text-sm.text-textSecondary {
-                position: absolute;
-                top: 4px;
-                left: 50%;
-                transform: translateX(-50%);
-                margin: 0;
-                padding: 0;
-                font-size: 0.7rem;
-                display: flex;
-                align-items: center;
-                background: rgba(255,255,255,0.8);
-                border-radius: 12px;
-                padding: 2px 8px;
-            }
-
-            /* Adjust header right section */
-            header > div:last-child {
-                display: flex;
-                align-items: center;
-                padding-right: 8px;
-                gap: 6px;
-            }
-
-            /* Adjust header left section */
-            header > div:first-child {
-                display: flex;
-                align-items: center;
-                padding-left: 8px;
-            }
-
-            /* Hide title completely on mobile */
-            header h1 {
-                display: none;
-            }
-
             /* Make logo smaller */
             header .w-10.h-10 {
                 width: 32px;
@@ -487,57 +498,11 @@
                 min-width: 32px;
             }
 
-            /* Editor toolbar styling */
-            .editor-toolbar {
-                position: fixed;
-                top: 56px;
-                left: 0;
-                right: 0;
-                width: 100%;
-                background: white;
-                z-index: 49;
-                padding: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                height: 48px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-
-            /* Style toolbar buttons */
-            .editor-toolbar .toolbar-btn {
-                width: 36px;
-                height: 36px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 8px;
-                background: rgba(75, 94, 170, 0.1);
-                color: var(--primary);
-                margin: 0 2px;
-            }
-
-            /* Style AI Assist button specifically */
-            .editor-toolbar #aiAssistBtn {
-                padding: 8px 12px;
-                height: 36px;
-                border-radius: 8px;
-                margin-left: auto;
-            }
-
-            /* Adjust main content area */
-            main {
-                margin-top: 104px; /* header + toolbar height */
-                height: calc(100vh - 104px);
-                overflow-y: auto;
-                width: 100%;
-            }
-
             /* Mobile sidebar */
             .sidebar {
                 position: fixed;
                 left: -250px;
-                top: 104px; /* Match header + toolbar height */
+                top: 112px; /* Match header + toolbar height */
                 bottom: 0;
                 width: 250px;
                 background: white;
@@ -1035,7 +1000,10 @@
             try {
                 if (!appState.currentChapter) return;
                 
-                updateSaveStatus(true, 'Saving...');
+                // Show save status
+                const saveStatus = document.getElementById('saveStatus');
+                saveStatus.classList.remove('hidden');
+                saveStatus.querySelector('span').textContent = 'Saving...';
                 
                 // Get content from editor
                 const content = elements.editorContent.innerHTML;
@@ -1056,8 +1024,13 @@
                 // Reset dirty state
                 appState.isDirty = false;
                 
-                // Update UI
-                updateSaveStatus(false);
+                // Update UI to show saved status
+                saveStatus.querySelector('span').textContent = 'Saved';
+                
+                // Hide save status after 2 seconds
+                setTimeout(() => {
+                    saveStatus.classList.add('hidden');
+                }, 2000);
                 
                 // Update project last edited time (backend will handle this)
                 elements.lastEdited.textContent = 'Last edited: ' + formatDate(new Date());
@@ -1068,7 +1041,17 @@
                 return updatedChapter[0];
             } catch (error) {
                 console.error('Error saving chapter:', error);
-                updateSaveStatus(false, 'Error saving');
+                
+                // Show error message
+                const saveStatus = document.getElementById('saveStatus');
+                saveStatus.classList.remove('hidden');
+                saveStatus.querySelector('span').textContent = 'Error saving';
+                
+                // Hide save status after 3 seconds
+                setTimeout(() => {
+                    saveStatus.classList.add('hidden');
+                }, 3000);
+                
                 return null;
             }
         }
@@ -1076,16 +1059,17 @@
         function updateSaveStatus(isDirty, message) {
             appState.isDirty = isDirty;
             
+            // Don't display anything persistently
             if (message) {
-                elements.saveStatus.textContent = message;
-            } else if (isDirty) {
-                elements.saveStatus.textContent = 'Unsaved changes';
-                elements.saveStatus.classList.add('text-warning');
-                elements.saveStatus.classList.remove('text-success');
-            } else {
-                elements.saveStatus.textContent = 'Saved';
-                elements.saveStatus.classList.remove('text-warning');
-                elements.saveStatus.classList.add('text-success');
+                // Show temporary message if explicitly requested
+                const saveStatus = document.getElementById('saveStatus');
+                saveStatus.classList.remove('hidden');
+                saveStatus.querySelector('span').textContent = message;
+                
+                // Hide save status after 2 seconds
+                setTimeout(() => {
+                    saveStatus.classList.add('hidden');
+                }, 2000);
             }
         }
 
@@ -1671,9 +1655,10 @@
             <h1 class="text-xl font-semibold text-primary hidden md:block">AIStoryCraft</h1>
         </div>
         <div class="flex items-center space-x-4">
-            <div class="text-sm text-textSecondary flex items-center">
+            <!-- Save status indicator - hidden by default -->
+            <div id="saveStatus" class="text-sm text-textSecondary flex items-center hidden">
                 <i class="fas fa-cloud-upload-alt mr-2 text-success"></i>
-                <span id="saveStatus">Saved</span>
+                <span>Saved</span>
             </div>
             <button id="saveBtn" class="btn btn-primary">
                 <i class="fas fa-save"></i>
