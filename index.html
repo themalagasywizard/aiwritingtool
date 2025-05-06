@@ -54,6 +54,15 @@
             color: var(--text-primary);
         }
 
+        /* Lock lateral movement on mobile */
+        @media (max-width: 768px) {
+            html, body {
+                overflow-x: hidden;
+                position: relative;
+                width: 100%;
+            }
+        }
+
         .editor-content {
             font-family: 'Merriweather', serif;
             line-height: 1.8;
@@ -456,6 +465,27 @@
             #aiAssistPanel {
                 width: 100% !important;
                 min-width: 100% !important;
+                max-height: 80vh !important;
+                bottom: 0;
+                top: auto;
+                border-radius: 1rem 1rem 0 0;
+                box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+            }
+            
+            /* Reduce size of AI inputs for mobile */
+            #aiInput, #chatInput {
+                max-height: 80px !important;
+                font-size: 0.95rem !important;
+            }
+            
+            #aiOutput {
+                max-height: 250px !important;
+                font-size: 0.95rem !important;
+            }
+            
+            /* Adjust the chat container height */
+            #chatHistory {
+                max-height: 250px !important;
             }
 
             /* Make load project panel full width */
@@ -3115,9 +3145,15 @@
                 if (!isOpen) {
                     // Panel is opening
                     if (currentMode === 'generate') {
-                        aiInput.focus();
+                        // Only focus on desktop, not mobile
+                        if (window.innerWidth >= 768) {
+                            aiInput.focus();
+                        }
                     } else if (currentMode === 'chat') {
-                        chatInput.focus();
+                        // Only focus on desktop, not mobile
+                        if (window.innerWidth >= 768) {
+                            chatInput.focus();
+                        }
                     }
                 }
             }

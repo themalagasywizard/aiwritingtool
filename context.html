@@ -368,13 +368,43 @@
                 font-size: 1.25rem;
             }
 
+            /* Timeline on top for mobile */
+            #timelineTab .flex.h-\[calc\(100vh-170px\)\] {
+                flex-direction: column-reverse;
+            }
+
+            /* Character sidebar full width on mobile */
             .w-64 {
                 width: 100%;
                 margin-bottom: 1rem;
+                overflow-y: visible;
+                max-height: none;
             }
 
-            .flex.h-\[calc\(100vh-170px\)\] {
-                flex-direction: column;
+            /* Make characters display horizontally with scroll */
+            #charactersList {
+                display: flex;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding: 0.5rem;
+                gap: 0.5rem;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #charactersList .character-item {
+                flex: 0 0 auto;
+                min-width: 100px;
+                margin-right: 0.5rem;
+            }
+
+            /* Improve drag and drop for mobile */
+            .character-item {
+                touch-action: none; /* Prevent scrolling while dragging */
+            }
+
+            .timeline-cell {
+                min-height: 60px;
+                min-width: 60px;
             }
 
             .timeline-grid {
@@ -382,25 +412,19 @@
                 -webkit-overflow-scrolling: touch;
             }
 
-            .timeline-cell {
-                min-width: 60px;
-            }
-
-            /* Character network adjustments */
-            .character-tree {
-                min-height: 250px;
+            /* Add mobile-friendly grab handles */
+            .handle {
                 padding: 0.5rem;
+                font-size: 1.25rem;
             }
 
-            .character-node {
-                width: 40px;
-                height: 40px;
-                font-size: 0.75rem;
-            }
-
-            .character-tooltip {
-                width: 160px;
-                font-size: 0.75rem;
+            /* Event modal adjustments */
+            #eventCreationModal .bg-white,
+            #eventDetailsPanel,
+            #characterDetailsPanel {
+                width: 100%;
+                max-height: 90vh;
+                overflow-y: auto;
             }
 
             /* Form adjustments */
@@ -415,16 +439,9 @@
                 overflow-y: auto;
             }
 
-            /* Button adjustments */
             .btn {
                 padding: 0.5rem;
                 font-size: 0.875rem;
-            }
-
-            /* Panel adjustments */
-            #eventDetailsPanel,
-            #characterDetailsPanel {
-                width: 100%;
             }
 
             /* Location modal adjustments */
@@ -439,6 +456,23 @@
                 margin: 1rem;
                 max-height: 90vh;
                 overflow-y: auto;
+            }
+
+            /* Character network improvements for mobile */
+            .character-tree {
+                min-height: 250px;
+                padding: 0.5rem;
+            }
+
+            .character-node {
+                width: 40px;
+                height: 40px;
+                font-size: 0.75rem;
+            }
+
+            .character-tooltip {
+                width: 160px;
+                font-size: 0.75rem;
             }
         }
     </style>
@@ -527,6 +561,10 @@
                 
                 charactersList.appendChild(characterItem);
             });
+
+            // Dispatch custom event to notify that characters list has been updated
+            // This allows us to re-attach touch events for mobile
+            document.dispatchEvent(new CustomEvent('charactersListUpdated'));
         }
 
         async function loadCharacters() {
@@ -836,6 +874,113 @@
 
         // Initialize all event handlers
         function initializeEventHandlers() {
+            // Mobile touch drag support
+            const isMobile = window.innerWidth < 768;
+            
+            if (isMobile) {
+                // Add touch event listeners for mobile drag and drop
+                document.querySelectorAll('.character-item').forEach(item => {
+                    item.addEventListener('touchstart', handleTouchStart);
+                });
+                
+                // Re-attach touch events after character list is updated
+                document.addEventListener('charactersListUpdated', function() {
+                    document.querySelectorAll('.character-item').forEach(item => {
+                        item.removeEventListener('touchstart', handleTouchStart);
+                        item.addEventListener('touchstart', handleTouchStart);
+                    });
+                });
+            }
+            
+            // Touch start handler function
+            function handleTouchStart(e) {
+                // Store the initial touch position
+                const touch = e.touches[0];
+                const startX = touch.clientX;
+                const startY = touch.clientY;
+                
+                // Set data for drag operation
+                const characterData = {
+                    id: this.getAttribute('data-character-id'),
+                    name: this.getAttribute('data-name'),
+                    role: this.getAttribute('data-role')
+                };
+                
+                // Add drag visual indicator
+                this.classList.add('dragging');
+                
+                // Handle touch move
+                const handleTouchMove = function(moveEvent) {
+                    // Prevent default to avoid scrolling while dragging
+                    moveEvent.preventDefault();
+                    
+                    const currentTouch = moveEvent.touches[0];
+                    const deltaX = currentTouch.clientX - startX;
+                    const deltaY = currentTouch.clientY - startY;
+                    
+                    // Move the element with the touch
+                    this.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                    
+                    // Find the element we're hovering over
+                    const touchTarget = document.elementFromPoint(
+                        currentTouch.clientX, 
+                        currentTouch.clientY
+                    );
+                    
+                    // Handle hover effects
+                    document.querySelectorAll('.timeline-cell').forEach(cell => {
+                        cell.classList.remove('drag-over');
+                    });
+                    
+                    // Find the closest timeline cell
+                    const timelineCell = touchTarget ? touchTarget.closest('.timeline-cell') : null;
+                    if (timelineCell) {
+                        timelineCell.classList.add('drag-over');
+                    }
+                }.bind(this);
+                
+                // Handle touch end
+                const handleTouchEnd = function(endEvent) {
+                    // Clean up
+                    this.classList.remove('dragging');
+                    this.style.transform = '';
+                    
+                    // Remove event listeners
+                    document.removeEventListener('touchmove', handleTouchMove);
+                    document.removeEventListener('touchend', handleTouchEnd);
+                    document.removeEventListener('touchcancel', handleTouchEnd);
+                    
+                    // Get the final touch position
+                    const endTouch = endEvent.changedTouches[0];
+                    
+                    // Find the element we're dropping onto
+                    const dropTarget = document.elementFromPoint(
+                        endTouch.clientX, 
+                        endTouch.clientY
+                    );
+                    
+                    // Find the closest timeline cell
+                    const timelineCell = dropTarget ? dropTarget.closest('.timeline-cell') : null;
+                    if (timelineCell) {
+                        // Remove hover effect
+                        timelineCell.classList.remove('drag-over');
+                        
+                        // Simulate drop event
+                        handleCharacterDrop({
+                            preventDefault: () => {},
+                            dataTransfer: {
+                                getData: () => JSON.stringify(characterData)
+                            }
+                        }, timelineCell);
+                    }
+                }.bind(this);
+                
+                // Add event listeners for touch move and end
+                document.addEventListener('touchmove', handleTouchMove, { passive: false });
+                document.addEventListener('touchend', handleTouchEnd);
+                document.addEventListener('touchcancel', handleTouchEnd);
+            }
+            
             // Initialize location modal handlers
             const addLocationBtn = document.getElementById('addLocationBtn');
             const closeLocationModalBtn = document.getElementById('closeLocationModal');
