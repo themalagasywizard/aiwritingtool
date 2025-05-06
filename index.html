@@ -577,118 +577,57 @@
             }
         }
 
-        /* AI Assistant Panel Styles */
-        #aiAssistPanel {
-            min-width: 400px;
-            max-width: 600px;
-            width: 35vw;
-            height: 100vh;
-            max-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
         /* Chat View Styles */
         #chatView {
             flex: 1;
             display: flex;
             flex-direction: column;
             height: 100%;
+            max-height: 100%;
             overflow: hidden;
-        }
-
-        /* Chat History */
-        #chatHistory {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        /* Chat Input Container */
-        .chat-input-container {
-            flex-shrink: 0;
-            padding: 1rem;
-            background: white;
-            border-top: 1px solid var(--primary-light);
             position: relative;
         }
 
-        #chatInput {
-            width: 100%;
-            min-height: 44px;
-            max-height: 120px;
-            resize: none;
-            border: 1px solid var(--primary-light);
-            border-radius: 8px;
-            padding: 10px;
-            padding-right: 40px;
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
-
-        #chatSubmit {
-            position: absolute;
-            right: 24px;
-            bottom: 24px;
-            width: 32px;
-            height: 32px;
-            padding: 0;
+        #chatHistory {
+            flex: 1;
+            padding: 1rem;
+            scroll-behavior: smooth;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+            height: calc(100vh - 280px);
+            min-height: 300px;
+            padding-bottom: 80px;
         }
 
-        /* Mobile Specific Styles */
+        /* Chat input container */
+        #chatView .flex-shrink-0 {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 1rem;
+            border-top: 1px solid var(--primary-light);
+            z-index: 52;
+        }
+
         @media (max-width: 768px) {
-            #aiAssistPanel {
-                width: 100%;
-                min-width: 100%;
-                height: 100vh;
-            }
-
-            #chatView {
-                height: calc(100vh - 120px); /* Account for header and mode toggle */
-            }
-
             #chatHistory {
-                height: calc(100vh - 220px); /* Account for input area and headers */
-                padding-bottom: 20px;
+                height: calc(100vh - 320px);
+                padding-bottom: 100px;
             }
 
-            .chat-input-container {
-                padding: 12px;
+            #chatView .flex-shrink-0 {
+                padding: 0.75rem;
                 background: white;
-                border-top: 1px solid var(--primary-light);
-                position: sticky;
-                bottom: 0;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             }
 
             #chatInput {
-                min-height: 40px;
-                max-height: 100px;
-                font-size: 16px; /* Prevent iOS zoom */
-                padding: 8px;
-                padding-right: 36px;
-            }
-
-            #chatSubmit {
-                right: 20px;
-                bottom: 20px;
-                width: 28px;
-                height: 28px;
-            }
-
-            /* Ensure messages are properly spaced */
-            .chat-message {
-                max-width: 85%;
-                padding: 10px 12px;
-                margin-bottom: 8px;
-                font-size: 0.9rem;
+                border-radius: 8px;
+                border: 1px solid var(--primary-light);
             }
         }
     </style>
@@ -2033,19 +1972,21 @@
                     <div class="text-sm text-primary mt-1">Jane, Darkwood Forest</div>
                 </div>
 
-                <!-- Chat View -->
+                <!-- Chat View */
                 <div id="chatView" class="flex-1 flex flex-col hidden">
-                    <!-- Chat History -->
+                    <!-- Chat History (now at top) -->
                     <div id="chatHistory" class="flex-1 overflow-y-auto">
-                        <!-- Messages will be added here dynamically -->
+                        <!-- Example messages will be added here -->
                     </div>
                     
-                    <!-- Chat Input Container -->
-                    <div class="chat-input-container">
-                        <textarea id="chatInput" placeholder="Ask the AI..." rows="1"></textarea>
-                        <button id="chatSubmit" class="btn btn-primary" disabled>
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
+                    <!-- Chat Input (now at bottom) -->
+                    <div class="flex-shrink-0 p-4 border-t border-gray-200">
+                        <div class="relative flex items-end space-x-2">
+                            <textarea id="chatInput" class="flex-1 border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ask the AI..." rows="1"></textarea>
+                            <button id="chatSubmit" class="btn btn-primary flex-shrink-0" disabled>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
                         
                         <!-- Token usage info for DeepSeek models -->
                         <div id="tokenUsageInfo" class="text-xs text-gray-500 mt-2 hidden">
