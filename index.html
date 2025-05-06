@@ -413,10 +413,24 @@
                 left: 0;
                 right: 0;
                 width: 100%;
-                height: 56px; /* Reduced height for mobile */
+                height: 56px;
                 background: white;
                 z-index: 50;
                 padding: 0 0.5rem;
+            }
+
+            /* Center the logo on mobile */
+            header .flex.items-center.space-x-4:first-child {
+                position: absolute;
+                left: 50%;
+                transform: translateX(-50%);
+                margin: 0;
+            }
+
+            /* Adjust spacing for mobile menu button */
+            #mobileMenuBtn {
+                position: absolute;
+                left: 0.5rem;
             }
 
             /* Mobile header buttons */
@@ -1603,7 +1617,7 @@
             <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
                 <i class="fas fa-feather-alt"></i>
             </div>
-            <h1 class="text-xl font-semibold text-primary">AIStoryCraft</h1>
+            <h1 class="text-xl font-semibold text-primary hidden md:block">AIStoryCraft</h1>
         </div>
         <div class="flex items-center space-x-4">
             <div class="text-sm text-textSecondary flex items-center">
