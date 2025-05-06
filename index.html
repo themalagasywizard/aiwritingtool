@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AIStoryCraft</title>
     <!-- Supabase Configuration -->
     <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
@@ -406,23 +406,68 @@
 
         /* Mobile Styles */
         @media (max-width: 768px) {
-            header, .editor-toolbar {
-                position: sticky;
-                top: 0;
-                width: 100%;
-            }
-            
             header {
-                z-index: 41;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                z-index: 50;
             }
             
             .editor-toolbar {
-                z-index: 39;
+                position: fixed;
+                top: 64px; /* Fixed distance from top, based on header height */
+                left: 0;
+                right: 0;
+                width: 100%;
+                z-index: 49;
+            }
+            
+            /* Add padding to main content to prevent overlap with fixed elements */
+            main {
+                padding-top: 108px; /* Sum of header height and toolbar height */
+            }
+            
+            /* Only allow zoom in editor content area */
+            .editor-content {
+                touch-action: pinch-zoom;
             }
             
             #aiAssistPanel {
                 width: 100%;
                 max-width: 100%;
+            }
+        }
+
+        /* Fix for iOS zoom issues */
+        @supports (-webkit-touch-callout: none) {
+            header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                z-index: 50;
+            }
+            
+            .editor-toolbar {
+                position: fixed;
+                top: 64px; /* Fixed distance from top, based on header height */
+                left: 0;
+                right: 0;
+                width: 100%;
+                z-index: 49;
+            }
+            
+            /* Add padding to main content to prevent overlap with fixed elements */
+            main {
+                padding-top: 108px; /* Sum of header height and toolbar height */
+            }
+            
+            /* Only allow zoom in editor content area */
+            .editor-content {
+                touch-action: pinch-zoom;
             }
         }
 
@@ -494,23 +539,6 @@
                 width: 100%;
                 min-width: 100%;
                 max-width: 100%;
-            }
-        }
-
-        /* Fix for iOS zoom issues */
-        @supports (-webkit-touch-callout: none) {
-            header, .editor-toolbar {
-                position: sticky;
-                top: 0;
-                z-index: 40;
-            }
-            
-            header {
-                z-index: 41;
-            }
-            
-            .editor-toolbar {
-                z-index: 39;
             }
         }
     </style>
