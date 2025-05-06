@@ -61,7 +61,7 @@
                 height: 100vh;
                 display: flex;
                 flex-direction: column;
-                padding-top: 64px; /* Header height */
+                padding-top: 56px;
             }
 
             /* Fixed header - absolutely fixed at top */
@@ -75,16 +75,16 @@
                 padding: 0.5rem 1rem !important;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 background-color: white;
-                height: 64px;
-                overflow: hidden; /* Prevent scrolling */
-                -webkit-overflow-scrolling: none; /* Disable momentum scrolling */
-                touch-action: none; /* Prevent zooming/scrolling */
+                height: 56px;
+                overflow: hidden;
+                -webkit-overflow-scrolling: none;
+                touch-action: none;
             }
             
             /* Fixed toolbar - absolutely fixed below header */
             .editor-toolbar {
                 position: fixed;
-                top: 64px; /* Header height */
+                top: 56px;
                 left: 0;
                 right: 0;
                 z-index: 39;
@@ -92,20 +92,20 @@
                 background-color: white;
                 flex-wrap: wrap;
                 gap: 0.25rem;
-                padding: 0.5rem;
+                padding: 0.25rem 0.5rem;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                height: 56px; /* Approximate toolbar height */
-                overflow: hidden; /* Prevent scrolling */
-                -webkit-overflow-scrolling: none; /* Disable momentum scrolling */
-                touch-action: none; /* Prevent zooming/scrolling */
+                height: 48px;
+                overflow: hidden;
+                -webkit-overflow-scrolling: none;
+                touch-action: none;
             }
 
             /* Main content needs to be pushed down to account for fixed header and toolbar */
             main.flex-1 {
-                padding-top: 56px; /* Toolbar height */
+                padding-top: 48px;
                 display: flex;
                 flex-direction: column;
-                height: 100%;
+                height: calc(100vh - 104px); /* Subtract header + toolbar height */
                 overflow: hidden;
             }
 
@@ -115,19 +115,52 @@
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
                 position: relative;
-                padding-bottom: 30px; /* Extra padding at bottom for scroll space */
+                padding-bottom: 30px;
             }
 
-            /* Remove overflow from inner container to avoid nested scrollbars */
-            .main-content-wrapper > .flex-1 {
-                overflow-y: visible;
-                height: auto;
+            /* AI Assistant Panel Mobile Styles */
+            #aiAssistPanel {
+                width: 100% !important;
+                min-width: 100% !important;
+                max-height: 80vh !important;
+                bottom: 0;
+                top: auto;
+                border-radius: 1rem 1rem 0 0;
+                box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+                background-color: white !important;
+                z-index: 50 !important;
             }
 
-            #editorContent {
-                padding: 1rem !important;
-                padding-bottom: 70px !important; /* Extra padding at bottom for scroll space */
-                min-height: 100%;
+            #aiMobileOverlay {
+                z-index: 49 !important;
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+
+            /* Ensure AI panel and its contents are interactive */
+            #aiAssistPanel,
+            #aiAssistPanel *,
+            #aiInput,
+            #aiOutput,
+            #chatInput,
+            #chatHistory,
+            .ai-mode-btn,
+            #aiModel {
+                pointer-events: auto !important;
+            }
+
+            /* Prevent clicks on overlay from closing the panel */
+            #aiMobileOverlay.hidden {
+                display: none !important;
+            }
+
+            /* Ensure proper height for chat components */
+            #chatHistory {
+                max-height: 50vh !important;
+            }
+
+            #chatInput,
+            #aiInput {
+                max-height: 100px !important;
             }
 
             .sidebar {
@@ -165,38 +198,6 @@
                 margin: 1rem !important;
                 max-height: 90vh !important;
                 overflow-y: auto !important;
-            }
-
-            /* Adjust AI Assistant panel for mobile */
-            #aiAssistPanel {
-                width: 100% !important;
-                min-width: 100% !important;
-                max-height: 80vh !important;
-                bottom: 0;
-                top: auto;
-                border-radius: 1rem 1rem 0 0;
-                box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
-            }
-            
-            /* Ensure AI assistant panel is above the fixed header/toolbar */
-            #aiAssistPanel, #aiMobileOverlay {
-                z-index: 50 !important;
-            }
-            
-            /* Reduce size of AI inputs for mobile */
-            #aiInput, #chatInput {
-                max-height: 80px !important;
-                font-size: 0.95rem !important;
-            }
-            
-            #aiOutput {
-                max-height: 250px !important;
-                font-size: 0.95rem !important;
-            }
-            
-            /* Adjust the chat container height */
-            #chatHistory {
-                max-height: 250px !important;
             }
 
             /* Make load project panel full width */
@@ -249,6 +250,52 @@
             .auth-container {
                 width: 90% !important;
                 margin: 1rem !important;
+            }
+        }
+
+        /* Desktop Styles */
+        @media (min-width: 769px) {
+            body {
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            /* Main container should be scrollable */
+            .flex.flex-1.overflow-hidden {
+                overflow: auto !important;
+                height: calc(100vh - 64px);
+            }
+
+            /* Editor content should be fully visible */
+            .main-content-wrapper {
+                height: auto;
+                min-height: 100%;
+                overflow-y: visible;
+            }
+
+            #editorContent {
+                height: auto;
+                min-height: 100%;
+                overflow-y: visible;
+            }
+
+            /* Ensure proper scrolling for main content */
+            main.flex-1 {
+                height: auto;
+                min-height: 100%;
+                overflow-y: visible;
+            }
+
+            .main-content-wrapper > .flex-1 {
+                height: auto;
+                min-height: 100%;
+                overflow-y: visible;
+            }
+
+            /* Ensure sidebar is full height */
+            .sidebar {
+                height: calc(100vh - 64px);
+                overflow-y: auto;
             }
         }
 
