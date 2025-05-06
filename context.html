@@ -357,6 +357,90 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            .container.mx-auto.px-4.py-4 {
+                padding: 0.75rem;
+            }
+
+            .text-xl {
+                font-size: 1.25rem;
+            }
+
+            .w-64 {
+                width: 100%;
+                margin-bottom: 1rem;
+            }
+
+            .flex.h-\[calc\(100vh-170px\)\] {
+                flex-direction: column;
+            }
+
+            .timeline-grid {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .timeline-cell {
+                min-width: 60px;
+            }
+
+            /* Character network adjustments */
+            .character-tree {
+                min-height: 250px;
+                padding: 0.5rem;
+            }
+
+            .character-node {
+                width: 40px;
+                height: 40px;
+                font-size: 0.75rem;
+            }
+
+            .character-tooltip {
+                width: 160px;
+                font-size: 0.75rem;
+            }
+
+            /* Form adjustments */
+            .grid.grid-cols-1.md\:grid-cols-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-container {
+                width: 95%;
+                margin: 1rem;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            /* Button adjustments */
+            .btn {
+                padding: 0.5rem;
+                font-size: 0.875rem;
+            }
+
+            /* Panel adjustments */
+            #eventDetailsPanel,
+            #characterDetailsPanel {
+                width: 100%;
+            }
+
+            /* Location modal adjustments */
+            #locationModal .bg-white {
+                width: 95%;
+                margin: 1rem;
+            }
+
+            /* Character form modal adjustments */
+            #characterFormModal .bg-white {
+                width: 95%;
+                margin: 1rem;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">

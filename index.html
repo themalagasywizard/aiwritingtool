@@ -406,9 +406,115 @@
 
         /* Mobile Styles */
         @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 0;
+                bottom: 0;
+                z-index: 40;
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(250px);
+            }
+
+            #editorContent {
+                padding: 1rem !important;
+            }
+
+            .btn {
+                padding: 0.5rem !important;
+            }
+
+            /* Hide text on small buttons, show only icons */
+            .btn-icon-only-mobile i {
+                margin: 0 !important;
+            }
+            .btn-icon-only-mobile span {
+                display: none;
+            }
+
+            /* Adjust top bar for mobile */
+            header.h-16 {
+                padding: 0.5rem 1rem !important;
+            }
+            
+            header .flex.items-center.space-x-4 {
+                gap: 0.5rem !important;
+            }
+
+            /* Make modals full width on mobile */
+            .modal-container {
+                width: 90% !important;
+                margin: 1rem !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
+            }
+
+            /* Adjust AI Assistant panel for mobile */
             #aiAssistPanel {
-                width: 100%;
-                max-width: 100%;
+                width: 100% !important;
+                min-width: 100% !important;
+            }
+
+            /* Make load project panel full width */
+            #loadProjectPanel {
+                width: 100% !important;
+            }
+
+            /* Add mobile menu button */
+            #mobileMenuBtn {
+                display: block !important;
+            }
+
+            /* Adjust editor toolbar for mobile */
+            .editor-toolbar {
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                padding: 0.5rem;
+            }
+
+            /* Make font size dropdown position better on mobile */
+            .font-size-dropdown {
+                left: auto;
+                right: 0;
+            }
+
+            /* Adjust character tree for mobile */
+            .character-tree {
+                min-height: 200px;
+                padding: 0.5rem;
+            }
+
+            .character-node {
+                width: 50px;
+                height: 50px;
+                font-size: 0.875rem;
+            }
+
+            /* Make tooltips work better on mobile */
+            .character-tooltip {
+                width: 180px;
+                font-size: 0.875rem;
+            }
+
+            /* Adjust word count display for mobile */
+            .word-count-container {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            /* Make project list more mobile-friendly */
+            .project-item {
+                padding: 0.75rem !important;
+            }
+
+            /* Adjust auth forms for mobile */
+            .auth-container {
+                width: 90% !important;
+                margin: 1rem !important;
             }
         }
 
@@ -1193,6 +1299,36 @@
 
         // Event Listeners
         function setupEventListeners() {
+            // Mobile Menu Handlers
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const sidebar = document.querySelector('.sidebar');
+            const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    sidebar.classList.toggle('open');
+                    mobileMenuOverlay.classList.toggle('hidden');
+                    document.body.classList.toggle('overflow-hidden');
+                });
+            }
+
+            if (mobileMenuOverlay) {
+                mobileMenuOverlay.addEventListener('click', () => {
+                    sidebar.classList.remove('open');
+                    mobileMenuOverlay.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                });
+            }
+
+            // Close mobile menu when window is resized to desktop size
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 768) {
+                    sidebar.classList.remove('open');
+                    mobileMenuOverlay.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }
+            });
+
             // New Project Button
             elements.newProjectBtn.addEventListener('click', () => {
                 elements.newProjectModal.classList.remove('hidden');
@@ -1554,27 +1690,31 @@
     <!-- Top Bar -->
     <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
         <div class="flex items-center space-x-4">
+            <!-- Mobile Menu Button -->
+            <button id="mobileMenuBtn" class="md:hidden text-primary" aria-label="Toggle Menu">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
             <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
                 <i class="fas fa-feather-alt"></i>
             </div>
             <h1 class="text-xl font-semibold text-primary">AIStoryCraft</h1>
         </div>
         <div class="flex items-center space-x-4">
-            <div class="text-sm text-textSecondary flex items-center">
+            <div class="text-sm text-textSecondary hidden md:flex items-center">
                 <i class="fas fa-cloud-upload-alt mr-2 text-success"></i>
                 <span id="saveStatus">Saved</span>
             </div>
-            <button id="saveBtn" class="btn btn-primary">
+            <button id="saveBtn" class="btn btn-primary btn-icon-only-mobile">
                 <i class="fas fa-save mr-1"></i>
-                Save
+                <span>Save</span>
             </button>
-            <button id="loadProjectBtn" class="btn btn-primary">
+            <button id="loadProjectBtn" class="btn btn-primary btn-icon-only-mobile">
                 <i class="fas fa-folder-open mr-1"></i>
-                Load Project
+                <span>Load Project</span>
             </button>
-            <button id="newProjectBtn" class="btn btn-success">
+            <button id="newProjectBtn" class="btn btn-success btn-icon-only-mobile">
                 <i class="fas fa-plus mr-1"></i>
-                New Project
+                <span>New Project</span>
             </button>
             <div class="relative group">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
@@ -1597,6 +1737,9 @@
             </div>
         </div>
     </header>
+
+    <!-- Mobile Menu Overlay -->
+    <div id="mobileMenuOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-30"></div>
 
     <!-- Load Project Panel -->
     <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
