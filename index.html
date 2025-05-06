@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AIStoryCraft</title>
     <!-- Supabase Configuration -->
     <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
@@ -76,6 +76,9 @@
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                 background-color: white;
                 height: 64px;
+                touch-action: none;
+                -webkit-overflow-scrolling: none;
+                overflow: hidden;
             }
             
             /* Fixed toolbar - absolutely fixed below header */
@@ -92,6 +95,9 @@
                 padding: 0.5rem;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.05);
                 height: 56px; /* Approximate toolbar height */
+                touch-action: none;
+                -webkit-overflow-scrolling: none;
+                overflow: hidden;
             }
 
             /* Main content needs to be pushed down to account for fixed header and toolbar */
@@ -101,6 +107,8 @@
                 flex-direction: column;
                 height: 100%;
                 overflow: hidden;
+                position: relative;
+                z-index: 10;
             }
 
             /* Make main wrapper take remaining height */
@@ -110,6 +118,8 @@
                 -webkit-overflow-scrolling: touch;
                 position: relative;
                 padding-bottom: 30px; /* Extra padding at bottom for scroll space */
+                margin-top: 10px; /* Add a small gap */
+                z-index: 10;
             }
 
             /* Remove overflow from inner container to avoid nested scrollbars */
@@ -668,6 +678,42 @@
             }
         }
     </style>
+    <script>
+        // Function to prevent touch scrolling on specific elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Prevent scrolling on header and toolbar
+            const header = document.querySelector('header.h-16');
+            const toolbar = document.querySelector('.editor-toolbar');
+            
+            if (header) {
+                header.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+            }
+            
+            if (toolbar) {
+                toolbar.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+            }
+            
+            // Global touch handler to prevent scrolling in header area
+            document.body.addEventListener('touchmove', function(e) {
+                const y = e.touches[0].clientY;
+                // If the touch is in the header/toolbar area, prevent default
+                if (y < 120) { // Header (64px) + toolbar (56px) height
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Lock header position on scroll
+            window.addEventListener('scroll', function() {
+                if (window.scrollY < 0) {
+                    window.scrollTo(0, 0);
+                }
+            });
+        });
+    </script>
 </head>
 <body class="h-screen flex flex-col">
     <script type="module">
@@ -1389,6 +1435,11 @@
                     mobileMenuOverlay.classList.toggle('hidden');
                     document.body.classList.toggle('overflow-hidden');
                 });
+                
+                // Prevent touchmove on button to avoid scroll issues
+                mobileMenuBtn.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                }, { passive: false });
             }
 
             if (mobileMenuOverlay) {
