@@ -357,149 +357,6 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-
-        /* Mobile Styles */
-        @media (max-width: 768px) {
-            .container.mx-auto.px-4.py-4 {
-                padding: 0.75rem;
-            }
-
-            .text-xl {
-                font-size: 1.25rem;
-            }
-
-            /* Make date selector wider on mobile */
-            #dateSelector {
-                min-width: 160px;
-                width: 100%;
-                max-width: 200px;
-            }
-
-            /* Timeline on top for mobile */
-            #timelineTab .flex.h-\[calc\(100vh-170px\)\] {
-                flex-direction: column-reverse;
-            }
-
-            /* Timeline header adjustments to move controls to a new line */
-            .timeline-header-controls {
-                display: block !important;
-            }
-            
-            .timeline-header-controls > div {
-                margin-top: 0.5rem;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                width: 100%;
-            }
-
-            /* Make both timeline and character components full-width */
-            .w-64, .flex-1 {
-                width: 100% !important;
-                margin-bottom: 1rem;
-            }
-
-            /* Character sidebar full width on mobile */
-            .w-64 {
-                overflow-y: visible;
-                max-height: none;
-            }
-
-            /* Make characters display horizontally with scroll and limit height */
-            #charactersList {
-                display: flex;
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                padding: 0.5rem;
-                gap: 0.5rem;
-                -webkit-overflow-scrolling: touch;
-                max-height: 90px; /* Only tall enough for one row */
-            }
-
-            #charactersList .character-item {
-                flex: 0 0 auto;
-                min-width: 100px;
-                margin-right: 0.5rem;
-            }
-
-            /* Improve drag and drop for mobile */
-            .character-item {
-                touch-action: none; /* Prevent scrolling while dragging */
-            }
-
-            .timeline-cell {
-                min-height: 60px;
-                min-width: 60px;
-            }
-
-            .timeline-grid {
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
-            }
-
-            /* Add mobile-friendly grab handles */
-            .handle {
-                padding: 0.5rem;
-                font-size: 1.25rem;
-            }
-
-            /* Event modal adjustments */
-            #eventCreationModal .bg-white,
-            #eventDetailsPanel,
-            #characterDetailsPanel {
-                width: 100%;
-                max-height: 90vh;
-                overflow-y: auto;
-            }
-
-            /* Form adjustments */
-            .grid.grid-cols-1.md\:grid-cols-2 {
-                grid-template-columns: 1fr;
-            }
-
-            .modal-container {
-                width: 95%;
-                margin: 1rem;
-                max-height: 90vh;
-                overflow-y: auto;
-            }
-
-            .btn {
-                padding: 0.5rem;
-                font-size: 0.875rem;
-            }
-
-            /* Location modal adjustments */
-            #locationModal .bg-white {
-                width: 95%;
-                margin: 1rem;
-            }
-
-            /* Character form modal adjustments */
-            #characterFormModal .bg-white {
-                width: 95%;
-                margin: 1rem;
-                max-height: 90vh;
-                overflow-y: auto;
-            }
-
-            /* Character network improvements for mobile */
-            .character-tree {
-                min-height: 250px;
-                padding: 0.5rem;
-            }
-
-            .character-node {
-                width: 40px;
-                height: 40px;
-                font-size: 0.75rem;
-            }
-
-            .character-tooltip {
-                width: 160px;
-                font-size: 0.75rem;
-            }
-        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -586,10 +443,6 @@
                 
                 charactersList.appendChild(characterItem);
             });
-
-            // Dispatch custom event to notify that characters list has been updated
-            // This allows us to re-attach touch events for mobile
-            document.dispatchEvent(new CustomEvent('charactersListUpdated'));
         }
 
         async function loadCharacters() {
@@ -899,113 +752,6 @@
 
         // Initialize all event handlers
         function initializeEventHandlers() {
-            // Mobile touch drag support
-            const isMobile = window.innerWidth < 768;
-            
-            if (isMobile) {
-                // Add touch event listeners for mobile drag and drop
-                document.querySelectorAll('.character-item').forEach(item => {
-                    item.addEventListener('touchstart', handleTouchStart);
-                });
-                
-                // Re-attach touch events after character list is updated
-                document.addEventListener('charactersListUpdated', function() {
-                    document.querySelectorAll('.character-item').forEach(item => {
-                        item.removeEventListener('touchstart', handleTouchStart);
-                        item.addEventListener('touchstart', handleTouchStart);
-                    });
-                });
-            }
-            
-            // Touch start handler function
-            function handleTouchStart(e) {
-                // Store the initial touch position
-                const touch = e.touches[0];
-                const startX = touch.clientX;
-                const startY = touch.clientY;
-                
-                // Set data for drag operation
-                const characterData = {
-                    id: this.getAttribute('data-character-id'),
-                    name: this.getAttribute('data-name'),
-                    role: this.getAttribute('data-role')
-                };
-                
-                // Add drag visual indicator
-                this.classList.add('dragging');
-                
-                // Handle touch move
-                const handleTouchMove = function(moveEvent) {
-                    // Prevent default to avoid scrolling while dragging
-                    moveEvent.preventDefault();
-                    
-                    const currentTouch = moveEvent.touches[0];
-                    const deltaX = currentTouch.clientX - startX;
-                    const deltaY = currentTouch.clientY - startY;
-                    
-                    // Move the element with the touch
-                    this.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-                    
-                    // Find the element we're hovering over
-                    const touchTarget = document.elementFromPoint(
-                        currentTouch.clientX, 
-                        currentTouch.clientY
-                    );
-                    
-                    // Handle hover effects
-                    document.querySelectorAll('.timeline-cell').forEach(cell => {
-                        cell.classList.remove('drag-over');
-                    });
-                    
-                    // Find the closest timeline cell
-                    const timelineCell = touchTarget ? touchTarget.closest('.timeline-cell') : null;
-                    if (timelineCell) {
-                        timelineCell.classList.add('drag-over');
-                    }
-                }.bind(this);
-                
-                // Handle touch end
-                const handleTouchEnd = function(endEvent) {
-                    // Clean up
-                    this.classList.remove('dragging');
-                    this.style.transform = '';
-                    
-                    // Remove event listeners
-                    document.removeEventListener('touchmove', handleTouchMove);
-                    document.removeEventListener('touchend', handleTouchEnd);
-                    document.removeEventListener('touchcancel', handleTouchEnd);
-                    
-                    // Get the final touch position
-                    const endTouch = endEvent.changedTouches[0];
-                    
-                    // Find the element we're dropping onto
-                    const dropTarget = document.elementFromPoint(
-                        endTouch.clientX, 
-                        endTouch.clientY
-                    );
-                    
-                    // Find the closest timeline cell
-                    const timelineCell = dropTarget ? dropTarget.closest('.timeline-cell') : null;
-                    if (timelineCell) {
-                        // Remove hover effect
-                        timelineCell.classList.remove('drag-over');
-                        
-                        // Simulate drop event
-                        handleCharacterDrop({
-                            preventDefault: () => {},
-                            dataTransfer: {
-                                getData: () => JSON.stringify(characterData)
-                            }
-                        }, timelineCell);
-                    }
-                }.bind(this);
-                
-                // Add event listeners for touch move and end
-                document.addEventListener('touchmove', handleTouchMove, { passive: false });
-                document.addEventListener('touchend', handleTouchEnd);
-                document.addEventListener('touchcancel', handleTouchEnd);
-            }
-            
             // Initialize location modal handlers
             const addLocationBtn = document.getElementById('addLocationBtn');
             const closeLocationModalBtn = document.getElementById('closeLocationModal');
@@ -2352,10 +2098,10 @@
 
                 <!-- Timeline Gantt Chart (Right) -->
                 <div class="flex-1 bg-white shadow-md border border-gray-100 rounded-r-lg overflow-auto">
-                    <div class="p-4 border-b border-gray-100 sticky top-0 bg-white z-10 timeline-header-controls">
+                    <div class="p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
                         <h2 class="text-lg font-semibold text-primary">Story Timeline</h2>
                         <div class="flex items-center space-x-3">
-                            <div class="relative flex-grow">
+                            <div class="relative">
                                 <input type="date" id="dateSelector" class="border border-gray-200 rounded-lg p-2 text-sm pr-8" onchange="handleDateSelectorChange()">
                                 <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary">
                                     <i class="fas fa-calendar-alt"></i>

@@ -439,66 +439,10 @@
                 z-index: 51;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
-            
-            /* AI Assistant panel mobile optimization */
-            #aiAssistPanel {
-                width: 100%;
-                min-width: 100%;
-                max-width: 100%;
-            }
-            
-            /* Ensure the chatView is visible and properly structured on mobile */
-            #chatView {
-                display: flex !important; /* Ensure it displays when active tab */
-                flex-direction: column;
-                height: calc(100vh - 160px); /* Adjust for header/panel header */
-            }
-            
-            /* Optimize chat history container for mobile */
-            #chatHistory {
-                flex: 1;
-                overflow-y: auto;
-                display: flex;
-                flex-direction: column;
-                min-height: 200px;
-                max-height: calc(100vh - 240px);
-                padding: 1rem;
-                scroll-behavior: smooth;
-                -webkit-overflow-scrolling: touch; /* Smooth scrolling for iOS */
-            }
-            
-            /* Ensure chat input area stays visible */
-            #chatInput {
-                min-height: 2.5rem;
-                max-height: 5rem; /* Smaller max height on mobile */
-                width: 100%;
-                border-radius: 8px;
-                padding: 0.5rem;
-                margin-bottom: 0.5rem;
-            }
-            
-            /* Ensure the chat message elements are properly styled */
-            .chat-message {
-                max-width: 90%;
-                padding: 0.75rem;
-                border-radius: 0.75rem;
-                margin-bottom: 0.75rem;
-                word-break: break-word;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            }
-            
-            .chat-message.user {
-                align-self: flex-end;
-                background-color: var(--primary-light);
-                color: var(--primary);
-                border-bottom-right-radius: 0;
-            }
-            
-            .chat-message.ai {
-                align-self: flex-start;
-                background-color: #f1f5f9;
-                color: #334155;
-                border-bottom-left-radius: 0;
+
+            #saveStatus i {
+                font-size: 0.65rem; /* Smaller icon size */
+                margin-right: 4px;
             }
 
             /* Clean up header for mobile */
@@ -631,11 +575,6 @@
                     -webkit-overflow-scrolling: touch;
                 }
             }
-        }
-
-        #saveStatus i {
-            font-size: 0.65rem; /* Smaller icon size */
-            margin-right: 4px;
         }
     </style>
 </head>
@@ -3181,17 +3120,6 @@
                     if (mode === 'chat') {
                         generateEditView.classList.add('hidden');
                         chatView.classList.remove('hidden');
-                        
-                        // On mobile, ensure chatHistory is visible and scrollable
-                        if (window.innerWidth <= 768) {
-                            // Force reflow to ensure visibility
-                            chatHistory.style.display = 'flex';
-                            // Scroll to bottom of chat history
-                            setTimeout(() => {
-                                chatHistory.scrollTop = chatHistory.scrollHeight;
-                            }, 50);
-                        }
-                        
                         // Remove auto-focus
                         // chatInput.focus();
                     } else {
@@ -3255,35 +3183,12 @@
             // Initialize textarea height
             window.addEventListener('load', function() {
                 autoExpandTextarea(aiInput);
-                
-                // Setup resize listener for mobile chat view
-                window.addEventListener('resize', () => {
-                    // If chat view is active and visible
-                    if (currentMode === 'chat' && !chatView.classList.contains('hidden') && window.innerWidth <= 768) {
-                        // Recalculate heights to ensure visibility
-                        chatHistory.style.maxHeight = `calc(100vh - 240px)`;
-                        chatHistory.scrollTop = chatHistory.scrollHeight;
-                    }
-                });
-                
-                // Initial adjustment for mobile, if needed
-                if (window.innerWidth <= 768 && currentMode === 'chat') {
-                    setTimeout(() => {
-                        chatHistory.scrollTop = chatHistory.scrollHeight;
-                    }, 100);
-                }
             });
             
             // Handle chat input
             chatInput.addEventListener('input', function() {
                 validateInput(this);
                 autoExpandTextarea(this);
-                
-                // Ensure chat history stays visible when typing
-                if (window.innerWidth <= 768) {
-                    // Make sure the chat view is scrolled correctly
-                    chatHistory.scrollTop = chatHistory.scrollHeight;
-                }
             });
             
             // Add a delay function to rate limit requests
@@ -3512,16 +3417,6 @@
                 chatHistory.appendChild(messageEl);
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             }
-
-            // Add window resize listener to handle mobile orientation changes
-            window.addEventListener('resize', () => {
-                // If chat view is active and visible
-                if (currentMode === 'chat' && !chatView.classList.contains('hidden') && window.innerWidth <= 768) {
-                    // Recalculate heights to ensure visibility
-                    chatHistory.style.maxHeight = `calc(100vh - 240px)`;
-                    chatHistory.scrollTop = chatHistory.scrollHeight;
-                }
-            });
         });
     </script>
 
