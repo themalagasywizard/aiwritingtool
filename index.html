@@ -415,37 +415,10 @@
 
         /* Mobile Styles */
         @media (max-width: 768px) {
-            /* Lock lateral movement on mobile */
             html, body {
                 overflow-x: hidden;
                 position: relative;
                 width: 100%;
-            }
-
-            /* Fix header and toolbar in place for mobile */
-            header.h-16 {
-                position: sticky;
-                top: 0;
-                z-index: 35;
-                padding: 0.5rem 1rem !important;
-            }
-
-            /* Fix editor toolbar in place */
-            .editor-toolbar {
-                position: sticky;
-                top: 4rem; /* Account for header height */
-                z-index: 30;
-                background-color: white;
-                border-bottom: 1px solid var(--primary-light);
-                flex-wrap: wrap;
-                gap: 0.25rem;
-                padding: 0.5rem;
-            }
-
-            /* Adjust content padding to account for fixed header and toolbar */
-            #editorContent {
-                padding: 1rem !important;
-                padding-top: 2rem !important;
             }
 
             .sidebar {
@@ -461,6 +434,31 @@
                 transform: translateX(250px);
             }
 
+            /* Fixed header and toolbar for mobile */
+            header.h-16 {
+                position: sticky;
+                top: 0;
+                z-index: 30;
+                padding: 0.5rem 1rem !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .editor-toolbar {
+                position: sticky;
+                top: 64px; /* Height of header */
+                z-index: 29;
+                background-color: white;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                padding: 0.5rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+
+            #editorContent {
+                padding: 1rem !important;
+                padding-bottom: 100px !important; /* Extra padding at bottom for scroll space */
+            }
+
             .btn {
                 padding: 0.5rem !important;
             }
@@ -472,8 +470,7 @@
             .btn-icon-only-mobile span {
                 display: none;
             }
-
-            /* Adjust top bar for mobile */
+            
             header .flex.items-center.space-x-4 {
                 gap: 0.5rem !important;
             }
@@ -3194,14 +3191,14 @@
                     if (mode === 'chat') {
                         generateEditView.classList.add('hidden');
                         chatView.classList.remove('hidden');
-                        // Only focus on desktop
+                        // Only focus on desktop, not mobile
                         if (window.innerWidth >= 768) {
                             chatInput.focus();
                         }
                     } else {
                         generateEditView.classList.remove('hidden');
                         chatView.classList.add('hidden');
-                        // Only focus on desktop
+                        // Only focus on desktop, not mobile
                         if (window.innerWidth >= 768) {
                             aiInput.focus();
                         }
