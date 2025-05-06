@@ -1887,92 +1887,40 @@
                     </div>
                     
                     <!-- Model Selector -->
-                    <select id="aiModel" class="w-full bg-primaryLight text-primary rounded-lg p-2 text-sm">
-                        <!-- DeepSeek Models (Direct API) -->
-                        <option value="deepseek-chat">DeepSeek Chat (V3) - Featured</option>
-                        <option value="deepseek-reasoner">DeepSeek Reasoner (R1) - Featured</option>
-                        
-                        <option disabled>──────── Hugging Face Models ────────</option>
-                        <option value="distilgpt2">DistilGPT-2 (Fast)</option>
-                        <option value="gpt2-medium">GPT-2 Medium (Balanced)</option>
-                        <!-- New models -->
-                        <option value="Qwen/Qwen3-0.6B">Qwen3-0.6B (Small but Improved)</option>
-                        <option value="google/gemma-2b">Gemma-2B (Google's Lightweight)</option>
-                        <option value="meta-llama/Llama-3-8B-Instruct">Llama-3-8B (High Quality)</option>
-                        <option value="tiiuae/falcon-7b-instruct">Falcon-7B (Creative)</option>
-                        <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral-8x7B (Most Powerful)</option>
-                        <!-- Temporarily disabled due to timeouts -->
-                        <!-- <option value="EleutherAI/gpt-neo-125M">GPT-Neo 125M (Advanced)</option> -->
-                        <!-- <option value="facebook/opt-350m">OPT 350M (Creative)</option> -->
+                    <select id="aiModel" class="w-full bg-primaryLight text-primary rounded-lg p-2 text-sm" tabindex="-1">
+                        <!-- Models list... -->
                     </select>
-                </div>
-
-                <!-- Context Preview -->
-                <div class="flex-shrink-0 bg-primaryLight/20 p-3 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs text-secondary">Using context:</span>
-                        <button class="text-xs text-primary hover:text-primary/80">
-                            <i class="fas fa-edit mr-1"></i>Edit
-                        </button>
-                    </div>
-                    <div class="text-sm text-primary mt-1">Jane, Darkwood Forest</div>
                 </div>
 
                 <!-- Chat View -->
                 <div id="chatView" class="flex-1 flex flex-col hidden">
-                    <!-- Chat History (now at top) -->
+                    <!-- Chat History -->
                     <div id="chatHistory" class="flex-1 overflow-y-auto">
-                        <!-- Example messages will be added here -->
+                        <!-- Messages will be added here -->
                     </div>
                     
-                    <!-- Chat Input (now at bottom) -->
+                    <!-- Chat Input -->
                     <div class="flex-shrink-0 p-4 border-t border-gray-200">
                         <div class="relative flex items-end space-x-2">
-                            <textarea id="chatInput" class="flex-1 border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ask the AI..." rows="1"></textarea>
+                            <textarea id="chatInput" class="flex-1 border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ask the AI..." rows="1" tabindex="-1"></textarea>
                             <button id="chatSubmit" class="btn btn-primary flex-shrink-0" disabled>
                                 <i class="fas fa-paper-plane"></i>
                             </button>
-                        </div>
-                        
-                        <!-- Token usage info for DeepSeek models -->
-                        <div id="tokenUsageInfo" class="text-xs text-gray-500 mt-2 hidden">
-                            <span>Token usage: <span id="promptTokens">0</span> prompt + <span id="completionTokens">0</span> completion = <span id="totalTokens">0</span> total</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Generate/Edit View -->
                 <div id="generateEditView" class="flex-1 flex flex-col">
-                    <!-- Output Area (now at top) -->
+                    <!-- Output Area -->
                     <div id="aiOutput" class="flex-1 bg-gray-50 rounded-lg m-4 p-6 overflow-y-auto">
                         <p class="text-gray-400 text-sm italic">AI output will appear here...</p>
                     </div>
                     
-                    <!-- Controls (in middle) -->
-                    <div class="flex-shrink-0 space-y-3 px-4">
-                        <div>
-                            <label class="text-sm font-medium block mb-2">Tone</label>
-                            <select id="aiTone" class="w-full border border-gray-200 rounded-lg p-2 text-sm">
-                                <option>Suspenseful</option>
-                                <option>Humorous</option>
-                                <option>Dramatic</option>
-                                <option>Reflective</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-sm font-medium block mb-2">Length</label>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-500">Short</span>
-                                <input type="range" id="aiLength" min="50" max="500" value="200" class="flex-grow">
-                                <span class="text-xs text-gray-500">Long</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Input Area (now at bottom) -->
+                    <!-- Input Area -->
                     <div class="flex-shrink-0 p-4 border-t border-gray-200">
                         <div class="relative">
-                            <textarea id="aiInput" class="w-full min-h-[100px] max-h-[200px] border border-gray-200 rounded-lg p-3 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Write a scene with Jane..."></textarea>
+                            <textarea id="aiInput" class="w-full min-h-[100px] max-h-[200px] border border-gray-200 rounded-lg p-3 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Write a scene with Jane..." tabindex="-1"></textarea>
                             <button id="aiSubmit" class="absolute right-3 top-3 text-primary hover:text-primary/80 disabled:opacity-50">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
@@ -3087,19 +3035,9 @@
             
             // Toggle AI Panel
             function toggleAiPanel() {
-                const isOpen = aiAssistPanel.classList.contains('translate-x-0');
-                aiAssistPanel.classList.toggle('translate-x-0');
+                const isOpen = !aiAssistPanel.classList.contains('translate-x-full');
                 aiAssistPanel.classList.toggle('translate-x-full');
                 aiMobileOverlay.classList.toggle('hidden');
-                
-                if (!isOpen) {
-                    // Panel is opening
-                    if (currentMode === 'generate') {
-                        aiInput.focus();
-                    } else if (currentMode === 'chat') {
-                        chatInput.focus();
-                    }
-                }
             }
             
             aiAssistBtn.addEventListener('click', toggleAiPanel);
@@ -3110,25 +3048,19 @@
             modeButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const mode = btn.dataset.mode;
-                    currentMode = mode;
                     
                     // Update active state
                     modeButtons.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     
-                    // Show/hide views
+                    // Show/hide views without focusing inputs
                     if (mode === 'chat') {
                         generateEditView.classList.add('hidden');
                         chatView.classList.remove('hidden');
-                        chatInput.focus();
                     } else {
                         generateEditView.classList.remove('hidden');
                         chatView.classList.add('hidden');
-                        aiInput.focus();
                     }
-                    
-                    // Update placeholder
-                    updatePlaceholder();
                 });
             });
             
