@@ -62,6 +62,10 @@
                 display: flex;
                 flex-direction: column;
                 padding-top: 56px;
+                position: fixed; /* Keep body fixed */
+                width: 100%;
+                left: 0;
+                right: 0;
             }
 
             /* Fixed header - absolutely fixed at top */
@@ -79,6 +83,8 @@
                 overflow: hidden;
                 -webkit-overflow-scrolling: none;
                 touch-action: none;
+                transform: translateZ(0); /* Force hardware acceleration */
+                will-change: transform; /* Hint to browser */
             }
             
             /* Fixed toolbar - absolutely fixed below header */
@@ -98,6 +104,8 @@
                 overflow: hidden;
                 -webkit-overflow-scrolling: none;
                 touch-action: none;
+                transform: translateZ(0); /* Force hardware acceleration */
+                will-change: transform; /* Hint to browser */
             }
 
             /* Main content needs to be pushed down to account for fixed header and toolbar */
@@ -107,6 +115,7 @@
                 flex-direction: column;
                 height: calc(100vh - 104px); /* Subtract header + toolbar height */
                 overflow: hidden;
+                transform: translateZ(0); /* Force hardware acceleration */
             }
 
             /* Make main wrapper take remaining height */
@@ -116,51 +125,6 @@
                 -webkit-overflow-scrolling: touch;
                 position: relative;
                 padding-bottom: 30px;
-            }
-
-            /* AI Assistant Panel Mobile Styles */
-            #aiAssistPanel {
-                width: 100% !important;
-                min-width: 100% !important;
-                max-height: 80vh !important;
-                bottom: 0;
-                top: auto;
-                border-radius: 1rem 1rem 0 0;
-                box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
-                background-color: white !important;
-                z-index: 50 !important;
-            }
-
-            #aiMobileOverlay {
-                z-index: 49 !important;
-                background-color: rgba(0, 0, 0, 0.5);
-            }
-
-            /* Ensure AI panel and its contents are interactive */
-            #aiAssistPanel,
-            #aiAssistPanel *,
-            #aiInput,
-            #aiOutput,
-            #chatInput,
-            #chatHistory,
-            .ai-mode-btn,
-            #aiModel {
-                pointer-events: auto !important;
-            }
-
-            /* Prevent clicks on overlay from closing the panel */
-            #aiMobileOverlay.hidden {
-                display: none !important;
-            }
-
-            /* Ensure proper height for chat components */
-            #chatHistory {
-                max-height: 50vh !important;
-            }
-
-            #chatInput,
-            #aiInput {
-                max-height: 100px !important;
             }
 
             .sidebar {
@@ -198,6 +162,65 @@
                 margin: 1rem !important;
                 max-height: 90vh !important;
                 overflow-y: auto !important;
+            }
+
+            /* AI Assistant Panel Mobile Styles */
+            #aiAssistPanel {
+                width: 100% !important;
+                min-width: 100% !important;
+                max-height: 80vh !important;
+                bottom: 0;
+                top: auto;
+                border-radius: 1rem 1rem 0 0;
+                box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+                background-color: white !important;
+                z-index: 50 !important;
+                position: fixed; /* Ensure it's fixed */
+                transform: translateZ(0); /* Force hardware acceleration */
+            }
+
+            #aiMobileOverlay {
+                z-index: 49 !important;
+                background-color: rgba(0, 0, 0, 0.5);
+                position: fixed; /* Ensure overlay is fixed */
+                top: 0;
+                bottom: 0;
+                left: 0;
+                right: 0;
+            }
+
+            /* Ensure chat input doesn't resize the viewport when focused */
+            #chatInput, #aiInput {
+                height: 70px;
+                max-height: 70px;
+                resize: none;
+                font-size: 14px;
+                padding: 8px;
+                position: relative;
+                -webkit-appearance: none;
+            }
+
+            /* Fix for iOS input focus viewport shifting */
+            @supports (-webkit-touch-callout: none) {
+                #chatInput, #aiInput, #aiModel, #aiAssistPanel select {
+                    font-size: 16px; /* Prevent iOS zoom on input focus */
+                }
+            }
+
+            /* Fix iOS keyboard issue that may move fixed elements */
+            @supports (-webkit-overflow-scrolling: touch) {
+                header.h-16, .editor-toolbar {
+                    position: fixed !important;
+                    -webkit-transform: translateZ(0);
+                }
+            }
+
+            /* Fix for keyboard appearance */
+            .keyboard-open header.h-16,
+            .keyboard-open .editor-toolbar {
+                position: fixed !important;
+                top: 0 !important;
+                transform: translateZ(0);
             }
 
             /* Make load project panel full width */
@@ -252,53 +275,26 @@
                 margin: 1rem !important;
             }
 
-            /* Fix for chat input focus issues */
-            #aiAssistPanel input, 
-            #aiAssistPanel textarea {
-                -webkit-appearance: none;
-                appearance: none;
-                font-size: 16px; /* Prevent iOS zoom */
+            /* Ensure AI panel and its contents are interactive */
+            #aiAssistPanel,
+            #aiAssistPanel *,
+            #aiInput,
+            #aiOutput,
+            #chatInput,
+            #chatHistory,
+            .ai-mode-btn,
+            #aiModel {
+                pointer-events: auto !important;
             }
 
-            /* Prevent visual viewport shifts when keyboard appears */
-            @supports (-webkit-touch-callout: none) {
-                /* iOS specific fix */
-                .main-content-wrapper {
-                    height: -webkit-fill-available;
-                }
-
-                /* iOS keyboard fix */
-                body.keyboard-open {
-                    height: -webkit-fill-available;
-                    position: fixed;
-                    width: 100%;
-                }
-
-                /* Keep header and toolbar visible regardless of keyboard state */
-                header.h-16,
-                .editor-toolbar {
-                    position: fixed !important;
-                    -webkit-transform: translateZ(0);
-                    transform: translateZ(0);
-                }
-
-                /* Add padding to ensure chat inputs are fully visible with keyboard */
-                #aiAssistPanel {
-                    padding-bottom: 20vh;
-                }
+            /* Prevent clicks on overlay from closing the panel */
+            #aiMobileOverlay.hidden {
+                display: none !important;
             }
 
-            /* Prevent scroll position jumps - more reliable cross-browser approach */
-            #chatInput:focus,
-            #aiInput:focus {
-                position: relative;
-                z-index: 3;
-            }
-
-            /* Add JS hook to handle keyboard visibility changes */
-            body::after {
-                content: '';
-                display: none;
+            /* Ensure proper height for chat components */
+            #chatHistory {
+                max-height: 50vh !important;
             }
         }
 
@@ -3667,61 +3663,89 @@
         </div>
     </div>
 
-    <!-- Add this script to the end of the body tag or at the end of the file */ -->
-    <!-- Add this before the closing </body> tag -->
+    <!-- Add keyboard detection script for mobile -->
     <script>
-        // Existing scripts...
+        // Only for mobile devices
+        if (window.innerWidth <= 768) {
+            // Function to handle input focus events
+            function handleInputFocus() {
+                // Add a class to body when keyboard is likely to be open
+                document.body.classList.add('keyboard-open');
+                
+                // Force redraw of header and toolbar to ensure they stay in place
+                const header = document.querySelector('header.h-16');
+                const toolbar = document.querySelector('.editor-toolbar');
+                
+                if (header) {
+                    header.style.transform = 'translateZ(0)';
+                    header.style.position = 'fixed';
+                    header.style.top = '0';
+                }
+                
+                if (toolbar) {
+                    toolbar.style.transform = 'translateZ(0)';
+                    toolbar.style.position = 'fixed';
+                    toolbar.style.top = '56px';
+                }
+                
+                // Prevent scrolling to input
+                setTimeout(function() {
+                    window.scrollTo(0, 0);
+                }, 10);
+            }
 
-        // Fix for mobile keyboard issues
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.innerWidth <= 768) {
-                // Handle input focus to prevent toolbar issues
-                const handleFocus = function() {
-                    // Add class to indicate keyboard is open
+            // Function to handle input blur events
+            function handleInputBlur() {
+                // Remove the class when keyboard likely closes
+                document.body.classList.remove('keyboard-open');
+                
+                // Restore scroll position
+                setTimeout(function() {
+                    window.scrollTo(0, 0);
+                }, 10);
+            }
+
+            // Add focus and blur event listeners to chat inputs
+            const inputs = document.querySelectorAll('#chatInput, #aiInput, #aiAssistPanel input, #aiAssistPanel textarea');
+            inputs.forEach(input => {
+                input.addEventListener('focus', handleInputFocus);
+                input.addEventListener('blur', handleInputBlur);
+            });
+
+            // Monitor viewport resize which might indicate keyboard opening/closing
+            let windowHeight = window.innerHeight;
+            window.addEventListener('resize', function() {
+                // If height significantly decreased, keyboard is probably open
+                if (window.innerHeight < windowHeight * 0.75) {
                     document.body.classList.add('keyboard-open');
-                    
-                    // Force redraw the fixed elements
-                    const header = document.querySelector('header.h-16');
-                    const toolbar = document.querySelector('.editor-toolbar');
-                    
-                    if (header) {
-                        header.style.display = 'none';
-                        header.offsetHeight; // Force reflow
-                        header.style.display = '';
-                    }
-                    
-                    if (toolbar) {
-                        toolbar.style.display = 'none';
-                        toolbar.offsetHeight; // Force reflow
-                        toolbar.style.display = '';
-                    }
-                };
-                
-                const handleBlur = function() {
-                    // Remove keyboard open class
+                } else {
                     document.body.classList.remove('keyboard-open');
-                };
+                }
+                windowHeight = window.innerHeight;
                 
-                // Add event listeners to AI panel inputs
-                const aiInputs = document.querySelectorAll('#aiAssistPanel input, #aiAssistPanel textarea');
-                aiInputs.forEach(input => {
-                    input.addEventListener('focus', handleFocus);
-                    input.addEventListener('blur', handleBlur);
-                });
+                // Prevent layout shift by forcing a fixed position on header and toolbar
+                const header = document.querySelector('header.h-16');
+                const toolbar = document.querySelector('.editor-toolbar');
                 
-                // Additional listener for visibilitychange to handle keyboard dismiss
-                document.addEventListener('visibilitychange', function() {
-                    if (document.visibilityState === 'visible') {
-                        // Ensure toolbar and header are properly positioned
+                if (header) header.style.position = 'fixed';
+                if (toolbar) toolbar.style.position = 'fixed';
+            });
+            
+            // Fix for AI Assistant panel opening
+            const aiButtons = document.querySelectorAll('.ai-toggle-btn, #aiMobileOverlay');
+            aiButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // Ensure header and toolbar stay fixed when AI panel opens/closes
+                    setTimeout(function() {
+                        window.scrollTo(0, 0);
                         const header = document.querySelector('header.h-16');
                         const toolbar = document.querySelector('.editor-toolbar');
-                        
-                        if (header) header.style.transform = 'translateZ(0)';
-                        if (toolbar) toolbar.style.transform = 'translateZ(0)';
-                    }
+                        if (header) header.style.position = 'fixed';
+                        if (toolbar) toolbar.style.position = 'fixed';
+                    }, 50);
                 });
-            }
-        });
+            });
+        }
     </script>
 </body>
 </html> 
