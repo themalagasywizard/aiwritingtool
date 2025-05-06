@@ -475,6 +475,11 @@
                 font-size: 0.75rem;
             }
         }
+
+        /* Character sidebar adjustments */
+        .w-64 {
+            min-height: 400px;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -2329,8 +2334,8 @@
                 <div class="flex-1 bg-white shadow-md border border-gray-100 rounded-r-lg overflow-auto">
                     <div class="p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
                         <h2 class="text-lg font-semibold text-primary">Story Timeline</h2>
-                        <div class="flex items-center space-x-3">
-                            <div class="relative">
+                        <div class="flex flex-col md:flex-row">
+                            <div class="relative mb-2 md:mb-0 md:mr-3">
                                 <input type="date" id="dateSelector" class="border border-gray-200 rounded-lg p-2 text-sm pr-8" onchange="handleDateSelectorChange()">
                                 <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary">
                                     <i class="fas fa-calendar-alt"></i>

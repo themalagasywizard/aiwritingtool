@@ -415,6 +415,39 @@
 
         /* Mobile Styles */
         @media (max-width: 768px) {
+            /* Lock lateral movement on mobile */
+            html, body {
+                overflow-x: hidden;
+                position: relative;
+                width: 100%;
+            }
+
+            /* Fix header and toolbar in place for mobile */
+            header.h-16 {
+                position: sticky;
+                top: 0;
+                z-index: 35;
+                padding: 0.5rem 1rem !important;
+            }
+
+            /* Fix editor toolbar in place */
+            .editor-toolbar {
+                position: sticky;
+                top: 4rem; /* Account for header height */
+                z-index: 30;
+                background-color: white;
+                border-bottom: 1px solid var(--primary-light);
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                padding: 0.5rem;
+            }
+
+            /* Adjust content padding to account for fixed header and toolbar */
+            #editorContent {
+                padding: 1rem !important;
+                padding-top: 2rem !important;
+            }
+
             .sidebar {
                 position: fixed;
                 left: -250px;
@@ -426,10 +459,6 @@
 
             .sidebar.open {
                 transform: translateX(250px);
-            }
-
-            #editorContent {
-                padding: 1rem !important;
             }
 
             .btn {
@@ -445,10 +474,6 @@
             }
 
             /* Adjust top bar for mobile */
-            header.h-16 {
-                padding: 0.5rem 1rem !important;
-            }
-            
             header .flex.items-center.space-x-4 {
                 gap: 0.5rem !important;
             }
@@ -496,13 +521,6 @@
             /* Add mobile menu button */
             #mobileMenuBtn {
                 display: block !important;
-            }
-
-            /* Adjust editor toolbar for mobile */
-            .editor-toolbar {
-                flex-wrap: wrap;
-                gap: 0.25rem;
-                padding: 0.5rem;
             }
 
             /* Make font size dropdown position better on mobile */
@@ -3176,11 +3194,17 @@
                     if (mode === 'chat') {
                         generateEditView.classList.add('hidden');
                         chatView.classList.remove('hidden');
-                        chatInput.focus();
+                        // Only focus on desktop
+                        if (window.innerWidth >= 768) {
+                            chatInput.focus();
+                        }
                     } else {
                         generateEditView.classList.remove('hidden');
                         chatView.classList.add('hidden');
-                        aiInput.focus();
+                        // Only focus on desktop
+                        if (window.innerWidth >= 768) {
+                            aiInput.focus();
+                        }
                     }
                     
                     // Update placeholder
