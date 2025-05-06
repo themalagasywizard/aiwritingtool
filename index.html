@@ -421,51 +421,28 @@
                 justify-content: space-between;
             }
 
-            /* Position save status indicator better for mobile */
+            /* Position save status indicator in the circle */
             #saveStatus {
                 position: absolute;
-                top: 12px;
-                left: 50px;
+                left: 90px; /* Position after the logo */
+                top: 50%;
+                transform: translateY(-50%);
                 margin: 0;
-                padding: 0;
+                padding: 4px 8px;
+                font-size: 0.75rem;
+                display: flex;
+                align-items: center;
+                background: var(--primary-light);
+                color: var(--primary);
+                border-radius: 16px;
+                white-space: nowrap;
+                z-index: 51;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            #saveStatus i {
                 font-size: 0.7rem;
-                display: flex;
-                align-items: center;
-                background: rgba(255,255,255,0.9);
-                border-radius: 12px;
-                padding: 2px 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                z-index: 60;
-            }
-
-            /* Editor toolbar styling */
-            .editor-toolbar {
-                position: fixed;
-                top: 64px; /* Increased from 56px to add more space */
-                left: 0;
-                right: 0;
-                width: 100%;
-                background: white;
-                z-index: 49;
-                padding: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                height: 48px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-
-            /* Adjust main content area to account for new spacing */
-            main {
-                margin-top: 112px; /* Increased from 104px */
-                height: calc(100vh - 112px);
-                overflow-y: auto;
-                width: 100%;
-            }
-
-            /* Update sidebar top position to match new toolbar position */
-            .sidebar {
-                top: 112px; /* Increased from 104px */
+                margin-right: 4px;
             }
 
             /* Clean up header for mobile */
@@ -496,6 +473,51 @@
                 width: 32px;
                 height: 32px;
                 min-width: 32px;
+            }
+
+            /* Adjust header sections */
+            header > div:first-child {
+                display: flex;
+                align-items: center;
+                padding-left: 8px;
+                position: relative; /* For save status positioning */
+            }
+
+            header > div:last-child {
+                display: flex;
+                align-items: center;
+                padding-right: 8px;
+                gap: 6px;
+            }
+
+            /* Editor toolbar styling */
+            .editor-toolbar {
+                position: fixed;
+                top: 64px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                background: white;
+                z-index: 49;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 48px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            /* Adjust main content area to account for new spacing */
+            main {
+                margin-top: 112px; /* Increased from 104px */
+                height: calc(100vh - 112px);
+                overflow-y: auto;
+                width: 100%;
+            }
+
+            /* Update sidebar top position to match new toolbar position */
+            .sidebar {
+                top: 112px; /* Increased from 104px */
             }
 
             /* Mobile sidebar */
