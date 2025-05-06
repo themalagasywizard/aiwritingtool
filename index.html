@@ -412,53 +412,63 @@
                 left: 0;
                 right: 0;
                 width: 100%;
-                z-index: 41;
-                touch-action: none;
-                -webkit-overflow-scrolling: none;
+                height: 64px;
+                background: white;
+                z-index: 50;
             }
             
             .editor-toolbar {
                 position: fixed;
-                top: 64px; /* header height (h-16 = 64px) */
+                top: 64px;
                 left: 0;
                 right: 0;
                 width: 100%;
-                z-index: 39;
-                touch-action: none;
-                -webkit-overflow-scrolling: none;
+                background: white;
+                z-index: 49;
             }
 
-            /* Adjust main content padding to account for fixed header and toolbar */
+            /* Adjust main content area */
             main {
-                padding-top: calc(64px + 48px); /* header height + toolbar height */
+                margin-top: 112px; /* header + toolbar height */
+                height: calc(100vh - 112px);
+                overflow-y: auto;
             }
 
-            /* Allow zooming only in editor content area */
+            /* Editor content specific styles */
             #editorContent {
-                touch-action: manipulation;
                 -webkit-overflow-scrolling: touch;
+                padding: 1rem;
             }
 
+            /* Sidebar adjustments */
+            .sidebar {
+                display: none;
+            }
+
+            /* AI Assistant panel adjustments */
             #aiAssistPanel {
                 width: 100%;
+                min-width: 100%;
                 max-width: 100%;
+            }
+
+            /* Ensure proper scrolling */
+            .overflow-y-auto {
+                -webkit-overflow-scrolling: touch;
             }
         }
 
         /* Fix for iOS zoom issues */
         @supports (-webkit-touch-callout: none) {
             header, .editor-toolbar {
-                position: sticky;
-                top: 0;
-                z-index: 40;
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+                will-change: transform;
+                background: white;
             }
             
-            header {
-                z-index: 41;
-            }
-            
-            .editor-toolbar {
-                z-index: 39;
+            #editorContent {
+                -webkit-overflow-scrolling: touch;
             }
         }
     </style>
