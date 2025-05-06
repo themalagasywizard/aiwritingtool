@@ -416,28 +416,19 @@
                 height: 56px;
                 background: white;
                 z-index: 50;
-                padding: 0 0.5rem;
+                padding: 0;
+                display: flex;
+                justify-content: space-between;
             }
 
-            /* Center the logo on mobile */
-            header .flex.items-center.space-x-4:first-child {
-                position: absolute;
-                left: 50%;
-                transform: translateX(-50%);
-                margin: 0;
-            }
-
-            /* Adjust spacing for mobile menu button */
-            #mobileMenuBtn {
-                position: absolute;
-                left: 0.5rem;
-            }
-
-            /* Mobile header buttons */
+            /* Clean up header for mobile */
             header .btn {
-                padding: 0.5rem;
-                min-width: 40px;
+                min-width: unset;
+                width: 40px;
                 height: 40px;
+                border-radius: 8px;
+                padding: 0;
+                margin: 0 4px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -450,50 +441,91 @@
 
             header .btn i {
                 margin: 0;
-                font-size: 1.1rem;
+                font-size: 1rem;
             }
 
-            /* Compact save status */
-            header .text-sm {
-                font-size: 0.75rem;
+            /* Position save status indicator better */
+            header .text-sm.text-textSecondary {
+                position: absolute;
+                top: 4px;
+                left: 50%;
+                transform: translateX(-50%);
+                margin: 0;
+                padding: 0;
+                font-size: 0.7rem;
+                display: flex;
+                align-items: center;
+                background: rgba(255,255,255,0.8);
+                border-radius: 12px;
+                padding: 2px 8px;
             }
 
-            /* Mobile sidebar */
-            .sidebar {
-                position: fixed;
-                left: -250px;
-                top: 56px; /* Match header height */
-                bottom: 0;
-                width: 250px;
-                background: white;
-                z-index: 48;
-                transition: transform 0.3s ease;
-                display: block !important;
+            /* Adjust header right section */
+            header > div:last-child {
+                display: flex;
+                align-items: center;
+                padding-right: 8px;
+                gap: 6px;
             }
 
-            .sidebar.active {
-                transform: translateX(250px);
+            /* Adjust header left section */
+            header > div:first-child {
+                display: flex;
+                align-items: center;
+                padding-left: 8px;
             }
 
-            /* Mobile menu toggle button */
-            #mobileMenuBtn {
-                display: block;
-                margin-right: 0.5rem;
+            /* Hide title completely on mobile */
+            header h1 {
+                display: none;
             }
 
-            /* Editor toolbar adjustments */
+            /* Make logo smaller */
+            header .w-10.h-10 {
+                width: 32px;
+                height: 32px;
+                min-width: 32px;
+            }
+
+            /* Editor toolbar styling */
             .editor-toolbar {
                 position: fixed;
-                top: 56px; /* Match new header height */
+                top: 56px;
                 left: 0;
                 right: 0;
                 width: 100%;
                 background: white;
                 z-index: 49;
-                padding: 0.5rem;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 48px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
 
-            /* Main content adjustments */
+            /* Style toolbar buttons */
+            .editor-toolbar .toolbar-btn {
+                width: 36px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                background: rgba(75, 94, 170, 0.1);
+                color: var(--primary);
+                margin: 0 2px;
+            }
+
+            /* Style AI Assist button specifically */
+            .editor-toolbar #aiAssistBtn {
+                padding: 8px 12px;
+                height: 36px;
+                border-radius: 8px;
+                margin-left: auto;
+            }
+
+            /* Adjust main content area */
             main {
                 margin-top: 104px; /* header + toolbar height */
                 height: calc(100vh - 104px);
@@ -501,11 +533,29 @@
                 width: 100%;
             }
 
+            /* Mobile sidebar */
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 104px; /* Match header + toolbar height */
+                bottom: 0;
+                width: 250px;
+                background: white;
+                z-index: 48;
+                transition: transform 0.3s ease;
+                display: block !important;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+
+            .sidebar.active {
+                transform: translateX(250px);
+            }
+
             /* Mobile overlay for sidebar */
             #sidebarOverlay {
                 position: fixed;
                 inset: 0;
-                background: rgba(0, 0, 0, 0.5);
+                background: rgba(0,0,0,0.5);
                 z-index: 47;
                 opacity: 0;
                 visibility: hidden;
@@ -527,15 +577,16 @@
 
         /* Fix for iOS zoom issues */
         @supports (-webkit-touch-callout: none) {
-            header, .editor-toolbar {
-                -webkit-transform: translateZ(0);
-                transform: translateZ(0);
-                will-change: transform;
-                background: white;
-            }
-            
-            #editorContent {
-                -webkit-overflow-scrolling: touch;
+            @media (max-width: 768px) {
+                header, .editor-toolbar {
+                    -webkit-transform: translateZ(0);
+                    transform: translateZ(0);
+                    will-change: transform;
+                }
+                
+                #editorContent {
+                    -webkit-overflow-scrolling: touch;
+                }
             }
         }
     </style>
@@ -1775,7 +1826,8 @@
         <main class="flex-1 overflow-hidden flex flex-col bg-white">
             <!-- Editor Toolbar -->
             <div class="bg-white border-b border-gray-100 p-2 flex items-center space-x-2 shadow-sm-custom editor-toolbar">
-                <div class="flex items-center space-x-1 mr-2">
+                <!-- Formatting buttons grouped together -->
+                <div class="flex items-center space-x-1">
                     <button class="toolbar-btn" title="Bold">
                         <i class="fas fa-bold"></i>
                     </button>
@@ -1797,13 +1849,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="h-6 w-px bg-gray-200 mx-2"></div>
-                <!-- AI Assistant Button -->
-                <button id="aiAssistBtn" class="btn btn-primary text-sm transform transition-transform hover:scale-105 active:scale-95">
+                
+                <!-- AI Assistant Button (right-aligned) -->
+                <button id="aiAssistBtn" class="btn btn-primary text-sm transform transition-transform hover:scale-105 active:scale-95 ml-auto">
                     <i class="fas fa-robot mr-2"></i>
-                    AI Assist
+                    <span>AI Assist</span>
                 </button>
-                <div class="flex-grow"></div>
+                
+                <!-- Full Screen button -->
                 <button class="toolbar-btn" title="Full Screen">
                     <i class="fas fa-expand"></i>
                 </button>
