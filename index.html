@@ -576,60 +576,6 @@
                 }
             }
         }
-
-        /* Chat View Styles */
-        #chatView {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            max-height: 100%;
-            overflow: hidden;
-            position: relative;
-        }
-
-        #chatHistory {
-            flex: 1;
-            padding: 1rem;
-            scroll-behavior: smooth;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            overflow-y: auto;
-            height: calc(100vh - 280px);
-            min-height: 300px;
-            padding-bottom: 80px;
-        }
-
-        /* Chat input container */
-        #chatView .flex-shrink-0 {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 1rem;
-            border-top: 1px solid var(--primary-light);
-            z-index: 52;
-        }
-
-        @media (max-width: 768px) {
-            #chatHistory {
-                height: calc(100vh - 320px);
-                padding-bottom: 100px;
-            }
-
-            #chatView .flex-shrink-0 {
-                padding: 0.75rem;
-                background: white;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            }
-
-            #chatInput {
-                border-radius: 8px;
-                border: 1px solid var(--primary-light);
-            }
-        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -1972,7 +1918,7 @@
                     <div class="text-sm text-primary mt-1">Jane, Darkwood Forest</div>
                 </div>
 
-                <!-- Chat View */
+                <!-- Chat View -->
                 <div id="chatView" class="flex-1 flex flex-col hidden">
                     <!-- Chat History (now at top) -->
                     <div id="chatHistory" class="flex-1 overflow-y-auto">
