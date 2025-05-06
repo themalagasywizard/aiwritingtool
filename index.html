@@ -54,15 +54,181 @@
             color: var(--text-primary);
         }
 
-        /* Lock lateral movement on mobile */
+        /* Mobile fixed layout */
         @media (max-width: 768px) {
-            html, body {
-                overflow-x: hidden;
-                position: relative;
-                width: 100%;
+            body {
+                overflow: hidden;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 0;
+                bottom: 0;
+                z-index: 40;
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(250px);
+            }
+
+            /* Fixed header and toolbar for mobile */
+            header.h-16 {
+                position: sticky;
+                top: 0;
+                z-index: 30;
+                flex-shrink: 0;
+                padding: 0.5rem 1rem !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            
+            .editor-toolbar {
+                position: sticky;
+                top: 64px; /* Height of header */
+                z-index: 29;
+                flex-shrink: 0;
+                background-color: white;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+                padding: 0.5rem;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+
+            /* Make main wrapper take remaining height */
+            .main-content-wrapper {
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Remove overflow from inner container to avoid nested scrollbars */
+            .main-content-wrapper > .flex-1 {
+                overflow-y: visible;
+                height: auto;
+            }
+
+            main.flex-1 {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                overflow: hidden;
+            }
+
+            #editorContent {
+                padding: 1rem !important;
+                padding-bottom: 100px !important; /* Extra padding at bottom for scroll space */
+                min-height: 100%;
+            }
+
+            .btn {
+                padding: 0.5rem !important;
+            }
+
+            /* Hide text on small buttons, show only icons */
+            .btn-icon-only-mobile i {
+                margin: 0 !important;
+            }
+            .btn-icon-only-mobile span {
+                display: none;
+            }
+            
+            header .flex.items-center.space-x-4 {
+                gap: 0.5rem !important;
+            }
+
+            /* Make modals full width on mobile */
+            .modal-container {
+                width: 90% !important;
+                margin: 1rem !important;
+                max-height: 90vh !important;
+                overflow-y: auto !important;
+            }
+
+            /* Adjust AI Assistant panel for mobile */
+            #aiAssistPanel {
+                width: 100% !important;
+                min-width: 100% !important;
+                max-height: 80vh !important;
+                bottom: 0;
+                top: auto;
+                border-radius: 1rem 1rem 0 0;
+                box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
+            }
+            
+            /* Reduce size of AI inputs for mobile */
+            #aiInput, #chatInput {
+                max-height: 80px !important;
+                font-size: 0.95rem !important;
+            }
+            
+            #aiOutput {
+                max-height: 250px !important;
+                font-size: 0.95rem !important;
+            }
+            
+            /* Adjust the chat container height */
+            #chatHistory {
+                max-height: 250px !important;
+            }
+
+            /* Make load project panel full width */
+            #loadProjectPanel {
+                width: 100% !important;
+            }
+
+            /* Add mobile menu button */
+            #mobileMenuBtn {
+                display: block !important;
+            }
+
+            /* Make font size dropdown position better on mobile */
+            .font-size-dropdown {
+                left: auto;
+                right: 0;
+            }
+
+            /* Adjust character tree for mobile */
+            .character-tree {
+                min-height: 200px;
+                padding: 0.5rem;
+            }
+
+            .character-node {
+                width: 50px;
+                height: 50px;
+                font-size: 0.875rem;
+            }
+
+            /* Make tooltips work better on mobile */
+            .character-tooltip {
+                width: 180px;
+                font-size: 0.875rem;
+            }
+
+            /* Adjust word count display for mobile */
+            .word-count-container {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            /* Make project list more mobile-friendly */
+            .project-item {
+                padding: 0.75rem !important;
+            }
+
+            /* Adjust auth forms for mobile */
+            .auth-container {
+                width: 90% !important;
+                margin: 1rem !important;
             }
         }
 
+        /* Custom Styles */
         .editor-content {
             font-family: 'Merriweather', serif;
             line-height: 1.8;
@@ -439,6 +605,7 @@
                 position: sticky;
                 top: 0;
                 z-index: 30;
+                flex-shrink: 0;
                 padding: 0.5rem 1rem !important;
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
@@ -447,6 +614,7 @@
                 position: sticky;
                 top: 64px; /* Height of header */
                 z-index: 29;
+                flex-shrink: 0;
                 background-color: white;
                 flex-wrap: wrap;
                 gap: 0.25rem;
@@ -454,9 +622,30 @@
                 box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             }
 
+            /* Make main wrapper take remaining height */
+            .main-content-wrapper {
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Remove overflow from inner container to avoid nested scrollbars */
+            .main-content-wrapper > .flex-1 {
+                overflow-y: visible;
+                height: auto;
+            }
+
+            main.flex-1 {
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+                overflow: hidden;
+            }
+
             #editorContent {
                 padding: 1rem !important;
                 padding-bottom: 100px !important; /* Extra padding at bottom for scroll space */
+                min-height: 100%;
             }
 
             .btn {
@@ -2055,10 +2244,12 @@
             </div>
 
             <!-- Editor Content -->
-            <div class="flex-1 overflow-y-auto p-8 bg-white">
-                <div id="editorContent" class="editor-content max-w-3xl mx-auto" contenteditable="true">
-                    <h1 id="chapterTitle" class="text-3xl font-bold mb-6">Loading chapter...</h1>
-                    <p class="mb-4 placeholder-text">Select a chapter to start writing, or create a new one.</p>
+            <div class="main-content-wrapper">
+                <div class="flex-1 overflow-y-auto p-8 bg-white">
+                    <div id="editorContent" class="editor-content max-w-3xl mx-auto" contenteditable="true">
+                        <h1 id="chapterTitle" class="text-3xl font-bold mb-6">Loading chapter...</h1>
+                        <p class="mb-4 placeholder-text">Select a chapter to start writing, or create a new one.</p>
+                    </div>
                 </div>
             </div>
         </main>
