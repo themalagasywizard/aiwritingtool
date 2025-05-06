@@ -406,55 +406,108 @@
 
         /* Mobile Styles */
         @media (max-width: 768px) {
+            /* Header optimizations */
             header {
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 width: 100%;
-                height: 64px;
+                height: 56px; /* Reduced height for mobile */
                 background: white;
                 z-index: 50;
+                padding: 0 0.5rem;
             }
-            
+
+            /* Mobile header buttons */
+            header .btn {
+                padding: 0.5rem;
+                min-width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Hide button text on mobile */
+            header .btn span {
+                display: none;
+            }
+
+            header .btn i {
+                margin: 0;
+                font-size: 1.1rem;
+            }
+
+            /* Compact save status */
+            header .text-sm {
+                font-size: 0.75rem;
+            }
+
+            /* Mobile sidebar */
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 56px; /* Match header height */
+                bottom: 0;
+                width: 250px;
+                background: white;
+                z-index: 48;
+                transition: transform 0.3s ease;
+                display: block !important;
+            }
+
+            .sidebar.active {
+                transform: translateX(250px);
+            }
+
+            /* Mobile menu toggle button */
+            #mobileMenuBtn {
+                display: block;
+                margin-right: 0.5rem;
+            }
+
+            /* Editor toolbar adjustments */
             .editor-toolbar {
                 position: fixed;
-                top: 64px;
+                top: 56px; /* Match new header height */
                 left: 0;
                 right: 0;
                 width: 100%;
                 background: white;
                 z-index: 49;
+                padding: 0.5rem;
             }
 
-            /* Adjust main content area */
+            /* Main content adjustments */
             main {
-                margin-top: 112px; /* header + toolbar height */
-                height: calc(100vh - 112px);
+                margin-top: 104px; /* header + toolbar height */
+                height: calc(100vh - 104px);
                 overflow-y: auto;
+                width: 100%;
             }
 
-            /* Editor content specific styles */
-            #editorContent {
-                -webkit-overflow-scrolling: touch;
-                padding: 1rem;
+            /* Mobile overlay for sidebar */
+            #sidebarOverlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 47;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease;
             }
 
-            /* Sidebar adjustments */
-            .sidebar {
-                display: none;
+            #sidebarOverlay.active {
+                opacity: 1;
+                visibility: visible;
             }
 
-            /* AI Assistant panel adjustments */
+            /* Adjust AI Assistant panel for mobile */
             #aiAssistPanel {
                 width: 100%;
                 min-width: 100%;
                 max-width: 100%;
-            }
-
-            /* Ensure proper scrolling */
-            .overflow-y-auto {
-                -webkit-overflow-scrolling: touch;
             }
         }
 
@@ -1543,6 +1596,10 @@
     <!-- Top Bar -->
     <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
         <div class="flex items-center space-x-4">
+            <!-- Mobile Menu Button -->
+            <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
                 <i class="fas fa-feather-alt"></i>
             </div>
@@ -1554,16 +1611,16 @@
                 <span id="saveStatus">Saved</span>
             </div>
             <button id="saveBtn" class="btn btn-primary">
-                <i class="fas fa-save mr-1"></i>
-                Save
+                <i class="fas fa-save"></i>
+                <span class="ml-1">Save</span>
             </button>
             <button id="loadProjectBtn" class="btn btn-primary">
-                <i class="fas fa-folder-open mr-1"></i>
-                Load Project
+                <i class="fas fa-folder-open"></i>
+                <span class="ml-1">Load Project</span>
             </button>
             <button id="newProjectBtn" class="btn btn-success">
-                <i class="fas fa-plus mr-1"></i>
-                New Project
+                <i class="fas fa-plus"></i>
+                <span class="ml-1">New Project</span>
             </button>
             <div class="relative group">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
@@ -1586,6 +1643,9 @@
             </div>
         </div>
     </header>
+
+    <!-- Sidebar Overlay (for mobile) -->
+    <div id="sidebarOverlay" class="lg:hidden" onclick="toggleSidebar()"></div>
 
     <!-- Load Project Panel -->
     <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
@@ -3317,5 +3377,20 @@
             <p id="loadingMessage">Loading...</p>
         </div>
     </div>
+
+    <!-- Add this script at the end of the body -->
+    <script>
+        // Mobile sidebar toggle function
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
+
+        // Add click handler to mobile menu button
+        document.getElementById('mobileMenuBtn').addEventListener('click', toggleSidebar);
+    </script>
 </body>
 </html> 
