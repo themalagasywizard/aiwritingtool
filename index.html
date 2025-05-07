@@ -421,30 +421,6 @@
                 justify-content: space-between;
             }
 
-            /* Position save status indicator in the circle */
-            #saveStatus {
-                position: absolute;
-                left: 100px; /* Adjusted position */
-                top: 50%;
-                transform: translateY(-50%);
-                margin: 0;
-                padding: 4px 8px;
-                font-size: 0.75rem;
-                display: flex;
-                align-items: center;
-                background: var(--primary-light);
-                color: var(--primary);
-                border-radius: 16px;
-                white-space: nowrap;
-                z-index: 51;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-
-            #saveStatus i {
-                font-size: 0.65rem; /* Smaller icon size */
-                margin-right: 4px;
-            }
-
             /* Clean up header for mobile */
             header .btn {
                 min-width: unset;
@@ -1022,13 +998,11 @@
             try {
                 if (!appState.currentChapter) return;
                 
-                // Show save status
-                const saveStatus = document.getElementById('saveStatus');
-                saveStatus.classList.remove('hidden');
-                saveStatus.querySelector('span').textContent = 'Saving...';
-                
                 // Get content from editor
                 const content = elements.editorContent.innerHTML;
+                
+                // Update save button to indicate saving in progress
+                elements.saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span class="ml-1">Saving...</span>';
                 
                 const { data: updatedChapter, error } = await chapters.update(
                     appState.currentChapter.id,
@@ -1046,13 +1020,10 @@
                 // Reset dirty state
                 appState.isDirty = false;
                 
-                // Update UI to show saved status
-                saveStatus.querySelector('span').textContent = 'Saved';
-                
-                // Hide save status after 2 seconds
-                setTimeout(() => {
-                    saveStatus.classList.add('hidden');
-                }, 2000);
+                // Update save button to indicate saved
+                elements.saveBtn.classList.remove('btn-error');
+                elements.saveBtn.classList.add('btn-primary');
+                elements.saveBtn.innerHTML = '<i class="fas fa-save"></i><span class="ml-1">Save</span>';
                 
                 // Update project last edited time (backend will handle this)
                 elements.lastEdited.textContent = 'Last edited: ' + formatDate(new Date());
@@ -1064,15 +1035,13 @@
             } catch (error) {
                 console.error('Error saving chapter:', error);
                 
-                // Show error message
-                const saveStatus = document.getElementById('saveStatus');
-                saveStatus.classList.remove('hidden');
-                saveStatus.querySelector('span').textContent = 'Error saving';
+                // Update save button to indicate error
+                elements.saveBtn.classList.remove('btn-primary');
+                elements.saveBtn.classList.add('btn-error');
+                elements.saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i><span class="ml-1">Error</span>';
                 
-                // Hide save status after 3 seconds
-                setTimeout(() => {
-                    saveStatus.classList.add('hidden');
-                }, 3000);
+                // Show toast with error message
+                showToast('Error saving chapter', 'error');
                 
                 return null;
             }
@@ -1081,17 +1050,18 @@
         function updateSaveStatus(isDirty, message) {
             appState.isDirty = isDirty;
             
-            // Don't display anything persistently
+            // Update save button appearance based on dirty state
+            if (isDirty) {
+                elements.saveBtn.classList.remove('btn-primary');
+                elements.saveBtn.classList.add('btn-error');
+            } else {
+                elements.saveBtn.classList.remove('btn-error');
+                elements.saveBtn.classList.add('btn-primary');
+            }
+            
+            // If message is provided, show it in a toast notification
             if (message) {
-                // Show temporary message if explicitly requested
-                const saveStatus = document.getElementById('saveStatus');
-                saveStatus.classList.remove('hidden');
-                saveStatus.querySelector('span').textContent = message;
-                
-                // Hide save status after 2 seconds
-                setTimeout(() => {
-                    saveStatus.classList.add('hidden');
-                }, 2000);
+                showToast(message);
             }
         }
 
@@ -1677,11 +1647,6 @@
             <h1 class="text-xl font-semibold text-primary hidden md:block">AIStoryCraft</h1>
         </div>
         <div class="flex items-center space-x-4">
-            <!-- Save status indicator - hidden by default -->
-            <div id="saveStatus" class="text-sm text-textSecondary flex items-center hidden">
-                <i class="fas fa-cloud-upload-alt mr-2 text-success"></i>
-                <span>Saved</span>
-            </div>
             <button id="saveBtn" class="btn btn-primary">
                 <i class="fas fa-save"></i>
                 <span class="ml-1">Save</span>
