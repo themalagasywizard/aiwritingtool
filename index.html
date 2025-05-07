@@ -661,16 +661,30 @@
             wordTarget: 1000, // Default target word count
         };
 
+        // Global elements object
+        let elements = {};
+
+        // Helper function for safe event listeners
+        function safeAddEventListener(element, event, handler) {
+            if (element) {
+                element.addEventListener(event, handler);
+            }
+        }
+
         // Helper Functions
         function showLoading(message = 'Loading...') {
-            elements.loadingMessage.textContent = message;
-            elements.loadingOverlay.classList.remove('hidden');
-            elements.loadingOverlay.classList.add('flex');
+            if (elements.loadingMessage) elements.loadingMessage.textContent = message;
+            if (elements.loadingOverlay) {
+                elements.loadingOverlay.classList.remove('hidden');
+                elements.loadingOverlay.classList.add('flex');
+            }
         }
 
         function hideLoading() {
-            elements.loadingOverlay.classList.add('hidden');
-            elements.loadingOverlay.classList.remove('flex');
+            if (elements.loadingOverlay) {
+                elements.loadingOverlay.classList.add('hidden');
+                elements.loadingOverlay.classList.remove('flex');
+            }
         }
 
         function formatDate(dateString) {
@@ -1485,7 +1499,7 @@
                 appState.currentUser = user;
                 
                 // Initialize elements object
-                const elements = {
+                elements = {
                     projectTitle: document.getElementById('projectTitle'),
                     lastEdited: document.getElementById('lastEdited'),
                     chaptersList: document.getElementById('chaptersList'),
@@ -1545,13 +1559,6 @@
                     aiToast: document.getElementById('aiToast'),
                     aiModel: document.getElementById('aiModel')
                 };
-                
-                // Helper function for safe event listeners
-                function safeAddEventListener(element, event, handler) {
-                    if (element) {
-                        element.addEventListener(event, handler);
-                    }
-                }
                 
                 // Setup UI event listeners
                 setupEventListeners();
