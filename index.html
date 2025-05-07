@@ -576,76 +576,6 @@
                 }
             }
         }
-
-        /* AI Assistant Panel */
-        #aiAssistPanel {
-            position: fixed;
-            right: 0;
-            top: 0;
-            height: 100%;
-            width: 400px;
-            background: white;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* Safari mobile viewport height fix */
-        @supports (-webkit-touch-callout: none) {
-            #aiAssistPanel {
-                height: -webkit-fill-available;
-            }
-            
-            #chatHistory {
-                height: -webkit-fill-available;
-                max-height: calc(100vh - 300px);
-                max-height: calc(-webkit-fill-available - 300px);
-            }
-            
-            #chatView, #generateEditView {
-                height: -webkit-fill-available;
-            }
-        }
-
-        /* Mobile-specific AI Assistant styles */
-        @media (max-width: 768px) {
-            #aiAssistPanel {
-                width: 100%;
-                min-width: 100%;
-                max-width: 100%;
-            }
-            
-            .ai-mode-btn {
-                min-width: unset;
-                padding: 0.5rem 1rem;
-            }
-            
-            #chatInput, #aiInput {
-                -webkit-appearance: none;
-                border-radius: 8px;
-                font-size: 16px; /* Prevent zoom on iOS */
-            }
-            
-            /* Prevent elastic scroll on iOS */
-            #chatHistory, #aiOutput {
-                overscroll-behavior: contain;
-                -webkit-overflow-scrolling: touch;
-            }
-        }
-
-        /* Fix for iOS keyboard issues */
-        @media (max-width: 768px) {
-            body.keyboard-open #aiAssistPanel {
-                height: calc(100% - var(--keyboard-height, 0px));
-            }
-            
-            body.keyboard-open #chatHistory {
-                max-height: calc(100vh - 400px - var(--keyboard-height, 0px));
-            }
-        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -661,30 +591,47 @@
             wordTarget: 1000, // Default target word count
         };
 
-        // Global elements object
-        let elements = {};
-
-        // Helper function for safe event listeners
-        function safeAddEventListener(element, event, handler) {
-            if (element) {
-                element.addEventListener(event, handler);
-            }
-        }
+        // DOM Elements
+        const elements = {
+            projectTitle: document.getElementById('projectTitle'),
+            lastEdited: document.getElementById('lastEdited'),
+            chaptersList: document.getElementById('chaptersList'),
+            addChapterBtn: document.getElementById('addChapterBtn'),
+            saveBtn: document.getElementById('saveBtn'),
+            newProjectBtn: document.getElementById('newProjectBtn'),
+            editorContent: document.getElementById('editorContent'),
+            chapterTitle: document.getElementById('chapterTitle'),
+            wordCount: document.getElementById('wordCount'),
+            wordCountProgress: document.getElementById('wordCountProgress'),
+            wordCountPercent: document.getElementById('wordCountPercent'),
+            contextCount: document.getElementById('contextCount'),
+            contextList: document.getElementById('contextList'),
+            saveStatus: document.getElementById('saveStatus'),
+            
+            // New Project Modal
+            newProjectModal: document.getElementById('newProjectModal'),
+            newProjectTitle: document.getElementById('newProjectTitle'),
+            newProjectDescription: document.getElementById('newProjectDescription'),
+            closeNewProjectModal: document.getElementById('closeNewProjectModal'),
+            cancelNewProject: document.getElementById('cancelNewProject'),
+            createNewProject: document.getElementById('createNewProject'),
+            
+            // Loading overlay
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            loadingMessage: document.getElementById('loadingMessage'),
+            loadProjectBtn: document.getElementById('loadProjectBtn'),
+        };
 
         // Helper Functions
         function showLoading(message = 'Loading...') {
-            if (elements.loadingMessage) elements.loadingMessage.textContent = message;
-            if (elements.loadingOverlay) {
-                elements.loadingOverlay.classList.remove('hidden');
-                elements.loadingOverlay.classList.add('flex');
-            }
+            elements.loadingMessage.textContent = message;
+            elements.loadingOverlay.classList.remove('hidden');
+            elements.loadingOverlay.classList.add('flex');
         }
 
         function hideLoading() {
-            if (elements.loadingOverlay) {
-                elements.loadingOverlay.classList.add('hidden');
-                elements.loadingOverlay.classList.remove('flex');
-            }
+            elements.loadingOverlay.classList.add('hidden');
+            elements.loadingOverlay.classList.remove('flex');
         }
 
         function formatDate(dateString) {
@@ -1360,130 +1307,293 @@
         // Event Listeners
         function setupEventListeners() {
             // New Project Button
-            safeAddEventListener(elements.newProjectBtn, 'click', () => {
-                elements.newProjectModal?.classList.remove('hidden');
-                elements.newProjectModal?.classList.add('flex');
-                elements.newProjectTitle?.focus();
+            elements.newProjectBtn.addEventListener('click', () => {
+                elements.newProjectModal.classList.remove('hidden');
+                elements.newProjectModal.classList.add('flex');
+                elements.newProjectTitle.focus();
             });
             
             // Close New Project Modal
-            safeAddEventListener(elements.closeNewProjectModal, 'click', () => {
-                elements.newProjectModal?.classList.add('hidden');
-                elements.newProjectModal?.classList.remove('flex');
+            elements.closeNewProjectModal.addEventListener('click', () => {
+                elements.newProjectModal.classList.add('hidden');
+                elements.newProjectModal.classList.remove('flex');
             });
             
             // Cancel New Project
-            safeAddEventListener(elements.cancelNewProject, 'click', () => {
-                elements.newProjectModal?.classList.add('hidden');
-                elements.newProjectModal?.classList.remove('flex');
+            elements.cancelNewProject.addEventListener('click', () => {
+                elements.newProjectModal.classList.add('hidden');
+                elements.newProjectModal.classList.remove('flex');
             });
             
             // Create New Project
-            safeAddEventListener(elements.createNewProject, 'click', async () => {
-                const title = elements.newProjectTitle?.value.trim() || '';
-                const description = elements.newProjectDescription?.value.trim() || '';
+            elements.createNewProject.addEventListener('click', async () => {
+                const title = elements.newProjectTitle.value.trim();
+                const description = elements.newProjectDescription.value.trim();
                 
                 if (!title) {
                     alert('Please enter a project title');
                     return;
                 }
                 
-                elements.newProjectModal?.classList.add('hidden');
-                elements.newProjectModal?.classList.remove('flex');
+                elements.newProjectModal.classList.add('hidden');
+                elements.newProjectModal.classList.remove('flex');
                 
                 const newProject = await createProject(title, description);
                 
                 if (newProject) {
                     // Successfully created project
-                    if (elements.newProjectTitle) elements.newProjectTitle.value = '';
-                    if (elements.newProjectDescription) elements.newProjectDescription.value = '';
+                    elements.newProjectTitle.value = '';
+                    elements.newProjectDescription.value = '';
                 }
             });
             
             // Add Chapter Button
-            safeAddEventListener(elements.addChapterBtn, 'click', async () => {
+            elements.addChapterBtn.addEventListener('click', async () => {
                 if (!appState.currentProject) {
                     alert('Please create a project first');
                     return;
                 }
                 
-                const chapterCount = elements.chaptersList?.querySelectorAll('.chapter-item').length || 0;
+                // Get the number of existing chapters
+                const chapterCount = elements.chaptersList.querySelectorAll('.chapter-item').length;
                 const newChapterTitle = `Chapter ${chapterCount + 1}`;
                 
                 await createChapter(newChapterTitle, '', chapterCount);
             });
             
             // Save Button
-            safeAddEventListener(elements.saveBtn, 'click', () => {
+            elements.saveBtn.addEventListener('click', () => {
                 if (appState.currentChapter) {
                     saveCurrentChapter();
                 }
             });
             
             // Editor Content Change
-            safeAddEventListener(elements.editorContent, 'input', () => {
+            elements.editorContent.addEventListener('input', () => {
                 updateSaveStatus(true);
                 updateWordCount();
             });
             
+            // Auto-save timer
+            setInterval(() => {
+                if (appState.isDirty && appState.currentChapter) {
+                    saveCurrentChapter();
+                }
+            }, 60000); // Auto-save every minute if there are changes
+
             // Load Project Button
-            safeAddEventListener(elements.loadProjectBtn, 'click', () => {
+            elements.loadProjectBtn.addEventListener('click', () => {
                 toggleLoadProjectPanel();
                 loadUserProjects();
             });
-            
+
             // Close Load Project Panel
-            safeAddEventListener(elements.closeLoadProjectPanel, 'click', toggleLoadProjectPanel);
-            safeAddEventListener(elements.loadProjectOverlay, 'click', toggleLoadProjectPanel);
-            
+            document.getElementById('closeLoadProjectPanel').addEventListener('click', toggleLoadProjectPanel);
+            document.getElementById('loadProjectOverlay').addEventListener('click', toggleLoadProjectPanel);
+
             // Project Search
-            safeAddEventListener(elements.projectSearch, 'input', (e) => {
+            document.getElementById('projectSearch').addEventListener('input', (e) => {
                 const searchTerm = e.target.value.toLowerCase();
                 filterProjects(searchTerm);
             });
+
+            // Formatting buttons
+            document.querySelector('button[title="Bold"]').addEventListener('click', () => {
+                document.execCommand('bold', false, null);
+                updateSaveStatus(true);
+            });
+
+            document.querySelector('button[title="Italic"]').addEventListener('click', () => {
+                document.execCommand('italic', false, null);
+                updateSaveStatus(true);
+            });
+
+            document.querySelector('button[title="Heading"]').addEventListener('click', () => {
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const container = range.commonAncestorContainer.parentElement;
+                
+                // Create a new div for the heading
+                const headingDiv = document.createElement('div');
+                headingDiv.className = 'text-center text-2xl font-bold my-4';
+                
+                // If we're already in a centered heading, revert to normal
+                if (container.classList && container.classList.contains('text-center')) {
+                    // Remove the heading formatting
+                    const normalText = document.createElement('div');
+                    normalText.innerHTML = container.innerHTML;
+                    container.parentNode.replaceChild(normalText, container);
+                } else {
+                    // Apply heading formatting
+                    headingDiv.innerHTML = range.toString();
+                    range.deleteContents();
+                    range.insertNode(headingDiv);
+                }
+                
+                updateSaveStatus(true);
+            });
+
+            // Font size button and dropdown
+            const fontSizeBtn = document.querySelector('button[title="Font Size"]');
+            const fontSizeDropdown = document.querySelector('.font-size-dropdown');
             
-            // Format buttons
-            if (elements.boldBtn) {
-                elements.boldBtn.addEventListener('click', () => {
-                    document.execCommand('bold', false, null);
+            // Toggle dropdown
+            fontSizeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fontSizeDropdown.classList.toggle('hidden');
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!fontSizeBtn.contains(e.target)) {
+                    fontSizeDropdown.classList.add('hidden');
+                }
+            });
+            
+            // Handle font size selection
+            document.querySelectorAll('.font-size-dropdown button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const size = button.getAttribute('data-size');
+                    document.execCommand('fontSize', false, size);
+                    fontSizeDropdown.classList.add('hidden');
                     updateSaveStatus(true);
                 });
-            }
-            
-            if (elements.italicBtn) {
-                elements.italicBtn.addEventListener('click', () => {
-                    document.execCommand('italic', false, null);
-                    updateSaveStatus(true);
-                });
-            }
-            
-            if (elements.headingBtn) {
-                elements.headingBtn.addEventListener('click', () => {
-                    const selection = window.getSelection();
-                    const range = selection.getRangeAt(0);
-                    const container = range.commonAncestorContainer.parentElement;
-                    
-                    const headingDiv = document.createElement('div');
-                    headingDiv.className = 'text-center text-2xl font-bold my-4';
-                    
-                    if (container.classList && container.classList.contains('text-center')) {
-                        const normalText = document.createElement('div');
-                        normalText.innerHTML = container.innerHTML;
-                        container.parentNode.replaceChild(normalText, container);
-                    } else {
-                        headingDiv.innerHTML = range.toString();
-                        range.deleteContents();
-                        range.insertNode(headingDiv);
+            });
+
+            // Full Screen button
+            document.querySelector('button[title="Full Screen"]').addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast(`Error attempting to enable full-screen mode: ${err.message}`, 'error');
+                    });
+                } else {
+                    document.exitFullscreen().catch(err => {
+                        showToast(`Error attempting to exit full-screen mode: ${err.message}`, 'error');
+                    });
+                }
+            });
+
+            // Keyboard shortcuts for formatting
+            elements.editorContent.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key.toLowerCase()) {
+                        case 'b':
+                            e.preventDefault();
+                            document.execCommand('bold', false, null);
+                            updateSaveStatus(true);
+                            break;
+                        case 'i':
+                            e.preventDefault();
+                            document.execCommand('italic', false, null);
+                            updateSaveStatus(true);
+                            break;
                     }
-                    
-                    updateSaveStatus(true);
-                });
+                }
+            });
+
+            // Update formatting buttons state based on current selection
+            function updateFormatButtons() {
+                const isBold = document.queryCommandState('bold');
+                const isItalic = document.queryCommandState('italic');
+                const container = window.getSelection().getRangeAt(0).commonAncestorContainer;
+                const isHeading = container.nodeType === 1 ? 
+                    container.classList && container.classList.contains('text-center') : 
+                    container.parentElement.classList && container.parentElement.classList.contains('text-center');
+
+                document.querySelector('button[title="Bold"]').classList.toggle('bg-primaryLight', isBold);
+                document.querySelector('button[title="Italic"]').classList.toggle('bg-primaryLight', isItalic);
+                document.querySelector('button[title="Heading"]').classList.toggle('bg-primaryLight', isHeading);
             }
-            
+
+            // Add selectionchange event listener to update formatting buttons
+            document.addEventListener('selectionchange', () => {
+                if (document.activeElement === elements.editorContent) {
+                    updateFormatButtons();
+                }
+            });
+
+            // Update format buttons when clicking in the editor
+            elements.editorContent.addEventListener('click', updateFormatButtons);
+            elements.editorContent.addEventListener('keyup', updateFormatButtons);
+
             // Project title rename functionality
-            if (elements.projectTitle) {
-                setupProjectTitleRename();
+            function setupProjectTitleRename() {
+                function handleProjectRename() {
+                    const currentTitle = elements.projectTitle.textContent;
+                    
+                    // Create input for editing
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'w-full p-0 border-none focus:ring-0 bg-primaryLight rounded text-primary font-medium';
+                    input.value = currentTitle;
+                    
+                    // Replace h2 with input
+                    elements.projectTitle.replaceWith(input);
+                    input.focus();
+                    input.select();
+                    
+                    // Save on blur or Enter key
+                    const saveProjectTitle = async () => {
+                        const newTitle = input.value.trim();
+                        if (newTitle && newTitle !== currentTitle && appState.currentProject) {
+                            try {
+                                // Update project title in database
+                                const { data: updatedProject, error } = await projects.update(
+                                    appState.currentProject.id,
+                                    { title: newTitle }
+                                );
+                                
+                                if (error) throw error;
+                                
+                                // Update local state
+                                appState.currentProject = updatedProject[0];
+                                showToast('Project renamed', 'success');
+                            } catch (error) {
+                                console.error('Error renaming project:', error);
+                                showToast('Failed to rename project', 'error');
+                            }
+                        }
+                        
+                        // Restore h2 with updated or original title
+                        const newH2 = document.createElement('h2');
+                        newH2.id = 'projectTitle';
+                        newH2.className = 'text-primary font-medium mb-1 cursor-pointer';
+                        newH2.title = 'Double-click to rename';
+                        newH2.textContent = newTitle || currentTitle;
+                        input.replaceWith(newH2);
+                        
+                        // Update elements reference and reattach event listener
+                        elements.projectTitle = newH2;
+                        elements.projectTitle.addEventListener('dblclick', handleProjectRename);
+                    };
+                    
+                    input.addEventListener('blur', saveProjectTitle);
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveProjectTitle();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            const newH2 = document.createElement('h2');
+                            newH2.id = 'projectTitle';
+                            newH2.className = 'text-primary font-medium mb-1 cursor-pointer';
+                            newH2.title = 'Double-click to rename';
+                            newH2.textContent = currentTitle;
+                            input.replaceWith(newH2);
+                            
+                            // Update elements reference and reattach event listener
+                            elements.projectTitle = newH2;
+                            elements.projectTitle.addEventListener('dblclick', handleProjectRename);
+                        }
+                    });
+                }
+
+                // Initial event listener attachment
+                elements.projectTitle.addEventListener('dblclick', handleProjectRename);
             }
+
+            // Call the setup function
+            setupProjectTitleRename();
         }
 
         // Initialization
@@ -1498,68 +1608,6 @@
                 
                 appState.currentUser = user;
                 
-                // Initialize elements object
-                elements = {
-                    projectTitle: document.getElementById('projectTitle'),
-                    lastEdited: document.getElementById('lastEdited'),
-                    chaptersList: document.getElementById('chaptersList'),
-                    addChapterBtn: document.getElementById('addChapterBtn'),
-                    saveBtn: document.getElementById('saveBtn'),
-                    newProjectBtn: document.getElementById('newProjectBtn'),
-                    editorContent: document.getElementById('editorContent'),
-                    chapterTitle: document.getElementById('chapterTitle'),
-                    wordCount: document.getElementById('wordCount'),
-                    wordCountProgress: document.getElementById('wordCountProgress'),
-                    wordCountPercent: document.getElementById('wordCountPercent'),
-                    contextCount: document.getElementById('contextCount'),
-                    contextList: document.getElementById('contextList'),
-                    saveStatus: document.getElementById('saveStatus'),
-                    
-                    // New Project Modal
-                    newProjectModal: document.getElementById('newProjectModal'),
-                    newProjectTitle: document.getElementById('newProjectTitle'),
-                    newProjectDescription: document.getElementById('newProjectDescription'),
-                    closeNewProjectModal: document.getElementById('closeNewProjectModal'),
-                    cancelNewProject: document.getElementById('cancelNewProject'),
-                    createNewProject: document.getElementById('createNewProject'),
-                    
-                    // Loading overlay
-                    loadingOverlay: document.getElementById('loadingOverlay'),
-                    loadingMessage: document.getElementById('loadingMessage'),
-                    loadProjectBtn: document.getElementById('loadProjectBtn'),
-                    
-                    // Project Panel
-                    loadProjectPanel: document.getElementById('loadProjectPanel'),
-                    loadProjectOverlay: document.getElementById('loadProjectOverlay'),
-                    closeLoadProjectPanel: document.getElementById('closeLoadProjectPanel'),
-                    projectSearch: document.getElementById('projectSearch'),
-                    projectsList: document.getElementById('projectsList'),
-                    
-                    // Formatting buttons
-                    boldBtn: document.querySelector('button[title="Bold"]'),
-                    italicBtn: document.querySelector('button[title="Italic"]'),
-                    headingBtn: document.querySelector('button[title="Heading"]'),
-                    fontSizeBtn: document.querySelector('button[title="Font Size"]'),
-                    fontSizeDropdown: document.querySelector('.font-size-dropdown'),
-                    fullScreenBtn: document.querySelector('button[title="Full Screen"]'),
-                    
-                    // AI Assistant elements
-                    aiAssistBtn: document.getElementById('aiAssistBtn'),
-                    aiAssistPanel: document.getElementById('aiAssistPanel'),
-                    closeAiPanel: document.getElementById('closeAiPanel'),
-                    aiMobileOverlay: document.getElementById('aiMobileOverlay'),
-                    modeButtons: document.querySelectorAll('.ai-mode-btn'),
-                    generateEditView: document.getElementById('generateEditView'),
-                    chatView: document.getElementById('chatView'),
-                    aiInput: document.getElementById('aiInput'),
-                    aiSubmit: document.getElementById('aiSubmit'),
-                    chatInput: document.getElementById('chatInput'),
-                    chatSubmit: document.getElementById('chatSubmit'),
-                    chatHistory: document.getElementById('chatHistory'),
-                    aiToast: document.getElementById('aiToast'),
-                    aiModel: document.getElementById('aiModel')
-                };
-                
                 // Setup UI event listeners
                 setupEventListeners();
                 
@@ -1569,168 +1617,11 @@
                 // Load context items
                 await loadContextItems();
                 
-                // Setup auto-save
-                setInterval(() => {
-                    if (appState.isDirty && appState.currentChapter) {
-                        saveCurrentChapter();
-                    }
-                }, 60000); // Auto-save every minute if there are changes
-                
-                // Initialize AI Assistant
-                initializeAIAssistant();
-                
             } catch (error) {
                 console.error('Error initializing app:', error);
                 hideLoading();
             }
         });
-
-        // Initialize AI Assistant
-        function initializeAIAssistant() {
-            if (!elements.aiAssistBtn || !elements.aiAssistPanel || !elements.closeAiPanel || !elements.aiMobileOverlay) {
-                console.warn('AI Assistant elements not found');
-                return;
-            }
-
-            let currentMode = 'generate';
-            let isKeyboardVisible = false;
-
-            // Toggle AI Panel
-            function toggleAiPanel() {
-                const isOpen = elements.aiAssistPanel.classList.contains('translate-x-0');
-                
-                if (isOpen) {
-                    elements.aiAssistPanel.classList.remove('translate-x-0');
-                    elements.aiAssistPanel.classList.add('translate-x-full');
-                    elements.aiMobileOverlay.classList.add('hidden');
-                    
-                    // Reset any keyboard adjustments
-                    document.body.classList.remove('keyboard-open');
-                    document.documentElement.style.setProperty('--keyboard-height', '0px');
-                } else {
-                    elements.aiAssistPanel.classList.add('translate-x-0');
-                    elements.aiAssistPanel.classList.remove('translate-x-full');
-                    elements.aiMobileOverlay.classList.remove('hidden');
-                    
-                    // Ensure proper height on iOS
-                    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                        elements.aiAssistPanel.style.height = `${window.innerHeight}px`;
-                    }
-                }
-            }
-
-            // Mode Switching
-            if (elements.modeButtons) {
-                elements.modeButtons.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const mode = btn.dataset.mode;
-                        currentMode = mode;
-                        
-                        // Update active state
-                        elements.modeButtons.forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
-                        
-                        // Show/hide views with proper height handling
-                        if (mode === 'chat' && elements.chatView && elements.generateEditView) {
-                            elements.generateEditView.classList.add('hidden');
-                            elements.chatView.classList.remove('hidden');
-                            
-                            // Reset chat view scroll position
-                            if (elements.chatHistory) {
-                                elements.chatHistory.scrollTop = elements.chatHistory.scrollHeight;
-                            }
-                            
-                            // Ensure proper height on iOS
-                            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                                elements.chatView.style.height = isKeyboardVisible ? 
-                                    `calc(100% - var(--keyboard-height, 0px))` : '100%';
-                            }
-                        } else if (elements.chatView && elements.generateEditView) {
-                            elements.generateEditView.classList.remove('hidden');
-                            elements.chatView.classList.add('hidden');
-                            
-                            // Reset generate view scroll position
-                            const aiOutput = document.getElementById('aiOutput');
-                            if (aiOutput) aiOutput.scrollTop = 0;
-                            
-                            // Ensure proper height on iOS
-                            if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                                elements.generateEditView.style.height = isKeyboardVisible ? 
-                                    `calc(100% - var(--keyboard-height, 0px))` : '100%';
-                            }
-                        }
-                        
-                        // Update placeholder
-                        updatePlaceholder();
-                        
-                        // Clear any existing keyboard adjustments
-                        if (!isKeyboardVisible) {
-                            document.body.classList.remove('keyboard-open');
-                            document.documentElement.style.setProperty('--keyboard-height', '0px');
-                        }
-                    });
-                });
-            }
-
-            // Handle iOS keyboard events
-            const inputs = [elements.chatInput, elements.aiInput];
-            inputs.forEach(input => {
-                if (!input) return;
-                
-                input.addEventListener('focus', () => {
-                    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                        setTimeout(() => {
-                            document.body.classList.add('keyboard-open');
-                            isKeyboardVisible = true;
-                            
-                            // Get keyboard height (approximately)
-                            const keyboardHeight = window.innerHeight - document.documentElement.clientHeight;
-                            document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
-                            
-                            // Scroll the input into view
-                            input.scrollIntoView({ behavior: 'smooth' });
-                        }, 100);
-                    }
-                });
-                
-                input.addEventListener('blur', () => {
-                    document.body.classList.remove('keyboard-open');
-                    isKeyboardVisible = false;
-                    document.documentElement.style.setProperty('--keyboard-height', '0px');
-                });
-            });
-
-            // Handle orientation change
-            window.addEventListener('orientationchange', () => {
-                setTimeout(() => {
-                    if (isKeyboardVisible) {
-                        const keyboardHeight = window.innerHeight - document.documentElement.clientHeight;
-                        document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
-                    }
-                }, 100);
-            });
-
-            // Add event listeners
-            elements.aiAssistBtn.addEventListener('click', toggleAiPanel);
-            elements.closeAiPanel.addEventListener('click', toggleAiPanel);
-            elements.aiMobileOverlay.addEventListener('click', toggleAiPanel);
-
-            // Prevent scroll bounce on iOS
-            if (elements.chatHistory) {
-                elements.chatHistory.addEventListener('touchmove', (e) => {
-                    const element = e.target.closest('#chatHistory');
-                    if (!element) return;
-                    
-                    const isAtTop = element.scrollTop <= 0;
-                    const isAtBottom = element.scrollTop + element.clientHeight >= element.scrollHeight;
-                    
-                    if ((isAtTop && e.touches[0].screenY > e.touches[0].screenY) ||
-                        (isAtBottom && e.touches[0].screenY < e.touches[0].screenY)) {
-                        e.preventDefault();
-                    }
-                }, { passive: false });
-            }
-        }
     </script>
 
     <script type="module">
@@ -3193,95 +3084,29 @@
             const aiModel = document.getElementById('aiModel');
             
             let currentMode = 'generate';
-            let isKeyboardVisible = false;
             
-            // Handle iOS keyboard events
-            function setupMobileKeyboardHandling() {
-                const inputs = [chatInput, aiInput];
-                
-                inputs.forEach(input => {
-                    if (!input) return;
-                    
-                    input.addEventListener('focus', () => {
-                        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                            setTimeout(() => {
-                                document.body.classList.add('keyboard-open');
-                                isKeyboardVisible = true;
-                                
-                                // Get keyboard height (approximately)
-                                const keyboardHeight = window.innerHeight - document.documentElement.clientHeight;
-                                document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
-                                
-                                // Scroll the input into view
-                                input.scrollIntoView({ behavior: 'smooth' });
-                            }, 100);
-                        }
-                    });
-                    
-                    input.addEventListener('blur', () => {
-                        document.body.classList.remove('keyboard-open');
-                        isKeyboardVisible = false;
-                        document.documentElement.style.setProperty('--keyboard-height', '0px');
-                    });
-                });
-                
-                // Handle orientation change
-                window.addEventListener('orientationchange', () => {
-                    setTimeout(() => {
-                        if (isKeyboardVisible) {
-                            const keyboardHeight = window.innerHeight - document.documentElement.clientHeight;
-                            document.documentElement.style.setProperty('--keyboard-height', `${keyboardHeight}px`);
-                        }
-                    }, 100);
-                });
-            }
-            
-            // Toggle AI Panel with improved mobile handling
+            // Toggle AI Panel
             function toggleAiPanel() {
                 const isOpen = aiAssistPanel.classList.contains('translate-x-0');
+                aiAssistPanel.classList.toggle('translate-x-0');
+                aiAssistPanel.classList.toggle('translate-x-full');
+                aiMobileOverlay.classList.toggle('hidden');
                 
-                if (isOpen) {
-                    aiAssistPanel.classList.remove('translate-x-0');
-                    aiAssistPanel.classList.add('translate-x-full');
-                    aiMobileOverlay.classList.add('hidden');
-                    
-                    // Reset any keyboard adjustments
-                    document.body.classList.remove('keyboard-open');
-                    document.documentElement.style.setProperty('--keyboard-height', '0px');
-                } else {
-                    aiAssistPanel.classList.add('translate-x-0');
-                    aiAssistPanel.classList.remove('translate-x-full');
-                    aiMobileOverlay.classList.remove('hidden');
-                    
-                    // Ensure proper height on iOS
-                    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                        aiAssistPanel.style.height = `${window.innerHeight}px`;
+                // Remove the auto-focus
+                /* if (!isOpen) {
+                    if (currentMode === 'generate') {
+                        aiInput.focus();
+                    } else if (currentMode === 'chat') {
+                        chatInput.focus();
                     }
-                }
+                } */
             }
-            
-            // Initialize mobile keyboard handling
-            setupMobileKeyboardHandling();
-            
-            // Prevent scroll bounce on iOS
-            document.addEventListener('touchmove', (e) => {
-                if (e.target.closest('#chatHistory, #aiOutput')) {
-                    const element = e.target.closest('#chatHistory, #aiOutput');
-                    const isAtTop = element.scrollTop <= 0;
-                    const isAtBottom = element.scrollTop + element.clientHeight >= element.scrollHeight;
-                    
-                    if ((isAtTop && e.touches[0].screenY > e.touches[0].screenY) ||
-                        (isAtBottom && e.touches[0].screenY < e.touches[0].screenY)) {
-                        e.preventDefault();
-                    }
-                }
-            }, { passive: false });
             
             aiAssistBtn.addEventListener('click', toggleAiPanel);
             closeAiPanel.addEventListener('click', toggleAiPanel);
             aiMobileOverlay.addEventListener('click', toggleAiPanel);
             
-            // Mode Switching with improved mobile handling
+            // Mode Switching
             modeButtons.forEach(btn => {
                 btn.addEventListener('click', () => {
                     const mode = btn.dataset.mode;
@@ -3291,42 +3116,21 @@
                     modeButtons.forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     
-                    // Show/hide views with proper height handling
+                    // Show/hide views
                     if (mode === 'chat') {
                         generateEditView.classList.add('hidden');
                         chatView.classList.remove('hidden');
-                        
-                        // Reset chat view scroll position
-                        chatHistory.scrollTop = chatHistory.scrollHeight;
-                        
-                        // Ensure proper height on iOS
-                        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                            chatView.style.height = isKeyboardVisible ? 
-                                `calc(100% - var(--keyboard-height, 0px))` : '100%';
-                        }
+                        // Remove auto-focus
+                        // chatInput.focus();
                     } else {
                         generateEditView.classList.remove('hidden');
                         chatView.classList.add('hidden');
-                        
-                        // Reset generate view scroll position
-                        const aiOutput = document.getElementById('aiOutput');
-                        if (aiOutput) aiOutput.scrollTop = 0;
-                        
-                        // Ensure proper height on iOS
-                        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-                            generateEditView.style.height = isKeyboardVisible ? 
-                                `calc(100% - var(--keyboard-height, 0px))` : '100%';
-                        }
+                        // Remove auto-focus
+                        // aiInput.focus();
                     }
                     
-                    // Update placeholder and reset inputs
+                    // Update placeholder
                     updatePlaceholder();
-                    
-                    // Clear any existing keyboard adjustments
-                    if (!isKeyboardVisible) {
-                        document.body.classList.remove('keyboard-open');
-                        document.documentElement.style.setProperty('--keyboard-height', '0px');
-                    }
                 });
             });
             
@@ -3360,27 +3164,14 @@
                 submitBtn.classList.toggle('pulse', isValid);
             }
             
-            // Improved auto-expand textarea function
+            // Auto-expand textarea
             function autoExpandTextarea(textarea) {
-                if (!textarea) return;
-                
                 // Reset height to allow shrinking
                 textarea.style.height = 'auto';
                 
-                // Calculate new height
-                const maxHeight = window.innerHeight * 0.3; // 30% of viewport height
-                const newHeight = Math.min(textarea.scrollHeight, maxHeight);
-                
-                textarea.style.height = `${newHeight}px`;
-                
-                // Adjust chat history height on mobile
-                if (window.innerWidth <= 768 && textarea.id === 'chatInput') {
-                    const chatHistory = document.getElementById('chatHistory');
-                    if (chatHistory) {
-                        const remainingHeight = window.innerHeight - newHeight - 200; // Account for other UI elements
-                        chatHistory.style.maxHeight = `${remainingHeight}px`;
-                    }
-                }
+                // Calculate new height (min 100px, max 300px)
+                const newHeight = Math.max(100, Math.min(textarea.scrollHeight, 300));
+                textarea.style.height = newHeight + 'px';
             }
             
             // Handle AI input
@@ -3405,40 +3196,31 @@
                 return new Promise(resolve => setTimeout(resolve, ms));
             }
             
-            // Handle chat submit with improved mobile handling
+            // Handle chat submit with Hugging Face API call
             chatSubmit.addEventListener('click', async () => {
                 const message = chatInput.value.trim();
                 if (!message) return;
                 
-                // Disable input and button while processing
-                chatInput.disabled = true;
-                chatSubmit.disabled = true;
+                addChatMessage(message, true);
+                
+                // Reset input and height
+                chatInput.value = '';
+                chatInput.style.height = 'auto';
+                validateInput(chatInput);
+                
+                // Show typing indicator
+                const typingIndicator = document.createElement('div');
+                typingIndicator.className = 'chat-message ai';
+                typingIndicator.innerHTML = `
+                    <p class="flex items-center text-sm text-gray-500">
+                        <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                        AI is typing...
+                    </p>
+                `;
+                chatHistory.appendChild(typingIndicator);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
                 
                 try {
-                    // Add user message
-                    addChatMessage(message, true);
-                    
-                    // Clear input and reset height
-                    chatInput.value = '';
-                    autoExpandTextarea(chatInput);
-                    
-                    // Blur input to hide keyboard on mobile
-                    if (window.innerWidth <= 768) {
-                        chatInput.blur();
-                    }
-                    
-                    // Show typing indicator
-                    const typingIndicator = document.createElement('div');
-                    typingIndicator.className = 'chat-message ai';
-                    typingIndicator.innerHTML = `
-                        <p class="flex items-center text-sm text-gray-500">
-                            <i class="fas fa-circle-notch fa-spin mr-2"></i>
-                            AI is typing...
-                        </p>
-                    `;
-                    chatHistory.appendChild(typingIndicator);
-                    chatHistory.scrollTop = chatHistory.scrollHeight;
-                    
                     // Add a small delay to avoid hitting rate limits
                     await delay(500);
                     
@@ -3487,12 +3269,9 @@
                     addChatMessage(formattedResponse, false, true);
                 } catch (error) {
                     console.error('Error:', error);
-                    showToast('Error sending message', 'error');
-                } finally {
-                    // Re-enable input and button
-                    chatInput.disabled = false;
-                    chatSubmit.disabled = false;
-                    chatInput.focus();
+                    typingIndicator.remove();
+                    addChatMessage(`Error: ${error.message || 'Could not connect to AI. Please try again later.'}`, false);
+                    showToast('Error connecting to AI', 'error');
                 }
             });
             
