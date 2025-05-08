@@ -379,8 +379,8 @@
 
         /* Chat input styles */
         #chatInput {
-            min-height: 2.5rem;
-            max-height: 8rem;
+            min-height: 100px;
+            max-height: 200px;
             resize: none;
             overflow-y: auto;
             line-height: 1.5;
@@ -1892,9 +1892,9 @@
                     
                     <!-- Chat Input (now at bottom) -->
                     <div class="flex-shrink-0 p-4 border-t border-gray-200">
-                        <div class="relative flex items-end space-x-2">
-                            <textarea id="chatInput" class="flex-1 border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ask the AI..." rows="1"></textarea>
-                            <button id="chatSubmit" class="btn btn-primary flex-shrink-0" disabled>
+                        <div class="relative">
+                            <textarea id="chatInput" class="w-full min-h-[100px] max-h-[200px] border border-gray-200 rounded-lg p-3 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Ask the AI..."></textarea>
+                            <button id="chatSubmit" class="absolute right-3 top-3 text-primary hover:text-primary/80 disabled:opacity-50">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -3148,6 +3148,7 @@
             // Initialize textarea height
             window.addEventListener('load', function() {
                 autoExpandTextarea(aiInput);
+                autoExpandTextarea(chatInput);
             });
             
             // Handle chat input
