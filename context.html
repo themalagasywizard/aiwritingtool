@@ -357,6 +357,45 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .timeline-cell {
+                min-height: 60px;
+                min-width: 60px; /* Ensure cells are wide enough to tap */
+            }
+            
+            /* Make drag ghost more visible on mobile */
+            .absolute.opacity-70.z-50.shadow-md {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                border: 2px solid var(--primary);
+                background-color: rgba(255, 255, 255, 0.95);
+            }
+            
+            /* Improve tap targets for timeline events */
+            .timeline-event {
+                padding: 8px !important;
+                min-height: 40px;
+            }
+            
+            /* Make character items easier to grab on mobile */
+            .character-item {
+                padding: 12px;
+                margin-bottom: 8px;
+                border-width: 2px;
+            }
+            
+            /* Visual indication that items are draggable */
+            .character-item::after {
+                content: '⋮⋮';
+                position: absolute;
+                right: 8px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--secondary);
+                opacity: 0.5;
+            }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -427,7 +466,7 @@
                     <div class="text-xs text-textSecondary">${character.role}</div>
                 `;
                 
-                // Add drag event listeners
+                // Add drag event listeners for desktop
                 characterItem.addEventListener('dragstart', function(e) {
                     e.dataTransfer.setData('text/plain', JSON.stringify({
                         id: character.id,
@@ -441,8 +480,154 @@
                     this.classList.remove('dragging');
                 });
                 
+                // Add touch event listeners for mobile
+                characterItem.addEventListener('touchstart', handleTouchStart, { passive: false });
+                characterItem.addEventListener('touchmove', handleTouchMove, { passive: false });
+                characterItem.addEventListener('touchend', handleTouchEnd);
+                
                 charactersList.appendChild(characterItem);
             });
+        }
+        
+        // Mobile touch event variables
+        let touchDragging = false;
+        let touchTarget = null;
+        let touchOffsetX = 0;
+        let touchOffsetY = 0;
+        let ghostElement = null;
+        let originalElement = null;
+        let currentDropTarget = null;
+        
+        // Touch event handlers
+        function handleTouchStart(e) {
+            // Prevent default only for elements we want to make draggable
+            if (e.target.closest('.character-item')) {
+                e.preventDefault();
+                
+                // Store the touched item
+                originalElement = e.target.closest('.character-item');
+                
+                // Get the touch position relative to the element
+                const touch = e.touches[0];
+                const rect = originalElement.getBoundingClientRect();
+                touchOffsetX = touch.clientX - rect.left;
+                touchOffsetY = touch.clientY - rect.top;
+                
+                // Create a ghost element (clone of the original)
+                ghostElement = originalElement.cloneNode(true);
+                ghostElement.classList.add('absolute', 'opacity-70', 'z-50', 'shadow-md');
+                ghostElement.style.width = `${rect.width}px`;
+                ghostElement.style.height = `${rect.height}px`;
+                ghostElement.style.position = 'fixed';
+                ghostElement.style.pointerEvents = 'none'; // Prevent it from capturing events
+                ghostElement.style.left = `${touch.clientX - touchOffsetX}px`;
+                ghostElement.style.top = `${touch.clientY - touchOffsetY}px`;
+                
+                // Add the ghost element to the body
+                document.body.appendChild(ghostElement);
+                
+                // Mark as dragging
+                touchDragging = true;
+                touchTarget = originalElement;
+                originalElement.classList.add('opacity-50');
+            }
+        }
+        
+        function handleTouchMove(e) {
+            if (!touchDragging || !ghostElement) return;
+            
+            e.preventDefault(); // Prevent scrolling while dragging
+            
+            const touch = e.touches[0];
+            
+            // Move the ghost element
+            ghostElement.style.left = `${touch.clientX - touchOffsetX}px`;
+            ghostElement.style.top = `${touch.clientY - touchOffsetY}px`;
+            
+            // Find potential drop target under the touch point
+            const elementUnderTouch = document.elementFromPoint(
+                touch.clientX,
+                touch.clientY
+            );
+            
+            // Reset previous drop target
+            if (currentDropTarget) {
+                currentDropTarget.classList.remove('drag-over');
+            }
+            
+            // Check if we're over a timeline cell or event
+            const timelineCell = elementUnderTouch?.closest('.timeline-cell');
+            const timelineEvent = elementUnderTouch?.closest('.timeline-event');
+            
+            if (timelineCell) {
+                currentDropTarget = timelineCell;
+                currentDropTarget.classList.add('drag-over');
+            } else if (timelineEvent) {
+                currentDropTarget = timelineEvent;
+                currentDropTarget.classList.add('bg-opacity-70');
+            } else {
+                currentDropTarget = null;
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            if (!touchDragging || !ghostElement) return;
+            
+            // Clean up ghost element
+            document.body.removeChild(ghostElement);
+            ghostElement = null;
+            originalElement.classList.remove('opacity-50');
+            
+            // Handle drop logic
+            if (currentDropTarget) {
+                const characterData = {
+                    id: originalElement.getAttribute('data-character-id'),
+                    name: originalElement.getAttribute('data-name'),
+                    role: originalElement.getAttribute('data-role')
+                };
+                
+                // Prepare character data in the same format as desktop drag&drop
+                const characterDataStr = JSON.stringify(characterData);
+                
+                // Handle drop based on target type
+                if (currentDropTarget.classList.contains('timeline-cell')) {
+                    // Create a fake event object to pass to the existing handler
+                    const fakeEvent = {
+                        preventDefault: () => {},
+                        dataTransfer: {
+                            getData: () => characterDataStr
+                        },
+                        currentTarget: currentDropTarget
+                    };
+                    
+                    // Call the existing drop handler
+                    handleCharacterDrop(fakeEvent, currentDropTarget);
+                } else if (currentDropTarget.classList.contains('timeline-event')) {
+                    // Create a fake event for dropping on an existing event
+                    const fakeEvent = {
+                        preventDefault: () => {},
+                        stopPropagation: () => {},
+                        dataTransfer: {
+                            getData: () => characterDataStr
+                        },
+                        target: {
+                            closest: () => currentDropTarget
+                        }
+                    };
+                    
+                    // Call the existing handleDropOnEvent function
+                    handleDropOnEvent(fakeEvent);
+                }
+                
+                // Reset current drop target
+                currentDropTarget.classList.remove('drag-over');
+                currentDropTarget.classList.remove('bg-opacity-70');
+                currentDropTarget = null;
+            }
+            
+            // Reset touch drag state
+            touchDragging = false;
+            touchTarget = null;
         }
 
         async function loadCharacters() {
@@ -521,6 +706,7 @@
             
             // Add drop event listeners to all timeline cells
             document.querySelectorAll('.timeline-cell').forEach(cell => {
+                // Desktop drag events
                 cell.addEventListener('dragover', e => {
                     e.preventDefault();
                     cell.classList.add('drag-over');
