@@ -404,6 +404,37 @@
             border-radius: 3px;
         }
 
+        /* AI Output styles */
+        #aiOutput {
+            overflow-y: auto;
+            min-height: 200px;
+            max-height: none;
+            scrollbar-width: thin;
+            scrollbar-color: var(--secondary) transparent;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        #aiOutput::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #aiOutput::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 3px;
+        }
+
+        #aiOutput::-webkit-scrollbar-thumb {
+            background-color: var(--secondary);
+            border-radius: 3px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        #aiOutput::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary);
+        }
+
         /* Mobile Styles */
         @media (max-width: 768px) {
             /* Header optimizations */
@@ -536,6 +567,17 @@
                 min-width: 100%;
                 max-width: 100%;
             }
+            
+            /* Make sure AI output and chat history are scrollable on mobile */
+            #aiOutput {
+                max-height: calc(50vh - 100px);
+                overflow-y: auto;
+            }
+            
+            #chatHistory {
+                max-height: calc(50vh - 100px);
+                overflow-y: auto;
+            }
         }
 
         /* Fix for iOS zoom issues */
@@ -548,6 +590,11 @@
                 }
                 
                 #editorContent {
+                    -webkit-overflow-scrolling: touch;
+                }
+                
+                /* Enable smooth scrolling for iOS */
+                #aiOutput, #chatHistory {
                     -webkit-overflow-scrolling: touch;
                 }
             }
@@ -1884,7 +1931,7 @@
                 </div>
 
                 <!-- Chat View -->
-                <div id="chatView" class="flex-1 flex flex-col hidden">
+                <div id="chatView" class="flex-1 flex flex-col hidden overflow-hidden">
                     <!-- Chat History (now at top) -->
                     <div id="chatHistory" class="flex-1 overflow-y-auto">
                         <!-- Example messages will be added here -->
@@ -1907,7 +1954,7 @@
                 </div>
 
                 <!-- Generate/Edit View -->
-                <div id="generateEditView" class="flex-1 flex flex-col">
+                <div id="generateEditView" class="flex-1 flex flex-col overflow-hidden">
                     <!-- Output Area (now at top) -->
                     <div id="aiOutput" class="flex-1 bg-gray-50 rounded-lg m-4 p-6 overflow-y-auto">
                         <p class="text-gray-400 text-sm italic">AI output will appear here...</p>
@@ -3287,7 +3334,7 @@
                     // Format the response with proper line breaks and paragraphs
                     const formattedResponse = responseText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
                     
-                    // Show the model that was used
+                    // Update the response text with model information
                     const modelInfo = data.model ? `<div class="text-xs text-gray-500 mb-2">Generated with: ${data.model}</div>` : '';
                     
                     // Add a warning if this is a fallback response
@@ -3295,6 +3342,10 @@
                         `<div class="text-xs text-orange-500 mb-2">Note: This is an offline fallback response. ${data.error || ''}</div>` : '';
                     
                     aiOutput.innerHTML = `${modelInfo}${fallbackWarning}<p class="text-gray-700">${formattedResponse}</p>`;
+                    
+                    // Scroll to see the new content
+                    aiOutput.scrollTop = aiOutput.scrollHeight;
+                    
                     showToast(data.isFallback ? 'Fallback response provided' : 'Text generated successfully!');
                 } catch (error) {
                     console.error('Error:', error);
@@ -3381,6 +3432,8 @@
                 }
                 
                 chatHistory.appendChild(messageEl);
+                
+                // Ensure we scroll to see the new message
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             }
         });
@@ -3433,6 +3486,39 @@
 
         // Add click handler to mobile menu button
         document.getElementById('mobileMenuBtn').addEventListener('click', toggleSidebar);
+        
+        // Ensure AI output containers can scroll properly when content changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const aiOutput = document.getElementById('aiOutput');
+            const chatHistory = document.getElementById('chatHistory');
+            
+            // Setup resize observer for AI output and chat history
+            if (window.ResizeObserver) {
+                // For aiOutput
+                const outputObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        if (entry.target.scrollHeight > entry.target.clientHeight) {
+                            // Content exceeds container height, ensure scrollable
+                            entry.target.style.overflowY = 'auto';
+                        }
+                    }
+                });
+                
+                if (aiOutput) outputObserver.observe(aiOutput);
+                
+                // For chatHistory
+                const chatObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        if (entry.target.scrollHeight > entry.target.clientHeight) {
+                            // Scroll to the bottom when content changes
+                            entry.target.scrollTop = entry.target.scrollHeight;
+                        }
+                    }
+                });
+                
+                if (chatHistory) chatObserver.observe(chatHistory);
+            }
+        });
     </script>
 </body>
 </html> 
