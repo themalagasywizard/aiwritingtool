@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AIStoryCraft</title>
     <!-- Supabase Configuration -->
     <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
@@ -54,301 +54,6 @@
             color: var(--text-primary);
         }
 
-        /* Mobile Styles */
-        @media (max-width: 768px) {
-            body {
-                overflow: hidden;
-                height: 100vh;
-                display: flex;
-                flex-direction: column;
-                padding-top: 56px;
-            }
-
-            /* Fixed header - absolutely fixed at top */
-            header.h-16 {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                z-index: 40;
-                flex-shrink: 0;
-                padding: 0.5rem 1rem !important;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                background-color: white;
-                height: 56px;
-                overflow: hidden;
-                -webkit-overflow-scrolling: none;
-                touch-action: none;
-            }
-            
-            /* Fixed toolbar - absolutely fixed below header */
-            .editor-toolbar {
-                position: fixed;
-                top: 56px;
-                left: 0;
-                right: 0;
-                z-index: 39;
-                flex-shrink: 0;
-                background-color: white;
-                flex-wrap: wrap;
-                gap: 0.25rem;
-                padding: 0.25rem 0.5rem;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                height: 48px;
-                overflow: hidden;
-                -webkit-overflow-scrolling: none;
-                touch-action: none;
-            }
-
-            /* Main content needs to be pushed down to account for fixed header and toolbar */
-            main.flex-1 {
-                padding-top: 48px;
-                display: flex;
-                flex-direction: column;
-                height: calc(100vh - 104px); /* Subtract header + toolbar height */
-                overflow: hidden;
-            }
-
-            /* Make main wrapper take remaining height */
-            .main-content-wrapper {
-                flex: 1;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-                position: relative;
-                padding-bottom: 30px;
-            }
-
-            /* AI Assistant Panel Mobile Styles */
-            #aiAssistPanel {
-                width: 100% !important;
-                min-width: 100% !important;
-                max-height: 80vh !important;
-                bottom: 0;
-                top: auto;
-                border-radius: 1rem 1rem 0 0;
-                box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.1);
-                background-color: white !important;
-                z-index: 50 !important;
-            }
-
-            #aiMobileOverlay {
-                z-index: 49 !important;
-                background-color: rgba(0, 0, 0, 0.5);
-            }
-
-            /* Ensure AI panel and its contents are interactive */
-            #aiAssistPanel,
-            #aiAssistPanel *,
-            #aiInput,
-            #aiOutput,
-            #chatInput,
-            #chatHistory,
-            .ai-mode-btn,
-            #aiModel {
-                pointer-events: auto !important;
-            }
-
-            /* Prevent clicks on overlay from closing the panel */
-            #aiMobileOverlay.hidden {
-                display: none !important;
-            }
-
-            /* Ensure proper height for chat components */
-            #chatHistory {
-                max-height: 50vh !important;
-            }
-
-            #chatInput,
-            #aiInput {
-                max-height: 100px !important;
-            }
-
-            .sidebar {
-                position: fixed;
-                left: -250px;
-                top: 0;
-                bottom: 0;
-                z-index: 45; /* Above header */
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.open {
-                transform: translateX(250px);
-            }
-
-            .btn {
-                padding: 0.5rem !important;
-            }
-
-            /* Hide text on small buttons, show only icons */
-            .btn-icon-only-mobile i {
-                margin: 0 !important;
-            }
-            .btn-icon-only-mobile span {
-                display: none;
-            }
-            
-            header .flex.items-center.space-x-4 {
-                gap: 0.5rem !important;
-            }
-
-            /* Make modals full width on mobile */
-            .modal-container {
-                width: 90% !important;
-                margin: 1rem !important;
-                max-height: 90vh !important;
-                overflow-y: auto !important;
-            }
-
-            /* Make load project panel full width */
-            #loadProjectPanel {
-                width: 100% !important;
-            }
-
-            /* Add mobile menu button */
-            #mobileMenuBtn {
-                display: block !important;
-            }
-
-            /* Make font size dropdown position better on mobile */
-            .font-size-dropdown {
-                left: auto;
-                right: 0;
-            }
-
-            /* Adjust character tree for mobile */
-            .character-tree {
-                min-height: 200px;
-                padding: 0.5rem;
-            }
-
-            .character-node {
-                width: 50px;
-                height: 50px;
-                font-size: 0.875rem;
-            }
-
-            /* Make tooltips work better on mobile */
-            .character-tooltip {
-                width: 180px;
-                font-size: 0.875rem;
-            }
-
-            /* Adjust word count display for mobile */
-            .word-count-container {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-
-            /* Make project list more mobile-friendly */
-            .project-item {
-                padding: 0.75rem !important;
-            }
-
-            /* Adjust auth forms for mobile */
-            .auth-container {
-                width: 90% !important;
-                margin: 1rem !important;
-            }
-
-            /* Fix for chat input focus issues */
-            #aiAssistPanel input, 
-            #aiAssistPanel textarea {
-                -webkit-appearance: none;
-                appearance: none;
-                font-size: 16px; /* Prevent iOS zoom */
-            }
-
-            /* Prevent visual viewport shifts when keyboard appears */
-            @supports (-webkit-touch-callout: none) {
-                /* iOS specific fix */
-                .main-content-wrapper {
-                    height: -webkit-fill-available;
-                }
-
-                /* iOS keyboard fix */
-                body.keyboard-open {
-                    height: -webkit-fill-available;
-                    position: fixed;
-                    width: 100%;
-                }
-
-                /* Keep header and toolbar visible regardless of keyboard state */
-                header.h-16,
-                .editor-toolbar {
-                    position: fixed !important;
-                    -webkit-transform: translateZ(0);
-                    transform: translateZ(0);
-                }
-
-                /* Add padding to ensure chat inputs are fully visible with keyboard */
-                #aiAssistPanel {
-                    padding-bottom: 20vh;
-                }
-            }
-
-            /* Prevent scroll position jumps - more reliable cross-browser approach */
-            #chatInput:focus,
-            #aiInput:focus {
-                position: relative;
-                z-index: 3;
-            }
-
-            /* Add JS hook to handle keyboard visibility changes */
-            body::after {
-                content: '';
-                display: none;
-            }
-        }
-
-        /* Desktop Styles */
-        @media (min-width: 769px) {
-            body {
-                height: 100vh;
-                overflow: hidden;
-            }
-
-            /* Main container should be scrollable */
-            .flex.flex-1.overflow-hidden {
-                overflow: auto !important;
-                height: calc(100vh - 64px);
-            }
-
-            /* Editor content should be fully visible */
-            .main-content-wrapper {
-                height: auto;
-                min-height: 100%;
-                overflow-y: visible;
-            }
-
-            #editorContent {
-                height: auto;
-                min-height: 100%;
-                overflow-y: visible;
-            }
-
-            /* Ensure proper scrolling for main content */
-            main.flex-1 {
-                height: auto;
-                min-height: 100%;
-                overflow-y: visible;
-            }
-
-            .main-content-wrapper > .flex-1 {
-                height: auto;
-                min-height: 100%;
-                overflow-y: visible;
-            }
-
-            /* Ensure sidebar is full height */
-            .sidebar {
-                height: calc(100vh - 64px);
-                overflow-y: auto;
-            }
-        }
-
-        /* Custom Styles */
         .editor-content {
             font-family: 'Merriweather', serif;
             line-height: 1.8;
@@ -674,8 +379,8 @@
 
         /* Chat input styles */
         #chatInput {
-            min-height: 2.5rem;
-            max-height: 8rem;
+            min-height: 100px;
+            max-height: 200px;
             resize: none;
             overflow-y: auto;
             line-height: 1.5;
@@ -699,47 +404,15 @@
             border-radius: 3px;
         }
 
-        /* AI Assistant Panel Styles */
-        #aiAssistPanel {
-            min-width: 400px;
-            max-width: 600px;
-            width: 35vw;
-            height: 100vh;
-            max-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        #aiInput {
-            font-size: 1rem;
-            line-height: 1.6;
-            overflow-y: auto;
-        }
-
-        #aiInput::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        #aiInput::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        #aiInput::-webkit-scrollbar-thumb {
-            background-color: var(--secondary);
-            border-radius: 3px;
-        }
-
+        /* AI Output styles */
         #aiOutput {
-            min-height: 200px;
-            max-height: 400px;
-            font-size: 1rem;
-            line-height: 1.6;
             overflow-y: auto;
-            padding: 1.5rem;
-            background-color: #F9FAFB;
-            border-radius: 0.5rem;
+            min-height: 200px;
+            max-height: none;
             scrollbar-width: thin;
             scrollbar-color: var(--secondary) transparent;
+            word-wrap: break-word;
+            white-space: pre-wrap;
         }
 
         #aiOutput::-webkit-scrollbar {
@@ -762,11 +435,168 @@
             background-color: var(--primary);
         }
 
+        /* Mobile Styles */
         @media (max-width: 768px) {
+            /* Header optimizations */
+            header {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                height: 56px;
+                background: white;
+                z-index: 50;
+                padding: 0;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            /* Clean up header for mobile */
+            header .btn {
+                min-width: unset;
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+                padding: 0;
+                margin: 0 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Hide button text on mobile */
+            header .btn span {
+                display: none;
+            }
+
+            header .btn i {
+                margin: 0;
+                font-size: 1rem;
+            }
+
+            /* Make logo smaller */
+            header .w-10.h-10 {
+                width: 32px;
+                height: 32px;
+                min-width: 32px;
+            }
+
+            /* Adjust header sections */
+            header > div:first-child {
+                display: flex;
+                align-items: center;
+                padding-left: 8px;
+                position: relative; /* For save status positioning */
+            }
+
+            header > div:last-child {
+                display: flex;
+                align-items: center;
+                padding-right: 8px;
+                gap: 6px;
+            }
+
+            /* Editor toolbar styling */
+            .editor-toolbar {
+                position: fixed;
+                top: 64px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                background: white;
+                z-index: 49;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                height: 48px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            /* Adjust main content area to account for new spacing */
+            main {
+                margin-top: 112px; /* Increased from 104px */
+                height: calc(100vh - 112px);
+                overflow-y: auto;
+                width: 100%;
+            }
+
+            /* Update sidebar top position to match new toolbar position */
+            .sidebar {
+                top: 112px; /* Increased from 104px */
+            }
+
+            /* Mobile sidebar */
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 112px; /* Match header + toolbar height */
+                bottom: 0;
+                width: 250px;
+                background: white;
+                z-index: 48;
+                transition: transform 0.3s ease;
+                display: block !important;
+                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            }
+
+            .sidebar.active {
+                transform: translateX(250px);
+            }
+
+            /* Mobile overlay for sidebar */
+            #sidebarOverlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 47;
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity 0.3s ease;
+            }
+
+            #sidebarOverlay.active {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            /* Adjust AI Assistant panel for mobile */
             #aiAssistPanel {
                 width: 100%;
                 min-width: 100%;
                 max-width: 100%;
+            }
+            
+            /* Make sure AI output and chat history are scrollable on mobile */
+            #aiOutput {
+                max-height: calc(50vh - 100px);
+                overflow-y: auto;
+            }
+            
+            #chatHistory {
+                max-height: calc(50vh - 100px);
+                overflow-y: auto;
+            }
+        }
+
+        /* Fix for iOS zoom issues */
+        @supports (-webkit-touch-callout: none) {
+            @media (max-width: 768px) {
+                header, .editor-toolbar {
+                    -webkit-transform: translateZ(0);
+                    transform: translateZ(0);
+                    will-change: transform;
+                }
+                
+                #editorContent {
+                    -webkit-overflow-scrolling: touch;
+                }
+                
+                /* Enable smooth scrolling for iOS */
+                #aiOutput, #chatHistory {
+                    -webkit-overflow-scrolling: touch;
+                }
             }
         }
     </style>
@@ -1215,10 +1045,11 @@
             try {
                 if (!appState.currentChapter) return;
                 
-                updateSaveStatus(true, 'Saving...');
-                
                 // Get content from editor
                 const content = elements.editorContent.innerHTML;
+                
+                // Update save button to indicate saving in progress
+                elements.saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span class="ml-1">Saving...</span>';
                 
                 const { data: updatedChapter, error } = await chapters.update(
                     appState.currentChapter.id,
@@ -1236,8 +1067,10 @@
                 // Reset dirty state
                 appState.isDirty = false;
                 
-                // Update UI
-                updateSaveStatus(false);
+                // Update save button to indicate saved
+                elements.saveBtn.classList.remove('btn-error');
+                elements.saveBtn.classList.add('btn-primary');
+                elements.saveBtn.innerHTML = '<i class="fas fa-save"></i><span class="ml-1">Save</span>';
                 
                 // Update project last edited time (backend will handle this)
                 elements.lastEdited.textContent = 'Last edited: ' + formatDate(new Date());
@@ -1248,7 +1081,15 @@
                 return updatedChapter[0];
             } catch (error) {
                 console.error('Error saving chapter:', error);
-                updateSaveStatus(false, 'Error saving');
+                
+                // Update save button to indicate error
+                elements.saveBtn.classList.remove('btn-primary');
+                elements.saveBtn.classList.add('btn-error');
+                elements.saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i><span class="ml-1">Error</span>';
+                
+                // Show toast with error message
+                showToast('Error saving chapter', 'error');
+                
                 return null;
             }
         }
@@ -1256,16 +1097,18 @@
         function updateSaveStatus(isDirty, message) {
             appState.isDirty = isDirty;
             
-            if (message) {
-                elements.saveStatus.textContent = message;
-            } else if (isDirty) {
-                elements.saveStatus.textContent = 'Unsaved changes';
-                elements.saveStatus.classList.add('text-warning');
-                elements.saveStatus.classList.remove('text-success');
+            // Update save button appearance based on dirty state
+            if (isDirty) {
+                elements.saveBtn.classList.remove('btn-primary');
+                elements.saveBtn.classList.add('btn-error');
             } else {
-                elements.saveStatus.textContent = 'Saved';
-                elements.saveStatus.classList.remove('text-warning');
-                elements.saveStatus.classList.add('text-success');
+                elements.saveBtn.classList.remove('btn-error');
+                elements.saveBtn.classList.add('btn-primary');
+            }
+            
+            // If message is provided, show it in a toast notification
+            if (message) {
+                showToast(message);
             }
         }
 
@@ -1480,36 +1323,6 @@
 
         // Event Listeners
         function setupEventListeners() {
-            // Mobile Menu Handlers
-            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-            const sidebar = document.querySelector('.sidebar');
-            const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
-
-            if (mobileMenuBtn) {
-                mobileMenuBtn.addEventListener('click', () => {
-                    sidebar.classList.toggle('open');
-                    mobileMenuOverlay.classList.toggle('hidden');
-                    document.body.classList.toggle('overflow-hidden');
-                });
-            }
-
-            if (mobileMenuOverlay) {
-                mobileMenuOverlay.addEventListener('click', () => {
-                    sidebar.classList.remove('open');
-                    mobileMenuOverlay.classList.add('hidden');
-                    document.body.classList.remove('overflow-hidden');
-                });
-            }
-
-            // Close mobile menu when window is resized to desktop size
-            window.addEventListener('resize', () => {
-                if (window.innerWidth >= 768) {
-                    sidebar.classList.remove('open');
-                    mobileMenuOverlay.classList.add('hidden');
-                    document.body.classList.remove('overflow-hidden');
-                }
-            });
-
             // New Project Button
             elements.newProjectBtn.addEventListener('click', () => {
                 elements.newProjectModal.classList.remove('hidden');
@@ -1872,30 +1685,26 @@
     <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
         <div class="flex items-center space-x-4">
             <!-- Mobile Menu Button -->
-            <button id="mobileMenuBtn" class="md:hidden text-primary" aria-label="Toggle Menu">
-                <i class="fas fa-bars text-xl"></i>
+            <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary">
+                <i class="fas fa-bars"></i>
             </button>
             <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
                 <i class="fas fa-feather-alt"></i>
             </div>
-            <h1 class="text-xl font-semibold text-primary">AIStoryCraft</h1>
+            <h1 class="text-xl font-semibold text-primary hidden md:block">AIStoryCraft</h1>
         </div>
         <div class="flex items-center space-x-4">
-            <div class="text-sm text-textSecondary hidden md:flex items-center">
-                <i class="fas fa-cloud-upload-alt mr-2 text-success"></i>
-                <span id="saveStatus">Saved</span>
-            </div>
-            <button id="saveBtn" class="btn btn-primary btn-icon-only-mobile">
-                <i class="fas fa-save mr-1"></i>
-                <span>Save</span>
+            <button id="saveBtn" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                <span class="ml-1">Save</span>
             </button>
-            <button id="loadProjectBtn" class="btn btn-primary btn-icon-only-mobile">
-                <i class="fas fa-folder-open mr-1"></i>
-                <span>Load Project</span>
+            <button id="loadProjectBtn" class="btn btn-primary">
+                <i class="fas fa-folder-open"></i>
+                <span class="ml-1">Load Project</span>
             </button>
-            <button id="newProjectBtn" class="btn btn-success btn-icon-only-mobile">
-                <i class="fas fa-plus mr-1"></i>
-                <span>New Project</span>
+            <button id="newProjectBtn" class="btn btn-success">
+                <i class="fas fa-plus"></i>
+                <span class="ml-1">New Project</span>
             </button>
             <div class="relative group">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
@@ -1919,8 +1728,8 @@
         </div>
     </header>
 
-    <!-- Mobile Menu Overlay -->
-    <div id="mobileMenuOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-30"></div>
+    <!-- Sidebar Overlay (for mobile) -->
+    <div id="sidebarOverlay" class="lg:hidden" onclick="toggleSidebar()"></div>
 
     <!-- Load Project Panel -->
     <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
@@ -2035,8 +1844,9 @@
         <!-- Editor Area -->
         <main class="flex-1 overflow-hidden flex flex-col bg-white">
             <!-- Editor Toolbar -->
-            <div class="bg-white border-b border-gray-100 p-2 flex items-center space-x-2 shadow-sm-custom">
-                <div class="flex items-center space-x-1 mr-2">
+            <div class="bg-white border-b border-gray-100 p-2 flex items-center space-x-2 shadow-sm-custom editor-toolbar">
+                <!-- Formatting buttons grouped together -->
+                <div class="flex items-center space-x-1">
                     <button class="toolbar-btn" title="Bold">
                         <i class="fas fa-bold"></i>
                     </button>
@@ -2058,13 +1868,14 @@
                         </div>
                     </div>
                 </div>
-                <div class="h-6 w-px bg-gray-200 mx-2"></div>
-                <!-- AI Assistant Button -->
-                <button id="aiAssistBtn" class="btn btn-primary text-sm transform transition-transform hover:scale-105 active:scale-95">
+                
+                <!-- AI Assistant Button (right-aligned) -->
+                <button id="aiAssistBtn" class="btn btn-primary text-sm transform transition-transform hover:scale-105 active:scale-95 ml-auto">
                     <i class="fas fa-robot mr-2"></i>
-                    AI Assist
+                    <span>AI Assist</span>
                 </button>
-                <div class="flex-grow"></div>
+                
+                <!-- Full Screen button -->
                 <button class="toolbar-btn" title="Full Screen">
                     <i class="fas fa-expand"></i>
                 </button>
@@ -2120,7 +1931,7 @@
                 </div>
 
                 <!-- Chat View -->
-                <div id="chatView" class="flex-1 flex flex-col hidden">
+                <div id="chatView" class="flex-1 flex flex-col hidden overflow-hidden">
                     <!-- Chat History (now at top) -->
                     <div id="chatHistory" class="flex-1 overflow-y-auto">
                         <!-- Example messages will be added here -->
@@ -2128,9 +1939,9 @@
                     
                     <!-- Chat Input (now at bottom) -->
                     <div class="flex-shrink-0 p-4 border-t border-gray-200">
-                        <div class="relative flex items-end space-x-2">
-                            <textarea id="chatInput" class="flex-1 border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Ask the AI..." rows="1"></textarea>
-                            <button id="chatSubmit" class="btn btn-primary flex-shrink-0" disabled>
+                        <div class="relative">
+                            <textarea id="chatInput" class="w-full min-h-[100px] max-h-[200px] border border-gray-200 rounded-lg p-3 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Ask the AI..."></textarea>
+                            <button id="chatSubmit" class="absolute right-3 top-3 text-primary hover:text-primary/80 disabled:opacity-50">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -2143,7 +1954,7 @@
                 </div>
 
                 <!-- Generate/Edit View -->
-                <div id="generateEditView" class="flex-1 flex flex-col">
+                <div id="generateEditView" class="flex-1 flex flex-col overflow-hidden">
                     <!-- Output Area (now at top) -->
                     <div id="aiOutput" class="flex-1 bg-gray-50 rounded-lg m-4 p-6 overflow-y-auto">
                         <p class="text-gray-400 text-sm italic">AI output will appear here...</p>
@@ -2191,12 +2002,10 @@
             </div>
 
             <!-- Editor Content -->
-            <div class="main-content-wrapper">
-                <div class="flex-1 overflow-y-auto p-8 bg-white">
-                    <div id="editorContent" class="editor-content max-w-3xl mx-auto" contenteditable="true">
-                        <h1 id="chapterTitle" class="text-3xl font-bold mb-6">Loading chapter...</h1>
-                        <p class="mb-4 placeholder-text">Select a chapter to start writing, or create a new one.</p>
-                    </div>
+            <div class="flex-1 overflow-y-auto p-8 bg-white">
+                <div id="editorContent" class="editor-content max-w-3xl mx-auto" contenteditable="true">
+                    <h1 id="chapterTitle" class="text-3xl font-bold mb-6">Loading chapter...</h1>
+                    <p class="mb-4 placeholder-text">Select a chapter to start writing, or create a new one.</p>
                 </div>
             </div>
         </main>
@@ -3295,20 +3104,14 @@
                 aiAssistPanel.classList.toggle('translate-x-full');
                 aiMobileOverlay.classList.toggle('hidden');
                 
-                if (!isOpen) {
-                    // Panel is opening
+                // Remove the auto-focus
+                /* if (!isOpen) {
                     if (currentMode === 'generate') {
-                        // Only focus on desktop, not mobile
-                        if (window.innerWidth >= 768) {
-                            aiInput.focus();
-                        }
+                        aiInput.focus();
                     } else if (currentMode === 'chat') {
-                        // Only focus on desktop, not mobile
-                        if (window.innerWidth >= 768) {
-                            chatInput.focus();
-                        }
+                        chatInput.focus();
                     }
-                }
+                } */
             }
             
             aiAssistBtn.addEventListener('click', toggleAiPanel);
@@ -3329,17 +3132,13 @@
                     if (mode === 'chat') {
                         generateEditView.classList.add('hidden');
                         chatView.classList.remove('hidden');
-                        // Only focus on desktop, not mobile
-                        if (window.innerWidth >= 768) {
-                            chatInput.focus();
-                        }
+                        // Remove auto-focus
+                        // chatInput.focus();
                     } else {
                         generateEditView.classList.remove('hidden');
                         chatView.classList.add('hidden');
-                        // Only focus on desktop, not mobile
-                        if (window.innerWidth >= 768) {
-                            aiInput.focus();
-                        }
+                        // Remove auto-focus
+                        // aiInput.focus();
                     }
                     
                     // Update placeholder
@@ -3396,6 +3195,7 @@
             // Initialize textarea height
             window.addEventListener('load', function() {
                 autoExpandTextarea(aiInput);
+                autoExpandTextarea(chatInput);
             });
             
             // Handle chat input
@@ -3534,7 +3334,7 @@
                     // Format the response with proper line breaks and paragraphs
                     const formattedResponse = responseText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
                     
-                    // Show the model that was used
+                    // Update the response text with model information
                     const modelInfo = data.model ? `<div class="text-xs text-gray-500 mb-2">Generated with: ${data.model}</div>` : '';
                     
                     // Add a warning if this is a fallback response
@@ -3542,6 +3342,10 @@
                         `<div class="text-xs text-orange-500 mb-2">Note: This is an offline fallback response. ${data.error || ''}</div>` : '';
                     
                     aiOutput.innerHTML = `${modelInfo}${fallbackWarning}<p class="text-gray-700">${formattedResponse}</p>`;
+                    
+                    // Scroll to see the new content
+                    aiOutput.scrollTop = aiOutput.scrollHeight;
+                    
                     showToast(data.isFallback ? 'Fallback response provided' : 'Text generated successfully!');
                 } catch (error) {
                     console.error('Error:', error);
@@ -3628,6 +3432,8 @@
                 }
                 
                 chatHistory.appendChild(messageEl);
+                
+                // Ensure we scroll to see the new message
                 chatHistory.scrollTop = chatHistory.scrollHeight;
             }
         });
@@ -3667,61 +3473,152 @@
         </div>
     </div>
 
-    <!-- Add this script to the end of the body tag or at the end of the file */ -->
-    <!-- Add this before the closing </body> tag -->
+    <!-- Add this script at the end of the body -->
     <script>
-        // Existing scripts...
+        // Mobile sidebar toggle function
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('active');
+        }
 
-        // Fix for mobile keyboard issues
+        // Add click handler to mobile menu button
+        document.getElementById('mobileMenuBtn').addEventListener('click', toggleSidebar);
+        
+        // Ensure AI output containers can scroll properly when content changes
         document.addEventListener('DOMContentLoaded', function() {
-            if (window.innerWidth <= 768) {
-                // Handle input focus to prevent toolbar issues
-                const handleFocus = function() {
-                    // Add class to indicate keyboard is open
-                    document.body.classList.add('keyboard-open');
-                    
-                    // Force redraw the fixed elements
-                    const header = document.querySelector('header.h-16');
-                    const toolbar = document.querySelector('.editor-toolbar');
-                    
-                    if (header) {
-                        header.style.display = 'none';
-                        header.offsetHeight; // Force reflow
-                        header.style.display = '';
+            const aiOutput = document.getElementById('aiOutput');
+            const chatHistory = document.getElementById('chatHistory');
+            
+            // Setup resize observer for AI output and chat history
+            if (window.ResizeObserver) {
+                // For aiOutput
+                const outputObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        if (entry.target.scrollHeight > entry.target.clientHeight) {
+                            // Content exceeds container height, ensure scrollable
+                            entry.target.style.overflowY = 'auto';
+                        }
                     }
-                    
-                    if (toolbar) {
-                        toolbar.style.display = 'none';
-                        toolbar.offsetHeight; // Force reflow
-                        toolbar.style.display = '';
-                    }
-                };
-                
-                const handleBlur = function() {
-                    // Remove keyboard open class
-                    document.body.classList.remove('keyboard-open');
-                };
-                
-                // Add event listeners to AI panel inputs
-                const aiInputs = document.querySelectorAll('#aiAssistPanel input, #aiAssistPanel textarea');
-                aiInputs.forEach(input => {
-                    input.addEventListener('focus', handleFocus);
-                    input.addEventListener('blur', handleBlur);
                 });
                 
-                // Additional listener for visibilitychange to handle keyboard dismiss
-                document.addEventListener('visibilitychange', function() {
-                    if (document.visibilityState === 'visible') {
-                        // Ensure toolbar and header are properly positioned
-                        const header = document.querySelector('header.h-16');
-                        const toolbar = document.querySelector('.editor-toolbar');
+                if (aiOutput) outputObserver.observe(aiOutput);
+                
+                // For chatHistory
+                const chatObserver = new ResizeObserver(entries => {
+                    for (let entry of entries) {
+                        if (entry.target.scrollHeight > entry.target.clientHeight) {
+                            // Scroll to the bottom when content changes
+                            entry.target.scrollTop = entry.target.scrollHeight;
+                        }
+                    }
+                });
+                
+                if (chatHistory) chatObserver.observe(chatHistory);
+            }
+            
+            // Mobile keyboard handling for AI chat inputs
+            const chatInput = document.getElementById('chatInput');
+            const aiInput = document.getElementById('aiInput');
+            const aiAssistPanel = document.getElementById('aiAssistPanel');
+            
+            // Function to adjust input position when keyboard appears
+            function handleMobileKeyboard(input) {
+                if (!input || window.innerWidth > 768) return; // Only apply on mobile devices
+                
+                // When input is focused (keyboard appears)
+                input.addEventListener('focus', () => {
+                    // Small delay to ensure keyboard is fully shown
+                    setTimeout(() => {
+                        // Get the input container (the parent div of the textarea)
+                        const inputContainer = input.closest('.flex-shrink-0');
+                        if (!inputContainer) return;
                         
-                        if (header) header.style.transform = 'translateZ(0)';
-                        if (toolbar) toolbar.style.transform = 'translateZ(0)';
+                        // Add class to position the input above keyboard
+                        inputContainer.classList.add('keyboard-visible');
+                        
+                        // Scroll the panel to ensure input is visible
+                        aiAssistPanel.scrollTop = aiAssistPanel.scrollHeight;
+                        
+                        // Scroll the input into view
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                });
+                
+                // When input loses focus (keyboard disappears)
+                input.addEventListener('blur', () => {
+                    // Get the input container
+                    const inputContainer = input.closest('.flex-shrink-0');
+                    if (!inputContainer) return;
+                    
+                    // Remove the positioning class
+                    inputContainer.classList.remove('keyboard-visible');
+                });
+            }
+            
+            // Apply keyboard handling to both chat inputs
+            handleMobileKeyboard(chatInput);
+            handleMobileKeyboard(aiInput);
+            
+            // Handle visual viewport changes (for iOS)
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => {
+                    const activeInput = document.activeElement;
+                    // Check if active element is one of our inputs
+                    if (activeInput === chatInput || activeInput === aiInput) {
+                        // Calculate the difference between window height and viewport height (keyboard height)
+                        const keyboardHeight = window.innerHeight - window.visualViewport.height;
+                        
+                        if (keyboardHeight > 100) { // Keyboard is visible
+                            // Get the input container
+                            const inputContainer = activeInput.closest('.flex-shrink-0');
+                            if (!inputContainer) return;
+                            
+                            // Position the input above the keyboard
+                            inputContainer.style.marginBottom = `${keyboardHeight}px`;
+                            
+                            // Scroll input into view
+                            activeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                     }
                 });
             }
         });
     </script>
+    
+    <style>
+        /* Mobile keyboard adjustments for AI chat inputs */
+        @media (max-width: 768px) {
+            /* When keyboard is visible, ensure input stays visible */
+            .keyboard-visible {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                background: white !important;
+                z-index: 100 !important;
+                padding: 10px !important;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+                margin-bottom: env(safe-area-inset-bottom, 0) !important;
+                transition: transform 0.3s ease !important;
+            }
+            
+            /* Adjust AI panel layout when keyboard is active */
+            #aiAssistPanel.keyboard-active {
+                height: auto !important;
+                bottom: 0 !important;
+                top: 50px !important;
+                overflow-y: auto !important;
+            }
+            
+            /* Ensure chat history scrolls properly with keyboard visible */
+            #aiAssistPanel.keyboard-active #chatHistory,
+            #aiAssistPanel.keyboard-active #aiOutput {
+                max-height: calc(100vh - 220px) !important;
+            }
+        }
+    </style>
 </body>
 </html> 
