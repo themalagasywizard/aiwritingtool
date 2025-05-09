@@ -3518,7 +3518,107 @@
                 
                 if (chatHistory) chatObserver.observe(chatHistory);
             }
+            
+            // Mobile keyboard handling for AI chat inputs
+            const chatInput = document.getElementById('chatInput');
+            const aiInput = document.getElementById('aiInput');
+            const aiAssistPanel = document.getElementById('aiAssistPanel');
+            
+            // Function to adjust input position when keyboard appears
+            function handleMobileKeyboard(input) {
+                if (!input || window.innerWidth > 768) return; // Only apply on mobile devices
+                
+                // When input is focused (keyboard appears)
+                input.addEventListener('focus', () => {
+                    // Small delay to ensure keyboard is fully shown
+                    setTimeout(() => {
+                        // Get the input container (the parent div of the textarea)
+                        const inputContainer = input.closest('.flex-shrink-0');
+                        if (!inputContainer) return;
+                        
+                        // Add class to position the input above keyboard
+                        inputContainer.classList.add('keyboard-visible');
+                        
+                        // Scroll the panel to ensure input is visible
+                        aiAssistPanel.scrollTop = aiAssistPanel.scrollHeight;
+                        
+                        // Scroll the input into view
+                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 300);
+                });
+                
+                // When input loses focus (keyboard disappears)
+                input.addEventListener('blur', () => {
+                    // Get the input container
+                    const inputContainer = input.closest('.flex-shrink-0');
+                    if (!inputContainer) return;
+                    
+                    // Remove the positioning class
+                    inputContainer.classList.remove('keyboard-visible');
+                });
+            }
+            
+            // Apply keyboard handling to both chat inputs
+            handleMobileKeyboard(chatInput);
+            handleMobileKeyboard(aiInput);
+            
+            // Handle visual viewport changes (for iOS)
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', () => {
+                    const activeInput = document.activeElement;
+                    // Check if active element is one of our inputs
+                    if (activeInput === chatInput || activeInput === aiInput) {
+                        // Calculate the difference between window height and viewport height (keyboard height)
+                        const keyboardHeight = window.innerHeight - window.visualViewport.height;
+                        
+                        if (keyboardHeight > 100) { // Keyboard is visible
+                            // Get the input container
+                            const inputContainer = activeInput.closest('.flex-shrink-0');
+                            if (!inputContainer) return;
+                            
+                            // Position the input above the keyboard
+                            inputContainer.style.marginBottom = `${keyboardHeight}px`;
+                            
+                            // Scroll input into view
+                            activeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                });
+            }
         });
     </script>
+    
+    <style>
+        /* Mobile keyboard adjustments for AI chat inputs */
+        @media (max-width: 768px) {
+            /* When keyboard is visible, ensure input stays visible */
+            .keyboard-visible {
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                background: white !important;
+                z-index: 100 !important;
+                padding: 10px !important;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
+                margin-bottom: env(safe-area-inset-bottom, 0) !important;
+                transition: transform 0.3s ease !important;
+            }
+            
+            /* Adjust AI panel layout when keyboard is active */
+            #aiAssistPanel.keyboard-active {
+                height: auto !important;
+                bottom: 0 !important;
+                top: 50px !important;
+                overflow-y: auto !important;
+            }
+            
+            /* Ensure chat history scrolls properly with keyboard visible */
+            #aiAssistPanel.keyboard-active #chatHistory,
+            #aiAssistPanel.keyboard-active #aiOutput {
+                max-height: calc(100vh - 220px) !important;
+            }
+        }
+    </style>
 </body>
 </html> 
