@@ -574,47 +574,87 @@
             }
 
             try {
-                let success = false;
-                let userData = null;
+                // Show loading state
+                document.getElementById('signinButton').disabled = true;
+                document.getElementById('signinButton').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing in...';
                 
-                try {
-                    // First try with Supabase if available
-                    const { data, error } = await auth.signIn(email, password);
-                    if (!error) {
-                        success = true;
-                        userData = data.user;
+                // Try with Supabase auth
+                const { data, error } = await auth.signIn(email, password);
+                
+                if (error) {
+                    console.warn("Supabase auth error:", error);
+                    
+                    // For development environments or when Supabase is unavailable
+                    if (window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        error.message.includes('Failed to fetch')) {
+                        
+                        console.log("Using fallback auth for development or offline usage");
+                        
+                        // Simple validation for the fallback
+                        if (email.includes('@') && password.length >= 6) {
+                            // Create a user ID based on email for consistency
+                            const userId = 'user_' + btoa(email).replace(/=/g, '');
+                            
+                            // Store session data for the mock client
+                            const session = {
+                                user: { id: userId, email },
+                                access_token: 'mock_token_' + Date.now()
+                            };
+                            
+                            // Store both in local storage
+                            localStorage.setItem('supabase_auth_token', JSON.stringify(session));
+                            localStorage.setItem('isAuthenticated', 'true');
+                            localStorage.setItem('userEmail', email);
+                            
+                            // Show success and redirect
+                            successMessage.textContent = 'Successfully signed in with offline mode!';
+                            successMessage.classList.remove('hidden');
+                            errorMessage.classList.add('hidden');
+                            
+                            // Redirect after a short delay
+                            setTimeout(() => {
+                                window.location.href = '../editor.html';
+                            }, 1000);
+                            return;
+                        } else {
+                            throw new Error("Invalid email or password format");
+                        }
                     } else {
                         throw error;
                     }
-                } catch (supabaseError) {
-                    console.warn("Supabase auth failed, using mock auth:", supabaseError);
-                    
-                    // For development - allow any login with simple validation
-                    if (email.includes('@') && password.length >= 6) {
-                        // Set auth state in localStorage for demo purposes
-                        localStorage.setItem('isAuthenticated', 'true');
-                        localStorage.setItem('userEmail', email);
-                        success = true;
-                        userData = { email };
-                    } else {
-                        // Simple validation failed
-                        throw new Error("Invalid email or password (must include @ and password length >= 6)");
-                    }
                 }
-
-                if (success) {
+                
+                // Successful authentication with Supabase
+                if (data && data.user) {
+                    console.log("Authenticated with Supabase:", data.user);
+                    
+                    // Store authentication state
+                    localStorage.setItem('isAuthenticated', 'true');
+                    localStorage.setItem('userEmail', email);
+                    
                     // Show success message
                     successMessage.textContent = 'Successfully signed in!';
                     successMessage.classList.remove('hidden');
                     errorMessage.classList.add('hidden');
 
-                    // Redirect to editor directly
-                    window.location.href = '../editor.html';
+                    // Redirect to editor
+                    setTimeout(() => {
+                        window.location.href = '../editor.html';
+                    }, 1000);
+                } else {
+                    throw new Error("Authentication successful but no user data received");
                 }
+                
             } catch (error) {
+                console.error("Authentication error:", error);
                 errorMessage.textContent = error.message || "Error signing in. Please try again.";
                 errorMessage.classList.remove('hidden');
                 successMessage.classList.add('hidden');
+            } finally {
+                // Reset button state
+                document.getElementById('signinButton').disabled = false;
+                document.getElementById('signinButton').innerHTML = 'Sign In';
             }
         });
 
@@ -632,12 +672,63 @@
             }
 
             try {
+                // Show loading state
+                document.getElementById('signupButton').disabled = true;
+                document.getElementById('signupButton').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing up...';
+                
                 const { data, error } = await auth.signUp(email, password);
 
-                if (error) throw error;
+                if (error) {
+                    console.warn("Supabase signup error:", error);
+                    
+                    // For development or when Supabase is unavailable
+                    if (window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        error.message.includes('Failed to fetch')) {
+                        
+                        console.log("Using fallback signup for development or offline usage");
+                        
+                        // Simple validation
+                        if (email.includes('@') && password.length >= 6) {
+                            // Create user ID based on email for consistency
+                            const userId = 'user_' + btoa(email).replace(/=/g, '');
+                            
+                            // Set mock auth in localStorage
+                            localStorage.setItem('isAuthenticated', 'true');
+                            localStorage.setItem('userEmail', email);
+                            
+                            // Store session for the mock client
+                            const session = {
+                                user: { id: userId, email },
+                                access_token: 'mock_token_' + Date.now()
+                            };
+                            localStorage.setItem('supabase_auth_token', JSON.stringify(session));
+                            
+                            // Show success
+                            successMessage.textContent = 'Successfully signed up with offline mode! Redirecting to editor...';
+                            successMessage.classList.remove('hidden');
+                            errorMessage.classList.add('hidden');
+                            
+                            // Clear form
+                            document.getElementById('signupEmail').value = '';
+                            document.getElementById('signupPassword').value = '';
+                            document.getElementById('signupPasswordConfirm').value = '';
+                            
+                            // Redirect to editor after short delay
+                            setTimeout(() => {
+                                window.location.href = '../editor.html';
+                            }, 1500);
+                            return;
+                        } else {
+                            throw new Error("Invalid email or password format");
+                        }
+                    } else {
+                        throw error;
+                    }
+                }
 
-                // Show success message
-                successMessage.textContent = 'Successfully signed up! Please check your email for verification.';
+                // Show success message for regular Supabase signup
+                successMessage.textContent = 'Successfully signed up! Please check your email for verification or sign in now.';
                 successMessage.classList.remove('hidden');
                 errorMessage.classList.add('hidden');
 
@@ -646,14 +737,20 @@
                 document.getElementById('signupPassword').value = '';
                 document.getElementById('signupPasswordConfirm').value = '';
 
-                // Switch to sign in tab after 2 seconds
+                // Switch to sign in tab after delay
                 setTimeout(() => {
                     authTabs[0].click();
                 }, 2000);
+                
             } catch (error) {
+                console.error("Signup error:", error);
                 errorMessage.textContent = error.message || "Error signing up. Please try again.";
                 errorMessage.classList.remove('hidden');
                 successMessage.classList.add('hidden');
+            } finally {
+                // Reset button state
+                document.getElementById('signupButton').disabled = false;
+                document.getElementById('signupButton').innerHTML = 'Sign Up';
             }
         });
 

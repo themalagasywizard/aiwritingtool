@@ -1967,11 +1967,10 @@
         // Initialization
         document.addEventListener('DOMContentLoaded', async () => {
             try {
+                showLoading('Checking authentication...');
+                
                 // Check authentication first
                 const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-                
-                // For development and testing, uncomment this line to bypass authentication
-                // localStorage.setItem('isAuthenticated', 'true');
                 
                 if (!isAuthenticated) {
                     // Not authenticated, redirect to landing page
@@ -1982,16 +1981,43 @@
                 
                 // Check if user is authenticated with Supabase
                 const { data: { user } } = await auth.getUser();
+                console.log('Authentication check:', user ? 'User authenticated' : 'No authenticated user');
+                
                 if (!user) {
-                    // This handles the case where Supabase is available but the user isn't authenticated
-                    // Only redirect if not already in a redirect loop
-                    if (!window.location.search.includes('redirected')) {
-                        window.location.href = 'index.html?redirected=true';
+                    // This handles the case where localStorage says the user is authenticated
+                    // but Supabase doesn't have a valid user session
+                    console.log('No valid Supabase session found. Attempting to use stored credentials.');
+                    
+                    // Try to authenticate with stored email if available
+                    const storedEmail = localStorage.getItem('userEmail');
+                    
+                    if (storedEmail) {
+                        // Create a temporary user object so the app can function
+                        // This will trigger the mock client with consistent user ID
+                        console.log('Using stored email to create temporary user session:', storedEmail);
+                        const tempUserId = 'user_' + btoa(storedEmail).replace(/=/g, '');
+                        
+                        // Store in supabase_auth_token to allow the client to use it
+                        const tempSession = {
+                            user: { id: tempUserId, email: storedEmail },
+                            access_token: 'temp_token'
+                        };
+                        
+                        // Store session in localStorage with the key Supabase expects
+                        localStorage.setItem('supabase_auth_token', JSON.stringify(tempSession));
+                    } else {
+                        // No stored email, redirect to auth page
+                        console.log('No stored email found, redirecting to auth page');
+                        window.location.href = 'auth/auth.html';
                         return;
                     }
                 }
                 
-                appState.currentUser = user;
+                // Get user from auth again (might be the temp user we just created)
+                const { data: { user: confirmedUser } } = await auth.getUser();
+                appState.currentUser = confirmedUser;
+                
+                console.log('Current user set:', appState.currentUser);
                 
                 // Setup UI event listeners
                 setupEventListeners();
@@ -2002,15 +2028,19 @@
                 // Load context items
                 await loadContextItems();
                 
+                hideLoading();
+                
             } catch (error) {
                 console.error('Error initializing app:', error);
                 
                 // Gracefully handle initialization errors
                 // If Supabase auth fails, we can still use local authentication
                 if (localStorage.getItem('isAuthenticated') === 'true') {
+                    console.log('Falling back to local authentication');
                     setupEventListeners();
                     await loadProjects();
                     await loadContextItems();
+                    hideLoading();
                 } else {
                     hideLoading();
                     

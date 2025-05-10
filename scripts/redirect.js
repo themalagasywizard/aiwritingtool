@@ -29,6 +29,22 @@ window.redirectApp = {
     subscribe: handleSubscription
 };
 
+// Utility function to check if we have a valid user session
+function hasValidSession() {
+    try {
+        // Check for token in localStorage
+        const tokenJson = localStorage.getItem('supabase_auth_token');
+        if (!tokenJson) return false;
+        
+        // Parse token and check if it has user data
+        const token = JSON.parse(tokenJson);
+        return !!token?.user?.id;
+    } catch (e) {
+        console.warn('Error checking session:', e);
+        return false;
+    }
+}
+
 // Check if we should redirect on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Get current page path
@@ -61,10 +77,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Check if user is authenticated and not already redirected
-        if (localStorage.getItem('isAuthenticated') === 'true' && !redirected) {
-            console.log("User is authenticated, redirecting to editor");
+        const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+        const hasSession = hasValidSession();
+        
+        // If authenticated with a valid session and not redirected, go to editor
+        if (isAuthenticated && hasSession && !redirected) {
+            console.log("User is authenticated with valid session, redirecting to editor");
             window.location.href = 'editor.html?redirected=true&from_landing=true';
             return;
+        } 
+        // If authenticated but no valid session, clear auth state
+        else if (isAuthenticated && !hasSession) {
+            console.log("Invalid session detected, clearing auth state");
+            localStorage.removeItem('isAuthenticated');
         }
         
         // Check if there's a pending email and auto-fill the subscription form
