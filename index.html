@@ -3238,6 +3238,11 @@
                     await delay(500);
                     
                     const model = aiModel.value;
+                    
+                    // Get current project and user IDs from app state
+                    const user_id = appState.currentUser?.id || '';
+                    const project_id = appState.currentProject?.id || '';
+                    
                     const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -3247,6 +3252,8 @@
                             mode: 'chat',
                             tone: 'neutral',
                             length: 200,
+                            user_id: user_id,
+                            project_id: project_id
                         }),
                     });
 
@@ -3306,6 +3313,10 @@
                     const tone = document.getElementById('aiTone').value;
                     const length = document.getElementById('aiLength').value;
                     
+                    // Get current project and user IDs from app state
+                    const user_id = appState.currentUser?.id || '';
+                    const project_id = appState.currentProject?.id || '';
+                    
                     const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -3315,6 +3326,8 @@
                             mode: currentMode,
                             tone: tone,
                             length: length,
+                            user_id: user_id,
+                            project_id: project_id
                         }),
                     });
                     
