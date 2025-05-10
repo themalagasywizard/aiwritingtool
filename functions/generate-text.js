@@ -1,6 +1,119 @@
 // functions/generate-text.js
 const fetch = require('node-fetch');
 const config = require('./config');
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize the Supabase client
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+// Helper function to truncate text to a maximum length
+const truncateText = (text, maxLength = 1000) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+// Helper function to summarize text (for previous chapter content)
+const summarizeText = (text) => {
+  if (!text) return '';
+  const maxLength = 500;
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+// Helper function to fetch project context from Supabase
+const fetchProjectContext = async (projectId, userId) => {
+  try {
+    // Fetch locations
+    const { data: locations, error: locationsError } = await supabase
+      .from('locations')
+      .select('name, type, description, key_features')
+      .eq('project_id', projectId)
+      .eq('user_id', userId);
+    
+    if (locationsError) throw locationsError;
+    
+    // Fetch timeline events
+    const { data: events, error: eventsError } = await supabase
+      .from('timeline_events')
+      .select('name, date_time, description, created_at')
+      .eq('project_id', projectId)
+      .eq('user_id', userId);
+    
+    if (eventsError) throw eventsError;
+    
+    // Fetch characters
+    const { data: characters, error: charactersError } = await supabase
+      .from('characters')
+      .select('name, role, traits, backstory')
+      .eq('project_id', projectId)
+      .eq('user_id', userId);
+    
+    if (charactersError) throw charactersError;
+    
+    // Format the context string
+    let contextString = 'Project Context:\n';
+    
+    // Add locations
+    contextString += '\nLocations:\n';
+    if (locations && locations.length > 0) {
+      locations.forEach(loc => {
+        contextString += `Location: ${loc.name} (${loc.type}, ${truncateText(loc.description, 200)}, ${truncateText(loc.key_features, 200)})\n`;
+      });
+    } else {
+      contextString += 'No locations found.\n';
+    }
+    
+    // Add timeline events
+    contextString += '\nTimeline Events:\n';
+    if (events && events.length > 0) {
+      events.forEach(event => {
+        contextString += `Event: ${event.name} on ${event.date_time} (${truncateText(event.description, 200)})\n`;
+      });
+    } else {
+      contextString += 'No timeline events found.\n';
+    }
+    
+    // Add characters
+    contextString += '\nCharacters:\n';
+    if (characters && characters.length > 0) {
+      characters.forEach(char => {
+        contextString += `Character: ${char.name} (${char.role}, ${truncateText(char.traits, 200)}, ${truncateText(char.backstory, 200)})\n`;
+      });
+    } else {
+      contextString += 'No characters found.\n';
+    }
+    
+    return contextString;
+  } catch (error) {
+    console.error('Error fetching project context:', error);
+    return 'Error fetching project context.';
+  }
+};
+
+// Helper function to fetch previous chapter
+const fetchPreviousChapter = async (projectId, userId) => {
+  try {
+    const { data, error } = await supabase
+      .from('chapters')
+      .select('content')
+      .eq('project_id', projectId)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (error) throw error;
+    
+    if (data && data.length > 0 && data[0].content) {
+      return summarizeText(data[0].content);
+    }
+    
+    return 'No previous chapter found.';
+  } catch (error) {
+    console.error('Error fetching previous chapter:', error);
+    return 'Error fetching previous chapter.';
+  }
+};
 
 // Helper function to validate API keys
 const validateApiKeys = (modelName) => {
