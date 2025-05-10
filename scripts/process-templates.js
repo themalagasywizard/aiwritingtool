@@ -21,8 +21,13 @@ function processTemplate(filePath) {
         // Add window.ENV object and Supabase script for client-side access
         const envScript = `
     <!-- Supabase Client -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
     <script>
+        // Ensure Supabase loaded correctly
+        if (typeof supabase === 'undefined') {
+            console.error('Supabase client failed to load');
+        }
+        
         window.ENV = {
             SUPABASE_URL: "${process.env.SUPABASE_URL}",
             SUPABASE_ANON_KEY: "${process.env.SUPABASE_ANON_KEY}"
