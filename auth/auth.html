@@ -182,9 +182,6 @@
             });
         });
             
-        // Protect against redirect loops
-        const isRedirected = new URLSearchParams(window.location.search).has('redirected');
-        
         // Sign In
         document.getElementById('signinButton').addEventListener('click', async () => {
             const email = document.getElementById('signinEmail').value;
@@ -232,10 +229,8 @@
                     successMessage.classList.remove('hidden');
                     errorMessage.classList.add('hidden');
 
-                    // Redirect to editor with a delay so user sees success message
-                    setTimeout(() => {
-                        window.location.href = '../editor.html?login_success=true';
-                    }, 1500);
+                    // Redirect to editor directly
+                    window.location.href = '../editor.html';
                 }
             } catch (error) {
                 errorMessage.textContent = error.message || "Error signing in. Please try again.";
@@ -286,12 +281,10 @@
         // Check if user is already signed in
         const checkUser = async () => {
             try {
-                // Only do this check if we haven't been redirected already
-                if (!isRedirected) {
-                    const { data: { user } } = await auth.getUser();
-                    if (user) {
-                        window.location.href = '../editor.html?redirected=true';
-                    }
+                const { data: { user } } = await auth.getUser();
+                if (user) {
+                    // If already authenticated, go directly to editor
+                    window.location.href = '../editor.html';
                 }
             } catch (error) {
                 console.error('Error checking auth state:', error);

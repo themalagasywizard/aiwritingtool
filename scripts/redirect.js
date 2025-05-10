@@ -4,17 +4,15 @@
 function redirectToEditor() {
     // Check local storage or cookies for authentication status
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+    const redirected = new URLSearchParams(window.location.search).has('redirected');
     
-    if (isAuthenticated) {
-        window.location.href = 'editor.html';
+    if (isAuthenticated && !redirected) {
+        window.location.href = 'editor.html?redirected=true';
     }
 }
 
 // Function to handle subscription form submission
 function handleSubscription(email) {
-    // In a real app, you'd send this to your backend
-    alert(`Thanks for subscribing with email: ${email}`);
-    
     // Store email in localStorage for demo purposes
     localStorage.setItem('pendingEmail', email);
     
@@ -30,19 +28,27 @@ window.redirectApp = {
 
 // Check if we should redirect on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Prevent redirect loops by checking URL params
-    const urlParams = new URLSearchParams(window.location.search);
-    const isRedirected = urlParams.has('redirected');
+    // Get current page path
+    const currentPath = window.location.pathname;
+    const isLandingPage = currentPath === '/' || 
+                         currentPath === '/index.html' || 
+                         currentPath.endsWith('/index.html');
     
-    // Auto-redirect authenticated users for direct visits to landing page
-    // but only if we haven't been redirected already
-    if (!isRedirected &&
-        (window.location.pathname === '/' || 
-        window.location.pathname === '/index.html' || 
-        window.location.pathname.endsWith('/index.html'))) {
+    // Only handle redirects on landing page
+    if (isLandingPage) {
+        // Check for login success parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const loginSuccess = urlParams.has('login_success');
+        const redirected = urlParams.has('redirected');
         
-        // Check if user is authenticated
-        if (localStorage.getItem('isAuthenticated') === 'true') {
+        // If we just logged in successfully, go to editor
+        if (loginSuccess) {
+            window.location.href = 'editor.html';
+            return;
+        }
+        
+        // Check if user is authenticated and not already redirected
+        if (localStorage.getItem('isAuthenticated') === 'true' && !redirected) {
             console.log("User is authenticated, redirecting to editor");
             window.location.href = 'editor.html?redirected=true';
             return;
