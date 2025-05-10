@@ -4,11 +4,7 @@ require('dotenv').config();
 
 // Function to process HTML files and inject environment variables
 function processTemplates() {
-    const files = ['index.html', 'auth/auth.html', 'auth/callback.html', 'context.html', 'app.html'];
-    
-    // Get environment variables with fallbacks
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://tadqfmqlqlahoknivhds.supabase.co';
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhZHFmbXFscWxhaG9rbml2aGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTY0MTAsImV4cCI6MjA2MTg5MjQxMH0.6afLHxoHlX3U3JzsqX6d61mpmiu3bICkbHgb1XDY7V0';
+    const files = ['index.html', 'auth/auth.html', 'auth/callback.html'];
     
     files.forEach(file => {
         const filePath = path.join(__dirname, '..', file);
@@ -21,8 +17,8 @@ function processTemplates() {
                 const envScript = `
                     <script>
                         window.ENV = {
-                            SUPABASE_URL: '${supabaseUrl}',
-                            SUPABASE_ANON_KEY: '${supabaseKey}'
+                            SUPABASE_URL: '${process.env.SUPABASE_URL || ''}',
+                            SUPABASE_ANON_KEY: '${process.env.SUPABASE_ANON_KEY || ''}'
                         };
                     </script>
                 `;
@@ -32,13 +28,13 @@ function processTemplates() {
                 
                 // Replace template variables in meta tags
                 content = content.replace(
-                    /<meta name="supabase-url" content="[^"]*">/,
-                    `<meta name="supabase-url" content="${supabaseUrl}">`
+                    /<meta name="supabase-url" content=".*?">/,
+                    `<meta name="supabase-url" content="${process.env.SUPABASE_URL || ''}">`
                 );
                 
                 content = content.replace(
-                    /<meta name="supabase-anon-key" content="[^"]*">/,
-                    `<meta name="supabase-anon-key" content="${supabaseKey}">`
+                    /<meta name="supabase-anon-key" content=".*?">/,
+                    `<meta name="supabase-anon-key" content="${process.env.SUPABASE_ANON_KEY || ''}">`
                 );
                 
                 fs.writeFileSync(filePath, content);
