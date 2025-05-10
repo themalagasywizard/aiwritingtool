@@ -3,8 +3,21 @@ const fetch = require('node-fetch');
 const config = require('./config');
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize the Supabase client
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+// Initialize the Supabase client with error handling
+let supabase;
+try {
+  // Check if Supabase environment variables are set
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+    console.warn('Supabase credentials missing. Some features will be unavailable.');
+    supabase = null;
+  } else {
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+    console.log('Supabase client initialized successfully');
+  }
+} catch (error) {
+  console.error('Error initializing Supabase client:', error);
+  supabase = null;
+}
 
 // Helper function to truncate text to a maximum length
 const truncateText = (text, maxLength = 1000) => {
@@ -24,6 +37,11 @@ const summarizeText = (text) => {
 // Helper function to fetch project context from Supabase
 const fetchProjectContext = async (projectId, userId) => {
   try {
+    // Check if Supabase client is available
+    if (!supabase) {
+      return 'Supabase connection not available. Project context could not be loaded.';
+    }
+    
     // Fetch locations
     const { data: locations, error: locationsError } = await supabase
       .from('locations')
@@ -87,13 +105,18 @@ const fetchProjectContext = async (projectId, userId) => {
     return contextString;
   } catch (error) {
     console.error('Error fetching project context:', error);
-    return 'Error fetching project context.';
+    return 'Error fetching project context: ' + error.message;
   }
 };
 
 // Helper function to fetch previous chapter
 const fetchPreviousChapter = async (projectId, userId) => {
   try {
+    // Check if Supabase client is available
+    if (!supabase) {
+      return 'Supabase connection not available. Previous chapter could not be loaded.';
+    }
+    
     const { data, error } = await supabase
       .from('chapters')
       .select('content')
@@ -111,7 +134,7 @@ const fetchPreviousChapter = async (projectId, userId) => {
     return 'No previous chapter found.';
   } catch (error) {
     console.error('Error fetching previous chapter:', error);
-    return 'Error fetching previous chapter.';
+    return 'Error fetching previous chapter: ' + error.message;
   }
 };
 
