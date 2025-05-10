@@ -18,8 +18,10 @@ function processTemplate(filePath) {
             `<meta name="supabase-anon-key" content="${process.env.SUPABASE_ANON_KEY}">`
         );
         
-        // Add window.ENV object for client-side access
+        // Add window.ENV object and Supabase script for client-side access
         const envScript = `
+    <!-- Supabase Client -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <script>
         window.ENV = {
             SUPABASE_URL: "${process.env.SUPABASE_URL}",
