@@ -997,6 +997,37 @@
         };
 
         // Helper Functions
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            if (!dateString) return 'Unknown';
+            const date = new Date(dateString);
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) return 'Invalid date';
+            
+            // Options for date formatting
+            const options = { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            
+            return date.toLocaleDateString(undefined, options);
+        }
+
         function showLoading(message = 'Loading...') {
             elements.loadingMessage.textContent = message;
             elements.loadingOverlay.classList.remove('hidden');
@@ -1006,12 +1037,6 @@
         function hideLoading() {
             elements.loadingOverlay.classList.add('hidden');
             elements.loadingOverlay.classList.remove('flex');
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return 'Never';
-            const date = new Date(dateString);
-            return date.toLocaleString();
         }
 
         function countWords(text) {
@@ -1039,47 +1064,71 @@
         // Project Functions
         async function loadProjects() {
             try {
-                showLoading('Loading projects...');
+                // Get projects from database
+                const { data, error } = await projects.getAll();
                 
-                const { data: userProjects, error } = await projects.getAll();
+                if (error) {
+                    console.error('Error loading projects:', error);
+                    throw error;
+                }
                 
-                if (error) throw error;
-                
-                if (!userProjects || userProjects.length === 0) {
-                    // No projects yet, show empty state
-                    elements.projectTitle.textContent = 'No projects yet';
-                    elements.lastEdited.textContent = 'Create a new project to get started';
-                    hideLoading();
+                if (!data || data.length === 0) {
+                    // No projects found
+                    projectsList.innerHTML = `
+                        <div class="text-center py-8">
+                            <div class="text-gray-500 mb-4">
+                                <i class="fas fa-folder-open text-3xl"></i>
+                            </div>
+                            <p class="text-gray-600">No projects found</p>
+                            <button id="createFirstProject" class="btn btn-primary mt-4">Create Your First Project</button>
+                        </div>
+                    `;
+                    
+                    // Add event listener to the button
+                    document.getElementById('createFirstProject')?.addEventListener('click', () => {
+                        toggleLoadProjectPanel();
+                        elements.newProjectModal.classList.remove('hidden');
+                        elements.newProjectModal.classList.add('flex');
+                        elements.newProjectTitle.focus();
+                    });
+                    
                     return;
                 }
                 
-                // Get the last loaded project ID from localStorage
-                const lastProjectId = localStorage.getItem('lastProjectId');
+                // Create projects list HTML
+                projectsList.innerHTML = data.map(project => `
+                    <div class="project-item p-4 mb-3 bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow" data-project-id="${project.id}">
+                        <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(project.title)}</h3>
+                        <p class="text-sm text-gray-600 mt-1">${escapeHtml(project.description || '')}</p>
+                        <div class="flex items-center mt-2 text-xs text-gray-500">
+                            <span><i class="far fa-calendar-alt mr-1"></i>${formatDate(project.created_at)}</span>
+                        </div>
+                    </div>
+                `).join('');
                 
-                // Find the last loaded project or default to the first project
-                let currentProject = userProjects[0];
-                if (lastProjectId) {
-                    const foundProject = userProjects.find(p => p.id === lastProjectId);
-                    if (foundProject) {
-                        currentProject = foundProject;
-                    }
-                }
-                
-                // Set the current project
-                appState.currentProject = currentProject;
-                
-                // Update UI with project info
-                updateProjectUI(appState.currentProject);
-                
-                // Load chapters for this project
-                await loadChapters(appState.currentProject.id);
-                
-                hideLoading();
+                // Add click handlers to project items
+                document.querySelectorAll('.project-item').forEach(item => {
+                    item.addEventListener('click', async () => {
+                        const projectId = item.dataset.projectId;
+                        await switchProject(projectId);
+                        toggleLoadProjectPanel();
+                    });
+                });
             } catch (error) {
                 console.error('Error loading projects:', error);
-                elements.projectTitle.textContent = 'Error loading projects';
-                elements.lastEdited.textContent = 'Please try again';
-                hideLoading();
+                projectsList.innerHTML = `
+                    <div class="text-center text-error">
+                        <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                        <p>Error loading projects</p>
+                        <p class="text-sm text-gray-600">${error.message || 'Failed to connect to database'}</p>
+                        <button id="retryLoadProjects" class="btn btn-sm btn-outline mt-4">Retry</button>
+                    </div>
+                `;
+                
+                // Add retry button listener
+                document.getElementById('retryLoadProjects')?.addEventListener('click', () => {
+                    loadProjects();
+                });
             }
         }
 
@@ -1554,51 +1603,53 @@
 
         // Load User Projects
         async function loadUserProjects() {
-            const projectsList = document.getElementById('projectsList');
-            projectsList.innerHTML = '<div class="text-center text-gray-500"><i class="fas fa-spinner fa-spin"></i> Loading projects...</div>';
-
             try {
-                const { data: userProjects, error } = await projects.getAll();
+                showLoading('Loading projects...');
                 
-                if (error) throw error;
-
-                if (!userProjects || userProjects.length === 0) {
+                // Get projects from database
+                const { data, error } = await projects.getAll();
+                
+                if (error) {
+                    console.error('Error loading projects:', error);
+                    throw error;
+                }
+                
+                hideLoading();
+                
+                if (!data || data.length === 0) {
+                    // No projects found
                     projectsList.innerHTML = `
-                        <div class="text-center text-gray-500">
-                            <i class="fas fa-folder-open text-2xl mb-2"></i>
-                            <p>No projects found</p>
+                        <div class="text-center py-8">
+                            <div class="text-gray-500 mb-4">
+                                <i class="fas fa-folder-open text-3xl"></i>
+                            </div>
+                            <p class="text-gray-600">No projects found</p>
+                            <button id="createFirstProject" class="btn btn-primary mt-4">Create Your First Project</button>
                         </div>
                     `;
+                    
+                    // Add event listener to the button
+                    document.getElementById('createFirstProject')?.addEventListener('click', () => {
+                        toggleLoadProjectPanel();
+                        elements.newProjectModal.classList.remove('hidden');
+                        elements.newProjectModal.classList.add('flex');
+                        elements.newProjectTitle.focus();
+                    });
+                    
                     return;
                 }
-
-                // Sort projects by last updated
-                userProjects.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
-
-                // Create project list HTML
-                projectsList.innerHTML = userProjects.map(project => `
-                    <div class="project-item bg-white rounded-lg p-4 border border-gray-200 hover:border-primary cursor-pointer transition-colors"
-                         data-project-id="${project.id}">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="font-medium text-primary">${project.title}</h3>
-                            ${project.id === appState.currentProject?.id ? 
-                                '<span class="text-xs bg-primary text-white px-2 py-1 rounded">Current</span>' : 
-                                ''}
-                        </div>
-                        <p class="text-sm text-gray-500 mb-2 line-clamp-2">${project.description || 'No description'}</p>
-                        <div class="flex items-center justify-between text-xs text-gray-400">
-                            <span>
-                                <i class="fas fa-clock mr-1"></i>
-                                ${formatDate(project.updated_at)}
-                            </span>
-                            <span>
-                                <i class="fas fa-book mr-1"></i>
-                                ${project.chapter_count || 0} chapters
-                            </span>
+                
+                // Create projects list HTML
+                projectsList.innerHTML = data.map(project => `
+                    <div class="project-item p-4 mb-3 bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow" data-project-id="${project.id}">
+                        <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(project.title)}</h3>
+                        <p class="text-sm text-gray-600 mt-1">${escapeHtml(project.description || '')}</p>
+                        <div class="flex items-center mt-2 text-xs text-gray-500">
+                            <span><i class="far fa-calendar-alt mr-1"></i>${formatDate(project.created_at)}</span>
                         </div>
                     </div>
                 `).join('');
-
+                
                 // Add click handlers to project items
                 document.querySelectorAll('.project-item').forEach(item => {
                     item.addEventListener('click', async () => {
@@ -1607,15 +1658,23 @@
                         toggleLoadProjectPanel();
                     });
                 });
-
             } catch (error) {
                 console.error('Error loading projects:', error);
+                hideLoading();
+                
                 projectsList.innerHTML = `
-                    <div class="text-center text-error">
+                    <div class="text-center text-error p-4">
                         <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
                         <p>Error loading projects</p>
+                        <p class="text-sm text-gray-600">${error.message || 'Failed to connect to database'}</p>
+                        <button id="retryLoadProjects" class="btn btn-sm btn-outline mt-4">Retry</button>
                     </div>
                 `;
+                
+                // Add retry button listener
+                document.getElementById('retryLoadProjects')?.addEventListener('click', () => {
+                    loadUserProjects();
+                });
             }
         }
 
