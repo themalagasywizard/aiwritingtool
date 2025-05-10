@@ -21,13 +21,11 @@
             theme: {
                 extend: {
                     colors: {
-                        indigo: {
-                            50: '#EEF2FF',
-                            100: '#E0E7FF',
-                            500: '#6366F1',
-                            600: '#4F46E5',
-                            700: '#4338CA'
-                        }
+                        primary: '#4B5EAA',
+                        primaryLight: '#E6E9F0',
+                        secondary: '#6B7280',
+                        accent: '#F472B6',
+                        background: '#F9FAFB',
                     }
                 }
             }
@@ -57,3 +55,292 @@
 <body class="bg-white text-gray-800 font-sans">
     <!-- Navigation -->
     <header class="sticky top-0 z-50 bg-white shadow-sm">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <a href="#" class="text-2xl font-bold text-primary">Kalligram</a>
+                </div>
+
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex space-x-10">
+                    <a href="#features" class="text-gray-600 hover:text-primary transition duration-300">Features</a>
+                    <a href="#how-it-works" class="text-gray-600 hover:text-primary transition duration-300">How It Works</a>
+                    <a href="#pricing" class="text-gray-600 hover:text-primary transition duration-300">Pricing</a>
+                    <a href="#faq" class="text-gray-600 hover:text-primary transition duration-300">FAQ</a>
+                </nav>
+
+                <div class="flex items-center space-x-4">
+                    <a href="/auth/auth.html" class="text-gray-600 hover:text-primary transition duration-300">Sign In</a>
+                    <a href="/auth/auth.html" class="hidden md:inline-block px-6 py-2 rounded-md bg-primary text-white font-medium hover:bg-opacity-90 transition duration-300">
+                        Get Started
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="pt-20 pb-32 bg-background">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-4xl mx-auto text-center">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-8">
+                    Write Better Stories with AI
+                </h1>
+                <p class="text-xl text-gray-600 mb-10">
+                    Kalligram combines the power of AI with your creativity to help you write compelling stories faster than ever before.
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <a href="/auth/auth.html" class="px-8 py-4 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition duration-300">
+                        Start Writing for Free
+                    </a>
+                    <a href="#how-it-works" class="px-8 py-4 bg-white text-primary border border-primary rounded-lg font-medium hover:bg-primaryLight transition duration-300">
+                        Learn More
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center mb-16">Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- AI Writing Assistant -->
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
+                    <div class="w-12 h-12 bg-primaryLight rounded-lg flex items-center justify-center text-primary mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">AI Writing Assistant</h3>
+                    <p class="text-gray-600">Get intelligent suggestions and overcome writer's block with our advanced AI assistant.</p>
+                </div>
+
+                <!-- Story Context Management -->
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
+                    <div class="w-12 h-12 bg-primaryLight rounded-lg flex items-center justify-center text-primary mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Story Context Management</h3>
+                    <p class="text-gray-600">Keep track of your characters, locations, and plot points with our intuitive context manager.</p>
+                </div>
+
+                <!-- Real-time Collaboration -->
+                <div class="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
+                    <div class="w-12 h-12 bg-primaryLight rounded-lg flex items-center justify-center text-primary mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Real-time Collaboration</h3>
+                    <p class="text-gray-600">Work together with co-authors and editors in real-time with our collaborative features.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 bg-background">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center mb-16">How It Works</h2>
+            <div class="max-w-3xl mx-auto">
+                <div class="flex flex-col space-y-8">
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center flex-shrink-0">1</div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Sign Up for Free</h3>
+                            <p class="text-gray-600">Create your account and start exploring the features immediately. No credit card required.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center flex-shrink-0">2</div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Create Your Story</h3>
+                            <p class="text-gray-600">Set up your story's context, characters, and plot points using our intuitive tools.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-4">
+                        <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center flex-shrink-0">3</div>
+                        <div>
+                            <h3 class="text-xl font-semibold mb-2">Write with AI Assistance</h3>
+                            <p class="text-gray-600">Let our AI help you overcome writer's block and generate creative ideas while you write.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center mb-16">Simple Pricing</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Free Tier -->
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
+                    <h3 class="text-2xl font-bold mb-4">Free</h3>
+                    <p class="text-4xl font-bold mb-6">$0<span class="text-lg text-gray-600">/month</span></p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            1 Project
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Basic AI Features
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            5,000 Words/Month
+                        </li>
+                    </ul>
+                    <a href="/auth/auth.html" class="block w-full text-center px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition duration-300">
+                        Get Started
+                    </a>
+                </div>
+
+                <!-- Pro Tier -->
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300 border-2 border-primary relative">
+                    <div class="absolute top-0 right-0 bg-primary text-white px-3 py-1 rounded-bl-lg rounded-tr-lg text-sm font-medium">
+                        Popular
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4">Pro</h3>
+                    <p class="text-4xl font-bold mb-6">$15<span class="text-lg text-gray-600">/month</span></p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Unlimited Projects
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Advanced AI Features
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            50,000 Words/Month
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Priority Support
+                        </li>
+                    </ul>
+                    <a href="/auth/auth.html" class="block w-full text-center px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition duration-300">
+                        Get Pro
+                    </a>
+                </div>
+
+                <!-- Enterprise Tier -->
+                <div class="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition duration-300">
+                    <h3 class="text-2xl font-bold mb-4">Enterprise</h3>
+                    <p class="text-4xl font-bold mb-6">$49<span class="text-lg text-gray-600">/month</span></p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Everything in Pro
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Unlimited Words
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Custom AI Training
+                        </li>
+                        <li class="flex items-center">
+                            <svg class="h-5 w-5 text-primary mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            24/7 Support
+                        </li>
+                    </ul>
+                    <a href="/auth/auth.html" class="block w-full text-center px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition duration-300">
+                        Contact Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 bg-background">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center mb-16">Frequently Asked Questions</h2>
+            <div class="max-w-3xl mx-auto space-y-6">
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold mb-2">How does the AI writing assistant work?</h3>
+                    <p class="text-gray-600">Our AI assistant uses advanced language models to help you generate ideas, overcome writer's block, and improve your writing. It learns from your style and story context to provide relevant suggestions.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold mb-2">Can I export my stories?</h3>
+                    <p class="text-gray-600">Yes! You can export your stories in multiple formats including PDF, EPUB, and Word documents. All your work is also automatically saved in the cloud.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h3 class="text-lg font-semibold mb-2">Is my work secure and private?</h3>
+                    <p class="text-gray-600">Absolutely. We use industry-standard encryption to protect your data, and your work remains 100% private and owned by you.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Kalligram</h3>
+                    <p class="text-gray-600">AI-powered writing assistant for storytellers.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="text-gray-600 hover:text-primary">Features</a></li>
+                        <li><a href="#pricing" class="text-gray-600 hover:text-primary">Pricing</a></li>
+                        <li><a href="#faq" class="text-gray-600 hover:text-primary">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-primary">About</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary">Blog</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-600 hover:text-primary">Privacy</a></li>
+                        <li><a href="#" class="text-gray-600 hover:text-primary">Terms</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 mt-8 pt-8 text-center text-gray-600">
+                <p>&copy; 2024 Kalligram. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
