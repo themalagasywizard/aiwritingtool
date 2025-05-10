@@ -398,14 +398,17 @@ Generate a detailed response of approximately ${desiredWords} words${tone ? ` in
 Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
 Do not stop mid-sentence. If approaching the token limit, find a natural ending point.
 
-IMPORTANT: You MUST incorporate characters, locations, and events from the project context into your response. 
-Your writing should directly reference and build upon the existing story elements provided below.
-Maintain consistency with previously established narrative elements and explicitly use character names and locations.
+IMPORTANT INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
+1. You MUST incorporate ALL characters, locations, and events from the project context in your response.
+2. You MUST directly reference the previous chapter content when continuing the story.
+3. Your writing MUST follow the user's specific instructions (e.g., "kill protagonist," "end with a cliffhanger") while maintaining narrative consistency.
+4. You MUST explicitly use character names, locations, and timeline events from the context.
+5. When user asks to "continue chapter X", ensure your writing flows directly from the previous chapter content provided.
 
-${contextString ? `PROJECT CONTEXT:\n${contextString}\n\n` : ''}
-${previousChapter ? `PREVIOUS CHAPTER SUMMARY:\n${previousChapter}\n\n` : ''}
+${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):\n${contextString}\n\n` : ''}
+${previousChapter ? `PREVIOUS CHAPTER TO CONTINUE FROM:\n${previousChapter}\n\n` : ''}
 
-Remember, your response must specifically reference and utilize the characters, locations, and timeline events from the context above.`;
+FAILURE TO INCORPORATE THE ABOVE CONTEXT ELEMENTS INTO YOUR RESPONSE IS NOT ALLOWED.`;
 
         // Create request body
         const requestBody = isDeepSeekModel ? {
