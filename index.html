@@ -3240,8 +3240,8 @@
                     const model = aiModel.value;
                     
                     // Get current project and user IDs from app state
-                    const user_id = appState.currentUser?.id || '';
-                    const project_id = appState.currentProject?.id || '';
+                    const user_id = window.appState?.currentUser?.id || '';
+                    const project_id = window.appState?.currentProject?.id || '';
                     
                     const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
                         method: 'POST',
@@ -3314,8 +3314,8 @@
                     const length = document.getElementById('aiLength').value;
                     
                     // Get current project and user IDs from app state
-                    const user_id = appState.currentUser?.id || '';
-                    const project_id = appState.currentProject?.id || '';
+                    const user_id = window.appState?.currentUser?.id || '';
+                    const project_id = window.appState?.currentProject?.id || '';
                     
                     const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
                         method: 'POST',
