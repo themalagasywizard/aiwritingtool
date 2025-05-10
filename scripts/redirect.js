@@ -5,9 +5,12 @@ function redirectToEditor() {
     // Check local storage or cookies for authentication status
     const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
     const redirected = new URLSearchParams(window.location.search).has('redirected');
+    const fromAuth = new URLSearchParams(window.location.search).has('from_auth');
     
     if (isAuthenticated && !redirected) {
-        window.location.href = 'editor.html?redirected=true';
+        console.log('User is authenticated, redirecting to editor');
+        // Add redirected and from parameters to prevent loops
+        window.location.href = 'editor.html?redirected=true&from_landing=true';
     }
 }
 
@@ -40,17 +43,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
         const loginSuccess = urlParams.has('login_success');
         const redirected = urlParams.has('redirected');
+        const fromEditor = urlParams.has('from_editor');
         
         // If we just logged in successfully, go to editor
         if (loginSuccess) {
-            window.location.href = 'editor.html';
+            console.log('Login success, redirecting to editor');
+            window.location.href = 'editor.html?redirected=true&from_auth=true';
+            return;
+        }
+        
+        // Prevent redirect loops - don't redirect if we came from the editor
+        if (fromEditor) {
+            console.log('Coming from editor, not redirecting back');
+            // Clear the redirected flag to allow manual navigation later
+            history.replaceState(null, '', window.location.pathname);
             return;
         }
         
         // Check if user is authenticated and not already redirected
         if (localStorage.getItem('isAuthenticated') === 'true' && !redirected) {
             console.log("User is authenticated, redirecting to editor");
-            window.location.href = 'editor.html?redirected=true';
+            window.location.href = 'editor.html?redirected=true&from_landing=true';
             return;
         }
         
