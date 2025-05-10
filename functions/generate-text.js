@@ -42,32 +42,34 @@ const fetchProjectContext = async (projectId, userId) => {
       return 'Supabase connection not available. Project context could not be loaded.';
     }
     
+    console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
+    
     // Fetch locations
     const { data: locations, error: locationsError } = await supabase
       .from('locations')
       .select('name, type, description, key_features')
-      .eq('project_id', projectId)
-      .eq('user_id', userId);
+      .eq('project_id', projectId);
     
     if (locationsError) throw locationsError;
+    console.log(`Fetched ${locations ? locations.length : 0} locations`);
     
     // Fetch timeline events
     const { data: events, error: eventsError } = await supabase
       .from('timeline_events')
       .select('name, date_time, description, created_at')
-      .eq('project_id', projectId)
-      .eq('user_id', userId);
+      .eq('project_id', projectId);
     
     if (eventsError) throw eventsError;
+    console.log(`Fetched ${events ? events.length : 0} events`);
     
     // Fetch characters
     const { data: characters, error: charactersError } = await supabase
       .from('characters')
       .select('name, role, traits, backstory')
-      .eq('project_id', projectId)
-      .eq('user_id', userId);
+      .eq('project_id', projectId);
     
     if (charactersError) throw charactersError;
+    console.log(`Fetched ${characters ? characters.length : 0} characters`);
     
     // Format the context string
     let contextString = 'Project Context:\n';
@@ -117,20 +119,23 @@ const fetchPreviousChapter = async (projectId, userId) => {
       return 'Supabase connection not available. Previous chapter could not be loaded.';
     }
     
+    console.log(`Fetching previous chapter for project_id: ${projectId}`);
+    
     const { data, error } = await supabase
       .from('chapters')
-      .select('content')
+      .select('content, title')
       .eq('project_id', projectId)
-      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(1);
     
     if (error) throw error;
     
     if (data && data.length > 0 && data[0].content) {
-      return summarizeText(data[0].content);
+      console.log(`Found previous chapter: ${data[0].title || 'Untitled'}`);
+      return `Chapter: ${data[0].title || 'Previous Chapter'}\n${summarizeText(data[0].content)}`;
     }
     
+    console.log('No previous chapter found');
     return 'No previous chapter found.';
   } catch (error) {
     console.error('Error fetching previous chapter:', error);
