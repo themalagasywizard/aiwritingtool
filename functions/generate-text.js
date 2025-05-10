@@ -288,7 +288,9 @@ exports.handler = async (event) => {
             context = [], 
             mode = 'generate', 
             tone = '', 
-            length = '500' 
+            length = '500',
+            user_id = '',
+            project_id = ''
         } = parsedBody;
 
         if (!prompt) {
@@ -297,6 +299,18 @@ exports.handler = async (event) => {
                 headers,
                 body: JSON.stringify({
                     error: 'Prompt is required',
+                    success: false
+                })
+            };
+        }
+        
+        // Validate user_id and project_id
+        if (!user_id || !project_id) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({
+                    error: 'user_id and project_id are required',
                     success: false
                 })
             };
@@ -317,6 +331,51 @@ exports.handler = async (event) => {
                 })
             };
         }
+        
+        // Fetch user data, project context, and previous chapter
+        let userName = 'User'; // Default value
+        let contextString = '';
+        let previousChapter = '';
+        
+        try {
+            // Get authenticated user data if Supabase is available
+            if (supabase) {
+                // Get user from auth
+                const { data: authData, error: authError } = await supabase.auth.getUser();
+                
+                if (!authError && authData && authData.user) {
+                    // Try to get user's name from auth.users table
+                    const { data: userData, error: userError } = await supabase
+                        .from('profiles')  // Assuming a profiles table exists with user names
+                        .select('name')
+                        .eq('id', authData.user.id)
+                        .single();
+                    
+                    if (!userError && userData && userData.name) {
+                        userName = userData.name;
+                    } else {
+                        console.log('User profile not found, using email or default name');
+                        // Fallback to email address if available
+                        userName = authData.user.email?.split('@')[0] || 'User';
+                    }
+                } else {
+                    console.log('Auth user not found, using default name');
+                }
+                
+                // Fetch project context
+                contextString = await fetchProjectContext(project_id, user_id);
+                
+                // Fetch previous chapter
+                previousChapter = await fetchPreviousChapter(project_id, user_id);
+                
+                console.log('Fetched context data successfully');
+            } else {
+                console.warn('Supabase client not available, skipping context fetching');
+            }
+        } catch (contextError) {
+            console.error('Error fetching context data:', contextError);
+            // Don't fail the entire request, just log the error and proceed with defaults
+        }
 
         const isDeepSeekModel = modelName.includes('deepseek');
         const apiUrl = isDeepSeekModel 
@@ -328,11 +387,14 @@ exports.handler = async (event) => {
         const maxTokens = wordsToTokens(desiredWords);
         const timeout = calculateTimeout(maxTokens, mode, isDeepSeekModel);
 
-        // Create system message based on desired length and tone
-        const systemMessage = `You are a creative writing assistant that creates imaginative and engaging content. 
+        // Create system message based on desired length, tone, and context data
+        const systemMessage = `You are a creative writing assistant that creates imaginative and engaging content for ${userName}. 
 Generate a detailed response of approximately ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
 Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
-Do not stop mid-sentence. If approaching the token limit, find a natural ending point.`;
+Do not stop mid-sentence. If approaching the token limit, find a natural ending point.
+
+${contextString ? `PROJECT CONTEXT:\n${contextString}\n\n` : ''}
+${previousChapter ? `PREVIOUS CHAPTER SUMMARY:\n${previousChapter}\n\n` : ''}`;
 
         // Create request body
         const requestBody = isDeepSeekModel ? {
@@ -433,6 +495,9 @@ Do not stop mid-sentence. If approaching the token limit, find a natural ending 
                 success: true,
                 text: generatedText,
                 model: modelName,
+                userName: userName,
+                contextProvided: !!contextString,
+                previousChapterProvided: !!previousChapter,
                 usage: usage || null,
                 requestedWords: desiredWords,
                 actualWords: actualWords,
