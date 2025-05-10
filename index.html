@@ -41,6 +41,7 @@
         }
     </script>
 </head>
+<<<<<<< HEAD
 <body class="bg-white text-gray-800 font-sans">
     <!-- Navigation -->
     <header class="sticky top-0 z-50 bg-white shadow-sm">
@@ -48,6 +49,1130 @@
             <div class="flex justify-between items-center py-4">
                 <div class="flex items-center">
                     <a href="#" class="text-2xl font-bold text-indigo-600">Kalligram</a>
+=======
+<body class="h-screen flex flex-col">
+    <script type="module">
+        import { projects, chapters, characters, auth } from './lib/supabase.js';
+        
+        // Global state management
+        const appState = {
+            currentProject: null,
+            currentChapter: null,
+            currentUser: null,
+            isDirty: false, // Track if editor has unsaved changes
+            wordTarget: 1000, // Default target word count
+        };
+
+        // DOM Elements
+        const elements = {
+            projectTitle: document.getElementById('projectTitle'),
+            lastEdited: document.getElementById('lastEdited'),
+            chaptersList: document.getElementById('chaptersList'),
+            addChapterBtn: document.getElementById('addChapterBtn'),
+            saveBtn: document.getElementById('saveBtn'),
+            newProjectBtn: document.getElementById('newProjectBtn'),
+            editorContent: document.getElementById('editorContent'),
+            chapterTitle: document.getElementById('chapterTitle'),
+            wordCount: document.getElementById('wordCount'),
+            wordCountProgress: document.getElementById('wordCountProgress'),
+            wordCountPercent: document.getElementById('wordCountPercent'),
+            contextCount: document.getElementById('contextCount'),
+            contextList: document.getElementById('contextList'),
+            saveStatus: document.getElementById('saveStatus'),
+            
+            // New Project Modal
+            newProjectModal: document.getElementById('newProjectModal'),
+            newProjectTitle: document.getElementById('newProjectTitle'),
+            newProjectDescription: document.getElementById('newProjectDescription'),
+            closeNewProjectModal: document.getElementById('closeNewProjectModal'),
+            cancelNewProject: document.getElementById('cancelNewProject'),
+            createNewProject: document.getElementById('createNewProject'),
+            
+            // Loading overlay
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            loadingMessage: document.getElementById('loadingMessage'),
+            loadProjectBtn: document.getElementById('loadProjectBtn'),
+        };
+
+        // Helper Functions
+        function showLoading(message = 'Loading...') {
+            elements.loadingMessage.textContent = message;
+            elements.loadingOverlay.classList.remove('hidden');
+            elements.loadingOverlay.classList.add('flex');
+        }
+
+        function hideLoading() {
+            elements.loadingOverlay.classList.add('hidden');
+            elements.loadingOverlay.classList.remove('flex');
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Never';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+
+        function countWords(text) {
+            // Remove HTML tags and count words
+            const cleanText = text.replace(/<[^>]*>/g, '');
+            const words = cleanText.trim().split(/\s+/);
+            return words.length;
+        }
+
+        function updateWordCount() {
+            if (!appState.currentChapter) return;
+            
+            const content = elements.editorContent.innerHTML;
+            const count = countWords(content);
+            
+            // Update the display
+            elements.wordCount.textContent = count.toLocaleString();
+            
+            // Calculate percentage of target
+            const percentage = Math.min(Math.round((count / appState.wordTarget) * 100), 100);
+            elements.wordCountProgress.setAttribute('stroke-dasharray', `${percentage} 100`);
+            elements.wordCountPercent.textContent = `${percentage}%`;
+        }
+
+        // Project Functions
+        async function loadProjects() {
+            try {
+                showLoading('Loading projects...');
+                
+                const { data: userProjects, error } = await projects.getAll();
+                
+                if (error) throw error;
+                
+                if (!userProjects || userProjects.length === 0) {
+                    // No projects yet, show empty state
+                    elements.projectTitle.textContent = 'No projects yet';
+                    elements.lastEdited.textContent = 'Create a new project to get started';
+                    hideLoading();
+                    return;
+                }
+                
+                // Get the last loaded project ID from localStorage
+                const lastProjectId = localStorage.getItem('lastProjectId');
+                
+                // Find the last loaded project or default to the first project
+                let currentProject = userProjects[0];
+                if (lastProjectId) {
+                    const foundProject = userProjects.find(p => p.id === lastProjectId);
+                    if (foundProject) {
+                        currentProject = foundProject;
+                    }
+                }
+                
+                // Set the current project
+                appState.currentProject = currentProject;
+                
+                // Update UI with project info
+                updateProjectUI(appState.currentProject);
+                
+                // Load chapters for this project
+                await loadChapters(appState.currentProject.id);
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                elements.projectTitle.textContent = 'Error loading projects';
+                elements.lastEdited.textContent = 'Please try again';
+                hideLoading();
+            }
+        }
+
+        function updateProjectUI(project) {
+            if (!project) return;
+            
+            elements.projectTitle.textContent = project.title;
+            elements.lastEdited.textContent = 'Last edited: ' + formatDate(project.updated_at);
+        }
+
+        async function createProject(title, description) {
+            try {
+                showLoading('Creating project...');
+                
+                const { data: newProject, error } = await projects.create(title, description);
+                
+                if (error) throw error;
+                
+                if (!newProject || newProject.length === 0) {
+                    throw new Error('Failed to create project');
+                }
+                
+                // Set as current project
+                appState.currentProject = newProject[0];
+                
+                // Save the new project ID to localStorage
+                localStorage.setItem('lastProjectId', newProject[0].id);
+                
+                // Update UI
+                updateProjectUI(appState.currentProject);
+                
+                // Create first chapter
+                await createChapter('Chapter 1: Introduction', '', 0);
+                
+                hideLoading();
+                
+                return newProject[0];
+            } catch (error) {
+                console.error('Error creating project:', error);
+                hideLoading();
+                return null;
+            }
+        }
+
+        // Chapter Functions
+        async function loadChapters(projectId) {
+            try {
+                if (!projectId) return;
+                
+                elements.chaptersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Loading chapters...</div>';
+                
+                const { data: projectChapters, error } = await chapters.getByProject(projectId);
+                
+                if (error) throw error;
+                
+                // Clear chapters list
+                elements.chaptersList.innerHTML = '';
+                
+                if (!projectChapters || projectChapters.length === 0) {
+                    elements.chaptersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No chapters yet</div>';
+                    return;
+                }
+                
+                // Sort chapters by order_index
+                projectChapters.sort((a, b) => a.order_index - b.order_index);
+                
+                // Add chapters to the list
+                projectChapters.forEach((chapter, index) => {
+                    const chapterElement = document.createElement('div');
+                    chapterElement.className = 'chapter-item p-2 pl-3 rounded cursor-pointer';
+                    chapterElement.setAttribute('data-chapter-id', chapter.id);
+                    chapterElement.setAttribute('draggable', 'true');
+                    
+                    chapterElement.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="chapter-title">${chapter.title}</span>
+                            <i class="fas fa-grip-lines text-gray-300 cursor-move handle"></i>
+                        </div>
+                    `;
+                    
+                    // Add click handler
+                    chapterElement.addEventListener('click', () => selectChapter(chapter));
+                    
+                    // Add double-click handler for renaming
+                    chapterElement.addEventListener('dblclick', (e) => {
+                        if (e.target.closest('.handle')) return; // Don't trigger rename when clicking the handle
+                        
+                        const titleSpan = chapterElement.querySelector('.chapter-title');
+                        const currentTitle = titleSpan.textContent;
+                        
+                        // Create input for editing
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = 'w-full p-0 border-none focus:ring-0 bg-primaryLight rounded';
+                        input.value = currentTitle;
+                        
+                        // Replace span with input
+                        titleSpan.replaceWith(input);
+                        input.focus();
+                        input.select();
+                        
+                        // Save on blur or Enter key
+                        const saveChapterTitle = async () => {
+                            const newTitle = input.value.trim();
+                            if (newTitle && newTitle !== currentTitle) {
+                                try {
+                                    // Update chapter title in database
+                                    const { data: updatedChapter, error } = await chapters.update(
+                                        chapter.id,
+                                        { title: newTitle }
+                                    );
+                                    
+                                    if (error) throw error;
+                                    
+                                    // Update local state if this is the current chapter
+                                    if (appState.currentChapter && appState.currentChapter.id === chapter.id) {
+                                        appState.currentChapter = updatedChapter[0];
+                                        elements.chapterTitle.textContent = newTitle;
+                                    }
+                                    
+                                    showToast('Chapter renamed', 'success');
+                                } catch (error) {
+                                    console.error('Error renaming chapter:', error);
+                                    showToast('Failed to rename chapter', 'error');
+                                }
+                            }
+                            
+                            // Restore span with updated or original title
+                            const newSpan = document.createElement('span');
+                            newSpan.className = 'chapter-title';
+                            newSpan.textContent = newTitle || currentTitle;
+                            input.replaceWith(newSpan);
+                        };
+                        
+                        input.addEventListener('blur', saveChapterTitle);
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                saveChapterTitle();
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                const newSpan = document.createElement('span');
+                                newSpan.className = 'chapter-title';
+                                newSpan.textContent = currentTitle;
+                                input.replaceWith(newSpan);
+                            }
+                        });
+                    });
+                    
+                    // Add drag and drop functionality
+                    chapterElement.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', chapter.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                        chapterElement.classList.add('bg-primaryLight');
+                    });
+                    
+                    chapterElement.addEventListener('dragend', () => {
+                        chapterElement.classList.remove('bg-primaryLight');
+                    });
+                    
+                    chapterElement.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                    });
+                    
+                    chapterElement.addEventListener('dragenter', (e) => {
+                        e.preventDefault();
+                        chapterElement.classList.add('border', 'border-primary');
+                    });
+                    
+                    chapterElement.addEventListener('dragleave', () => {
+                        chapterElement.classList.remove('border', 'border-primary');
+                    });
+                    
+                    chapterElement.addEventListener('drop', async (e) => {
+                        e.preventDefault();
+                        chapterElement.classList.remove('border', 'border-primary');
+                        
+                        const draggedChapterId = e.dataTransfer.getData('text/plain');
+                        if (!draggedChapterId || draggedChapterId === chapter.id) return;
+                        
+                        try {
+                            // Get all chapters in current order
+                            const chapterElements = Array.from(elements.chaptersList.querySelectorAll('.chapter-item'));
+                            const draggedElement = elements.chaptersList.querySelector(`[data-chapter-id="${draggedChapterId}"]`);
+                            const dropElement = chapterElement;
+                            
+                            // Get current indices
+                            const draggedIndex = chapterElements.indexOf(draggedElement);
+                            const dropIndex = chapterElements.indexOf(dropElement);
+                            
+                            // Move element in DOM
+                            if (draggedIndex < dropIndex) {
+                                // Moving down
+                                dropElement.parentNode.insertBefore(draggedElement, dropElement.nextElementSibling);
+                            } else {
+                                // Moving up
+                                dropElement.parentNode.insertBefore(draggedElement, dropElement);
+                            }
+                            
+                            // Update order_index values
+                            const updatedChapters = Array.from(elements.chaptersList.querySelectorAll('.chapter-item'))
+                                .map((el, idx) => ({
+                                    id: el.getAttribute('data-chapter-id'),
+                                    order_index: idx
+                                }));
+                            
+                            // Show saving indicator
+                            showToast('Updating chapter order...', 'success');
+                            
+                            // Update database
+                            const { error } = await chapters.updateOrder(updatedChapters);
+                            
+                            if (error) {
+                                console.error('Error updating chapter order:', error);
+                                showToast('Failed to update chapter order: ' + (error.message || 'Unknown error'), 'error');
+                                // Reload chapters to restore original order
+                                await loadChapters(projectId);
+                                return;
+                            }
+                            
+                            showToast('Chapter order updated', 'success');
+                        } catch (error) {
+                            console.error('Error updating chapter order:', error);
+                            showToast('Failed to update chapter order', 'error');
+                            // Reload chapters to restore original order
+                            await loadChapters(projectId);
+                        }
+                    });
+                    
+                    elements.chaptersList.appendChild(chapterElement);
+                });
+                
+                // Select the first chapter by default
+                if (projectChapters.length > 0) {
+                    selectChapter(projectChapters[0]);
+                }
+            } catch (error) {
+                console.error('Error loading chapters:', error);
+                elements.chaptersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-exclamation-circle mr-2 text-error"></i>Error loading chapters</div>';
+            }
+        }
+
+        function selectChapter(chapter) {
+            if (!chapter) return;
+            
+            // Save current chapter if it exists and has changes
+            if (appState.currentChapter && appState.isDirty) {
+                saveCurrentChapter();
+            }
+            
+            // Set as current chapter
+            appState.currentChapter = chapter;
+            
+            // Highlight the selected chapter
+            const chapterItems = document.querySelectorAll('.chapter-item');
+            chapterItems.forEach(item => {
+                item.classList.remove('active');
+                if (item.getAttribute('data-chapter-id') === chapter.id) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Update editor content
+            elements.chapterTitle.textContent = chapter.title;
+            elements.editorContent.innerHTML = chapter.content || '<p class="mb-4">Start writing your story here...</p>';
+            
+            // Reset dirty state
+            appState.isDirty = false;
+            updateSaveStatus(false);
+            
+            // Update word count
+            updateWordCount();
+        }
+
+        async function createChapter(title, content, orderIndex) {
+            try {
+                if (!appState.currentProject) {
+                    throw new Error('No current project');
+                }
+                
+                showLoading('Creating chapter...');
+                
+                const { data: newChapter, error } = await chapters.create(
+                    appState.currentProject.id,
+                    title, 
+                    content || '', 
+                    orderIndex
+                );
+                
+                if (error) throw error;
+                
+                if (!newChapter || newChapter.length === 0) {
+                    throw new Error('Failed to create chapter');
+                }
+                
+                // Reload chapters
+                await loadChapters(appState.currentProject.id);
+                
+                // Select the new chapter
+                selectChapter(newChapter[0]);
+                
+                hideLoading();
+                
+                return newChapter[0];
+            } catch (error) {
+                console.error('Error creating chapter:', error);
+                hideLoading();
+                return null;
+            }
+        }
+
+        async function saveCurrentChapter() {
+            try {
+                if (!appState.currentChapter) return;
+                
+                // Get content from editor
+                const content = elements.editorContent.innerHTML;
+                
+                // Update save button to indicate saving in progress
+                elements.saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span class="ml-1">Saving...</span>';
+                
+                const { data: updatedChapter, error } = await chapters.update(
+                    appState.currentChapter.id,
+                    {
+                        content: content,
+                        updated_at: new Date().toISOString()
+                    }
+                );
+                
+                if (error) throw error;
+                
+                // Update current chapter
+                appState.currentChapter = updatedChapter[0];
+                
+                // Reset dirty state
+                appState.isDirty = false;
+                
+                // Update save button to indicate saved
+                elements.saveBtn.classList.remove('btn-error');
+                elements.saveBtn.classList.add('btn-primary');
+                elements.saveBtn.innerHTML = '<i class="fas fa-save"></i><span class="ml-1">Save</span>';
+                
+                // Update project last edited time (backend will handle this)
+                elements.lastEdited.textContent = 'Last edited: ' + formatDate(new Date());
+                
+                // Update word count
+                updateWordCount();
+                
+                return updatedChapter[0];
+            } catch (error) {
+                console.error('Error saving chapter:', error);
+                
+                // Update save button to indicate error
+                elements.saveBtn.classList.remove('btn-primary');
+                elements.saveBtn.classList.add('btn-error');
+                elements.saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i><span class="ml-1">Error</span>';
+                
+                // Show toast with error message
+                showToast('Error saving chapter', 'error');
+                
+                return null;
+            }
+        }
+
+        function updateSaveStatus(isDirty, message) {
+            appState.isDirty = isDirty;
+            
+            // Update save button appearance based on dirty state
+            if (isDirty) {
+                elements.saveBtn.classList.remove('btn-primary');
+                elements.saveBtn.classList.add('btn-error');
+            } else {
+                elements.saveBtn.classList.remove('btn-error');
+                elements.saveBtn.classList.add('btn-primary');
+            }
+            
+            // If message is provided, show it in a toast notification
+            if (message) {
+                showToast(message);
+            }
+        }
+
+        // Context Management
+        async function loadContextItems() {
+            try {
+                if (!appState.currentProject) return;
+                
+                // Load characters
+                const { data: projectCharacters, error: charError } = await characters.getByProject(appState.currentProject.id);
+                
+                if (charError) throw charError;
+                
+                // TODO: Load settings and timeline events when those functions are implemented
+                
+                // Clear context list
+                elements.contextList.innerHTML = '';
+                
+                // Count total context items
+                const totalItems = (projectCharacters?.length || 0);
+                elements.contextCount.textContent = totalItems + ' items';
+                
+                if (totalItems === 0) {
+                    elements.contextList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No context items yet</div>';
+                    return;
+                }
+                
+                // Add characters to the list
+                if (projectCharacters && projectCharacters.length > 0) {
+                    projectCharacters.forEach(character => {
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'p-2 text-sm hover:bg-gray-50 rounded cursor-pointer';
+                        
+                        itemElement.innerHTML = `
+                            <div class="font-medium">${character.name}</div>
+                            <div class="text-xs text-textSecondary">${character.role}</div>
+                        `;
+                        
+                        elements.contextList.appendChild(itemElement);
+                    });
+                }
+                
+                // TODO: Add settings and timeline events to the list
+            } catch (error) {
+                console.error('Error loading context items:', error);
+                elements.contextList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-exclamation-circle mr-2 text-error"></i>Error loading context</div>';
+            }
+        }
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('aiToast');
+            if (!toast) return; // Exit if toast element isn't available
+            
+            const toastText = toast.querySelector('p');
+            if (toastText) toastText.textContent = message;
+            
+            toast.classList.remove('hidden');
+            toast.classList.add('transform', 'translate-y-0');
+            
+            if (type === 'success') {
+                toast.classList.add('bg-success');
+                toast.classList.remove('bg-error');
+            } else {
+                toast.classList.add('bg-error');
+                toast.classList.remove('bg-success');
+            }
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-full');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('translate-y-full', 'bg-success', 'bg-error');
+                }, 300);
+            }, 3000);
+        }
+
+        // Toggle Load Project Panel
+        function toggleLoadProjectPanel() {
+            const panel = document.getElementById('loadProjectPanel');
+            const overlay = document.getElementById('loadProjectOverlay');
+            const isOpen = !panel.classList.contains('translate-x-full');
+
+            if (isOpen) {
+                panel.classList.add('translate-x-full');
+                overlay.classList.add('hidden');
+            } else {
+                panel.classList.remove('translate-x-full');
+                overlay.classList.remove('hidden');
+            }
+        }
+
+        // Load User Projects
+        async function loadUserProjects() {
+            const projectsList = document.getElementById('projectsList');
+            projectsList.innerHTML = '<div class="text-center text-gray-500"><i class="fas fa-spinner fa-spin"></i> Loading projects...</div>';
+
+            try {
+                const { data: userProjects, error } = await projects.getAll();
+                
+                if (error) throw error;
+
+                if (!userProjects || userProjects.length === 0) {
+                    projectsList.innerHTML = `
+                        <div class="text-center text-gray-500">
+                            <i class="fas fa-folder-open text-2xl mb-2"></i>
+                            <p>No projects found</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Sort projects by last updated
+                userProjects.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+                // Create project list HTML
+                projectsList.innerHTML = userProjects.map(project => `
+                    <div class="project-item bg-white rounded-lg p-4 border border-gray-200 hover:border-primary cursor-pointer transition-colors"
+                         data-project-id="${project.id}">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-medium text-primary">${project.title}</h3>
+                            ${project.id === appState.currentProject?.id ? 
+                                '<span class="text-xs bg-primary text-white px-2 py-1 rounded">Current</span>' : 
+                                ''}
+                        </div>
+                        <p class="text-sm text-gray-500 mb-2 line-clamp-2">${project.description || 'No description'}</p>
+                        <div class="flex items-center justify-between text-xs text-gray-400">
+                            <span>
+                                <i class="fas fa-clock mr-1"></i>
+                                ${formatDate(project.updated_at)}
+                            </span>
+                            <span>
+                                <i class="fas fa-book mr-1"></i>
+                                ${project.chapter_count || 0} chapters
+                            </span>
+                        </div>
+                    </div>
+                `).join('');
+
+                // Add click handlers to project items
+                document.querySelectorAll('.project-item').forEach(item => {
+                    item.addEventListener('click', async () => {
+                        const projectId = item.dataset.projectId;
+                        await switchProject(projectId);
+                        toggleLoadProjectPanel();
+                    });
+                });
+
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                projectsList.innerHTML = `
+                    <div class="text-center text-error">
+                        <i class="fas fa-exclamation-circle text-2xl mb-2"></i>
+                        <p>Error loading projects</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Filter Projects
+        function filterProjects(searchTerm) {
+            const projectItems = document.querySelectorAll('.project-item');
+            projectItems.forEach(item => {
+                const title = item.querySelector('h3').textContent.toLowerCase();
+                const description = item.querySelector('p').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Switch Project
+        async function switchProject(projectId) {
+            try {
+                showLoading('Loading project...');
+
+                // Save current project if there are unsaved changes
+                if (appState.isDirty && appState.currentChapter) {
+                    await saveCurrentChapter();
+                }
+
+                // Get the new project
+                const { data: project, error } = await projects.getById(projectId);
+                
+                if (error) throw error;
+                if (!project) throw new Error('Project not found');
+
+                // Update app state
+                appState.currentProject = project;
+                appState.currentChapter = null;
+                appState.isDirty = false;
+
+                // Save the current project ID to localStorage
+                localStorage.setItem('lastProjectId', project.id);
+
+                // Update UI
+                updateProjectUI(project);
+                await loadChapters(project.id);
+                await loadContextItems();
+
+                hideLoading();
+                showToast('Project loaded successfully', 'success');
+            } catch (error) {
+                console.error('Error switching project:', error);
+                hideLoading();
+                showToast('Error loading project', 'error');
+            }
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // New Project Button
+            elements.newProjectBtn.addEventListener('click', () => {
+                elements.newProjectModal.classList.remove('hidden');
+                elements.newProjectModal.classList.add('flex');
+                elements.newProjectTitle.focus();
+            });
+            
+            // Close New Project Modal
+            elements.closeNewProjectModal.addEventListener('click', () => {
+                elements.newProjectModal.classList.add('hidden');
+                elements.newProjectModal.classList.remove('flex');
+            });
+            
+            // Cancel New Project
+            elements.cancelNewProject.addEventListener('click', () => {
+                elements.newProjectModal.classList.add('hidden');
+                elements.newProjectModal.classList.remove('flex');
+            });
+            
+            // Create New Project
+            elements.createNewProject.addEventListener('click', async () => {
+                const title = elements.newProjectTitle.value.trim();
+                const description = elements.newProjectDescription.value.trim();
+                
+                if (!title) {
+                    alert('Please enter a project title');
+                    return;
+                }
+                
+                elements.newProjectModal.classList.add('hidden');
+                elements.newProjectModal.classList.remove('flex');
+                
+                const newProject = await createProject(title, description);
+                
+                if (newProject) {
+                    // Successfully created project
+                    elements.newProjectTitle.value = '';
+                    elements.newProjectDescription.value = '';
+                }
+            });
+            
+            // Add Chapter Button
+            elements.addChapterBtn.addEventListener('click', async () => {
+                if (!appState.currentProject) {
+                    alert('Please create a project first');
+                    return;
+                }
+                
+                // Get the number of existing chapters
+                const chapterCount = elements.chaptersList.querySelectorAll('.chapter-item').length;
+                const newChapterTitle = `Chapter ${chapterCount + 1}`;
+                
+                await createChapter(newChapterTitle, '', chapterCount);
+            });
+            
+            // Save Button
+            elements.saveBtn.addEventListener('click', () => {
+                if (appState.currentChapter) {
+                    saveCurrentChapter();
+                }
+            });
+            
+            // Editor Content Change
+            elements.editorContent.addEventListener('input', () => {
+                updateSaveStatus(true);
+                updateWordCount();
+            });
+            
+            // Auto-save timer
+            setInterval(() => {
+                if (appState.isDirty && appState.currentChapter) {
+                    saveCurrentChapter();
+                }
+            }, 60000); // Auto-save every minute if there are changes
+
+            // Load Project Button
+            elements.loadProjectBtn.addEventListener('click', () => {
+                toggleLoadProjectPanel();
+                loadUserProjects();
+            });
+
+            // Close Load Project Panel
+            document.getElementById('closeLoadProjectPanel').addEventListener('click', toggleLoadProjectPanel);
+            document.getElementById('loadProjectOverlay').addEventListener('click', toggleLoadProjectPanel);
+
+            // Project Search
+            document.getElementById('projectSearch').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterProjects(searchTerm);
+            });
+
+            // Formatting buttons
+            document.querySelector('button[title="Bold"]').addEventListener('click', () => {
+                document.execCommand('bold', false, null);
+                updateSaveStatus(true);
+            });
+
+            document.querySelector('button[title="Italic"]').addEventListener('click', () => {
+                document.execCommand('italic', false, null);
+                updateSaveStatus(true);
+            });
+
+            document.querySelector('button[title="Heading"]').addEventListener('click', () => {
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const container = range.commonAncestorContainer.parentElement;
+                
+                // Create a new div for the heading
+                const headingDiv = document.createElement('div');
+                headingDiv.className = 'text-center text-2xl font-bold my-4';
+                
+                // If we're already in a centered heading, revert to normal
+                if (container.classList && container.classList.contains('text-center')) {
+                    // Remove the heading formatting
+                    const normalText = document.createElement('div');
+                    normalText.innerHTML = container.innerHTML;
+                    container.parentNode.replaceChild(normalText, container);
+                } else {
+                    // Apply heading formatting
+                    headingDiv.innerHTML = range.toString();
+                    range.deleteContents();
+                    range.insertNode(headingDiv);
+                }
+                
+                updateSaveStatus(true);
+            });
+
+            // Font size button and dropdown
+            const fontSizeBtn = document.querySelector('button[title="Font Size"]');
+            const fontSizeDropdown = document.querySelector('.font-size-dropdown');
+            
+            // Toggle dropdown
+            fontSizeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fontSizeDropdown.classList.toggle('hidden');
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!fontSizeBtn.contains(e.target)) {
+                    fontSizeDropdown.classList.add('hidden');
+                }
+            });
+            
+            // Handle font size selection
+            document.querySelectorAll('.font-size-dropdown button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const size = button.getAttribute('data-size');
+                    document.execCommand('fontSize', false, size);
+                    fontSizeDropdown.classList.add('hidden');
+                    updateSaveStatus(true);
+                });
+            });
+
+            // Full Screen button
+            document.querySelector('button[title="Full Screen"]').addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast(`Error attempting to enable full-screen mode: ${err.message}`, 'error');
+                    });
+                } else {
+                    document.exitFullscreen().catch(err => {
+                        showToast(`Error attempting to exit full-screen mode: ${err.message}`, 'error');
+                    });
+                }
+            });
+
+            // Keyboard shortcuts for formatting
+            elements.editorContent.addEventListener('keydown', (e) => {
+                if (e.ctrlKey || e.metaKey) {
+                    switch(e.key.toLowerCase()) {
+                        case 'b':
+                            e.preventDefault();
+                            document.execCommand('bold', false, null);
+                            updateSaveStatus(true);
+                            break;
+                        case 'i':
+                            e.preventDefault();
+                            document.execCommand('italic', false, null);
+                            updateSaveStatus(true);
+                            break;
+                    }
+                }
+            });
+
+            // Update formatting buttons state based on current selection
+            function updateFormatButtons() {
+                const isBold = document.queryCommandState('bold');
+                const isItalic = document.queryCommandState('italic');
+                const container = window.getSelection().getRangeAt(0).commonAncestorContainer;
+                const isHeading = container.nodeType === 1 ? 
+                    container.classList && container.classList.contains('text-center') : 
+                    container.parentElement.classList && container.parentElement.classList.contains('text-center');
+
+                document.querySelector('button[title="Bold"]').classList.toggle('bg-primaryLight', isBold);
+                document.querySelector('button[title="Italic"]').classList.toggle('bg-primaryLight', isItalic);
+                document.querySelector('button[title="Heading"]').classList.toggle('bg-primaryLight', isHeading);
+            }
+
+            // Add selectionchange event listener to update formatting buttons
+            document.addEventListener('selectionchange', () => {
+                if (document.activeElement === elements.editorContent) {
+                    updateFormatButtons();
+                }
+            });
+
+            // Update format buttons when clicking in the editor
+            elements.editorContent.addEventListener('click', updateFormatButtons);
+            elements.editorContent.addEventListener('keyup', updateFormatButtons);
+
+            // Project title rename functionality
+            function setupProjectTitleRename() {
+                function handleProjectRename() {
+                    const currentTitle = elements.projectTitle.textContent;
+                    
+                    // Create input for editing
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'w-full p-0 border-none focus:ring-0 bg-primaryLight rounded text-primary font-medium';
+                    input.value = currentTitle;
+                    
+                    // Replace h2 with input
+                    elements.projectTitle.replaceWith(input);
+                    input.focus();
+                    input.select();
+                    
+                    // Save on blur or Enter key
+                    const saveProjectTitle = async () => {
+                        const newTitle = input.value.trim();
+                        if (newTitle && newTitle !== currentTitle && appState.currentProject) {
+                            try {
+                                // Update project title in database
+                                const { data: updatedProject, error } = await projects.update(
+                                    appState.currentProject.id,
+                                    { title: newTitle }
+                                );
+                                
+                                if (error) throw error;
+                                
+                                // Update local state
+                                appState.currentProject = updatedProject[0];
+                                showToast('Project renamed', 'success');
+                            } catch (error) {
+                                console.error('Error renaming project:', error);
+                                showToast('Failed to rename project', 'error');
+                            }
+                        }
+                        
+                        // Restore h2 with updated or original title
+                        const newH2 = document.createElement('h2');
+                        newH2.id = 'projectTitle';
+                        newH2.className = 'text-primary font-medium mb-1 cursor-pointer';
+                        newH2.title = 'Double-click to rename';
+                        newH2.textContent = newTitle || currentTitle;
+                        input.replaceWith(newH2);
+                        
+                        // Update elements reference and reattach event listener
+                        elements.projectTitle = newH2;
+                        elements.projectTitle.addEventListener('dblclick', handleProjectRename);
+                    };
+                    
+                    input.addEventListener('blur', saveProjectTitle);
+                    input.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            saveProjectTitle();
+                        } else if (e.key === 'Escape') {
+                            e.preventDefault();
+                            const newH2 = document.createElement('h2');
+                            newH2.id = 'projectTitle';
+                            newH2.className = 'text-primary font-medium mb-1 cursor-pointer';
+                            newH2.title = 'Double-click to rename';
+                            newH2.textContent = currentTitle;
+                            input.replaceWith(newH2);
+                            
+                            // Update elements reference and reattach event listener
+                            elements.projectTitle = newH2;
+                            elements.projectTitle.addEventListener('dblclick', handleProjectRename);
+                        }
+                    });
+                }
+
+                // Initial event listener attachment
+                elements.projectTitle.addEventListener('dblclick', handleProjectRename);
+            }
+
+            // Call the setup function
+            setupProjectTitleRename();
+        }
+
+        // Initialization
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Check if user is authenticated
+                const { data: { user } } = await auth.getUser();
+                if (!user) {
+                    window.location.href = '/auth/auth.html';
+                    return;
+                }
+                
+                appState.currentUser = user;
+                
+                // Setup UI event listeners
+                setupEventListeners();
+                
+                // Load projects
+                await loadProjects();
+                
+                // Load context items
+                await loadContextItems();
+                
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                hideLoading();
+            }
+        });
+    </script>
+
+    <script type="module">
+        import { auth } from './lib/supabase.js';
+        
+        // Initialize with a default user avatar and handle sign out
+        document.addEventListener('DOMContentLoaded', () => {
+            const userAvatar = document.querySelector('#userAvatar');
+            const userDisplayName = document.querySelector('#userDisplayName');
+            const signOutBtn = document.querySelector('#signOutBtn');
+            
+            // Update user info if authenticated
+            auth.getUser().then(({ data: { user } }) => {
+                if (user && userAvatar) {
+                    // Update avatar with user email or name
+                    const nameInitial = user.email ? user.email.charAt(0).toUpperCase() : 'G';
+                    userAvatar.src = `https://ui-avatars.com/api/?name=${nameInitial}&background=4B5EAA&color=fff`;
+                    
+                    // Update user display name
+                    if (userDisplayName) {
+                        userDisplayName.textContent = user.email || 'Signed In User';
+                    }
+                }
+            }).catch(error => {
+                console.error('Auth check error:', error);
+            });
+            
+            // Add sign out handler
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', async () => {
+                    try {
+                        await auth.signOut();
+                        window.location.href = '/auth/auth.html';
+                    } catch (error) {
+                        console.error('Error signing out:', error);
+                        alert('Failed to sign out. Please try again.');
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- Top Bar -->
+    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
+        <div class="flex items-center space-x-4">
+            <!-- Mobile Menu Button -->
+            <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
+                <i class="fas fa-feather-alt"></i>
+            </div>
+            <h1 class="text-xl font-semibold text-primary hidden md:block">Kalligram</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="saveBtn" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                <span class="ml-1">Save</span>
+            </button>
+            <button id="loadProjectBtn" class="btn btn-primary">
+                <i class="fas fa-folder-open"></i>
+                <span class="ml-1">Load Project</span>
+            </button>
+            <button id="newProjectBtn" class="btn btn-success">
+                <i class="fas fa-plus"></i>
+                <span class="ml-1">New Project</span>
+            </button>
+            <div class="relative group">
+                <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
+                     alt="User Avatar" 
+                     class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
+                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
+                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                        <i class="fas fa-user-circle text-primary mr-2"></i>
+                        <span id="userDisplayName">Guest User</span>
+                    </div>
+                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                        <i class="fas fa-cog text-secondary mr-2"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        <span>Sign Out</span>
+                    </div>
+>>>>>>> a18c8678fcfd16d511439bc217ad07d653501626
                 </div>
 
                 <!-- Desktop Navigation -->
