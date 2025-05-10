@@ -1619,11 +1619,28 @@
         // Initialization
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Check if user is authenticated
+                // Check authentication first
+                const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+                
+                // For development and testing, uncomment this line to bypass authentication
+                // localStorage.setItem('isAuthenticated', 'true');
+                
+                if (!isAuthenticated) {
+                    // Not authenticated, redirect to landing page
+                    console.log('User not authenticated, redirecting to landing page');
+                    window.location.href = 'index.html';
+                    return; // Stop execution
+                }
+                
+                // Check if user is authenticated with Supabase
                 const { data: { user } } = await auth.getUser();
                 if (!user) {
-                    window.location.href = '/auth/auth.html';
-                    return;
+                    // This handles the case where Supabase is available but the user isn't authenticated
+                    // Only redirect if not already in a redirect loop
+                    if (!window.location.search.includes('redirected')) {
+                        window.location.href = 'index.html?redirected=true';
+                        return;
+                    }
                 }
                 
                 appState.currentUser = user;
@@ -1639,7 +1656,29 @@
                 
             } catch (error) {
                 console.error('Error initializing app:', error);
-                hideLoading();
+                
+                // Gracefully handle initialization errors
+                // If Supabase auth fails, we can still use local authentication
+                if (localStorage.getItem('isAuthenticated') === 'true') {
+                    setupEventListeners();
+                    await loadProjects();
+                    await loadContextItems();
+                } else {
+                    hideLoading();
+                    
+                    // Show a user-friendly error
+                    const errorElement = document.createElement('div');
+                    errorElement.className = 'fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50';
+                    errorElement.innerHTML = `
+                        <div class="bg-white p-8 rounded-lg shadow-lg text-center max-w-md">
+                            <div class="text-error text-5xl mb-4"><i class="fas fa-exclamation-circle"></i></div>
+                            <h2 class="text-2xl font-bold mb-4">Authentication Error</h2>
+                            <p class="mb-6">Unable to verify your authentication. Please log in again.</p>
+                            <a href="index.html" class="btn btn-primary px-6 py-2 rounded-md">Return to Home</a>
+                        </div>
+                    `;
+                    document.body.appendChild(errorElement);
+                }
             }
         });
     </script>

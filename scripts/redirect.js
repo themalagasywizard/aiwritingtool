@@ -15,6 +15,9 @@ function handleSubscription(email) {
     // In a real app, you'd send this to your backend
     alert(`Thanks for subscribing with email: ${email}`);
     
+    // Store email in localStorage for demo purposes
+    localStorage.setItem('pendingEmail', email);
+    
     // Redirect to the authentication page
     window.location.href = 'auth/auth.html';
 }
@@ -27,32 +30,29 @@ window.redirectApp = {
 
 // Check if we should redirect on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Prevent redirect loops by checking URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const isRedirected = urlParams.has('redirected');
+    
     // Auto-redirect authenticated users for direct visits to landing page
-    // Check if the user is on the landing page (index.html)
-    if (window.location.pathname === '/' || 
+    // but only if we haven't been redirected already
+    if (!isRedirected &&
+        (window.location.pathname === '/' || 
         window.location.pathname === '/index.html' || 
-        window.location.pathname.endsWith('/index.html')) {
+        window.location.pathname.endsWith('/index.html'))) {
         
-        // Check if user is authenticated via Supabase
-        try {
-            // If using Supabase auth
-            const supabaseUrl = document.querySelector('meta[name="supabase-url"]')?.content;
-            const supabaseKey = document.querySelector('meta[name="supabase-anon-key"]')?.content;
-            
-            if (supabaseUrl && supabaseKey && typeof supabase !== 'undefined') {
-                const { data: { user } } = supabase.auth.getUser();
-                if (user) {
-                    // User is authenticated, redirect to editor
-                    window.location.href = 'editor.html';
-                }
-            } else {
-                // Fallback to localStorage check if Supabase is not available
-                if (localStorage.getItem('isAuthenticated') === 'true') {
-                    window.location.href = 'editor.html';
-                }
-            }
-        } catch (error) {
-            console.error('Auth check error:', error);
+        // Check if user is authenticated
+        if (localStorage.getItem('isAuthenticated') === 'true') {
+            console.log("User is authenticated, redirecting to editor");
+            window.location.href = 'editor.html?redirected=true';
+            return;
+        }
+        
+        // Check if there's a pending email and auto-fill the subscription form
+        const pendingEmail = localStorage.getItem('pendingEmail');
+        const emailInput = document.getElementById('emailInput');
+        if (pendingEmail && emailInput) {
+            emailInput.value = pendingEmail;
         }
     }
     

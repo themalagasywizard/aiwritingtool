@@ -305,6 +305,20 @@
     <script>
         // Initialize landing page
         document.addEventListener('DOMContentLoaded', function() {
+            // Check for login success from auth page
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('login_success')) {
+                alert('You have successfully logged in!');
+                window.location.href = 'editor.html';
+                return;
+            }
+            
+            // For development: Clear any previous authentication state when landing on the main page
+            // Comment this out when deploying to production
+            if (!urlParams.has('keep_auth')) {
+                localStorage.removeItem('isAuthenticated');
+            }
+            
             // Mobile menu toggle
             const mobileMenuBtn = document.getElementById('mobileMenuBtn');
             const mobileMenu = document.getElementById('mobileMenu');
@@ -317,18 +331,23 @@
             const subscribeForm = document.getElementById('subscribeForm');
             const emailInput = document.getElementById('emailInput');
             
-            subscribeForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const email = emailInput.value.trim();
-                
-                if (email) {
-                    // In a real app, you'd send this to your backend
-                    alert(`Thanks for subscribing with email: ${email}`);
+            if (subscribeForm && emailInput) {
+                subscribeForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const email = emailInput.value.trim();
                     
-                    // Redirect to the authentication page
-                    window.location.href = 'auth/auth.html';
-                }
-            });
+                    if (email) {
+                        // Store email for the auth page to use
+                        localStorage.setItem('pendingEmail', email);
+                        
+                        // In a real app, you'd send this to your backend
+                        alert(`Thanks for subscribing with email: ${email}`);
+                        
+                        // Redirect to the authentication page
+                        window.location.href = 'auth/auth.html';
+                    }
+                });
+            }
             
             // Modify all "Get Started" buttons to redirect to auth page
             document.querySelectorAll('a[href="#signup"]').forEach(link => {
@@ -340,13 +359,14 @@
                 // Check local storage or cookies for authentication status
                 const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
                 
-                if (isAuthenticated) {
-                    window.location.href = 'editor.html';
+                // Only redirect if we're authenticated and not already in a redirect loop
+                if (isAuthenticated && !urlParams.has('redirected')) {
+                    window.location.href = 'editor.html?redirected=true';
                 }
             }
             
-            // Uncomment to enable auto-redirect for authenticated users
-            // checkAuthAndRedirect();
+            // Check if user is already authenticated
+            checkAuthAndRedirect();
         });
     </script>
     
