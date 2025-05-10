@@ -613,6 +613,9 @@
             isDirty: false, // Track if editor has unsaved changes
             wordTarget: 1000, // Default target word count
         };
+        
+        // Expose appState to window object for access from other scripts
+        window.appState = appState;
 
         // DOM Elements
         const elements = {
