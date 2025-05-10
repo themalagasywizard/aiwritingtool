@@ -15,6 +15,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase Client -->
+    <script type="module">
+        import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+        
+        // Initialize Supabase client
+        const supabaseUrl = document.querySelector('meta[name="supabase-url"]')?.content;
+        const supabaseKey = document.querySelector('meta[name="supabase-anon-key"]')?.content;
+        
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('Supabase configuration missing');
+        } else {
+            window.supabase = createClient(supabaseUrl, supabaseKey);
+        }
+    </script>
     <script>
         tailwind.config = {
             theme: {
