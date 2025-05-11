@@ -77,50 +77,61 @@ const fetchProjectContext = async (projectId, userId) => {
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
     
-    // Fetch locations with all details
+    // Debug: Log the query we're about to make
+    console.log('Querying locations with:', { project_id: projectId });
+    
+    // Fetch locations with detailed query logging
     const { data: locations, error: locationsError } = await supabase
       .from('locations')
-      .select('id, name, type, description, key_features')
+      .select('*')
       .eq('project_id', projectId);
     
-    if (locationsError) throw locationsError;
+    if (locationsError) {
+      console.error('Location query error:', locationsError);
+      throw locationsError;
+    }
+    console.log('Raw locations data:', locations);
     console.log(`Fetched ${locations ? locations.length : 0} locations`);
     
-    // Fetch timeline events with related characters and locations
+    // Fetch timeline events with relationships
+    console.log('Querying timeline_events with:', { project_id: projectId });
     const { data: events, error: eventsError } = await supabase
       .from('timeline_events')
       .select(`
-        id,
-        name,
-        date_time,
-        description,
-        location_id,
+        *,
         locations (id, name),
         timeline_event_characters (
-          character_id,
           characters (id, name, role)
         )
       `)
-      .eq('project_id', projectId)
-      .order('date_time', { ascending: true });
-    
-    if (eventsError) throw eventsError;
-    console.log(`Fetched ${events ? events.length : 0} events`);
-    
-    // Fetch characters with all details
-    const { data: characters, error: charactersError } = await supabase
-      .from('characters')
-      .select('id, name, role, traits, backstory')
       .eq('project_id', projectId);
     
-    if (charactersError) throw charactersError;
+    if (eventsError) {
+      console.error('Events query error:', eventsError);
+      throw eventsError;
+    }
+    console.log('Raw events data:', events);
+    console.log(`Fetched ${events ? events.length : 0} events`);
+    
+    // Fetch characters with detailed query logging
+    console.log('Querying characters with:', { project_id: projectId });
+    const { data: characters, error: charactersError } = await supabase
+      .from('characters')
+      .select('*')
+      .eq('project_id', projectId);
+    
+    if (charactersError) {
+      console.error('Characters query error:', charactersError);
+      throw charactersError;
+    }
+    console.log('Raw characters data:', characters);
     console.log(`Fetched ${characters ? characters.length : 0} characters`);
     
     // Format the context string with more detailed information
-    let contextString = 'Project Context:\n';
+    let contextString = 'Project Context:\n\n';
     
     // Add characters section with detailed information
-    contextString += '\nCharacters:\n';
+    contextString += 'Characters:\n';
     if (characters && characters.length > 0) {
       characters.forEach(char => {
         contextString += `Character: ${char.name}\n`;
@@ -143,15 +154,15 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += '\n';
       });
     } else {
-      contextString += 'No characters found.\n';
+      contextString += 'No characters found.\n\n';
     }
     
     // Add locations section with detailed information
-    contextString += '\nLocations:\n';
+    contextString += 'Locations:\n';
     if (locations && locations.length > 0) {
       locations.forEach(loc => {
         contextString += `Location: ${loc.name}\n`;
-        contextString += `  Type: ${loc.type}\n`;
+        contextString += `  Type: ${loc.type || 'Unspecified'}\n`;
         if (loc.description) contextString += `  Description: ${truncateText(loc.description, 200)}\n`;
         if (loc.key_features) contextString += `  Key Features: ${truncateText(loc.key_features, 200)}\n`;
         
@@ -166,12 +177,13 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += '\n';
       });
     } else {
-      contextString += 'No locations found.\n';
+      contextString += 'No locations found.\n\n';
     }
     
     // Add timeline events section with detailed information
-    contextString += '\nTimeline Events (in chronological order):\n';
+    contextString += 'Timeline Events (in chronological order):\n';
     if (events && events.length > 0) {
+      events.sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
       events.forEach(event => {
         contextString += `Event: ${event.name}\n`;
         contextString += `  Time: ${event.date_time}\n`;
@@ -199,7 +211,7 @@ const fetchProjectContext = async (projectId, userId) => {
     return contextString;
   } catch (error) {
     console.error('Error fetching project context:', error);
-    return 'Error fetching project context: ' + error.message;
+    throw error;
   }
 };
 
@@ -210,19 +222,26 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
     await ensureSupabaseConnection();
     
     console.log(`Fetching previous chapters for project_id: ${projectId}`);
+    console.log('Querying chapters with:', { project_id: projectId });
     
-    // Extract chapter number from prompt if it exists (e.g., "continue chapter 4" -> 4)
+    // Extract chapter number from prompt if it exists
     const chapterMatch = prompt.match(/chapter\s+(\d+)/i);
     const targetChapter = chapterMatch ? parseInt(chapterMatch[1]) : null;
     
-    // Fetch all chapters
+    // Fetch all chapters with detailed query logging
     const { data, error } = await supabase
       .from('chapters')
-      .select('content, title, order_index')
+      .select('*')
       .eq('project_id', projectId)
       .order('order_index', { ascending: true });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Chapters query error:', error);
+      throw error;
+    }
+    
+    console.log('Raw chapters data:', data);
+    console.log(`Fetched ${data ? data.length : 0} chapters`);
     
     if (data && data.length > 0) {
       console.log(`Found ${data.length} chapters`);
