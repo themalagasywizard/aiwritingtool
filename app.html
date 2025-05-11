@@ -7,13 +7,13 @@
     <!-- Environment Variables Script -->
     <script>
         window.ENV = {
-            SUPABASE_URL: '',
-            SUPABASE_ANON_KEY: ''
+            SUPABASE_URL: '<%= process.env.SUPABASE_URL %>',
+            SUPABASE_ANON_KEY: '<%= process.env.SUPABASE_ANON_KEY %>'
         };
     </script>
     <!-- Supabase Configuration -->
-    <meta name="supabase-url" content="">
-    <meta name="supabase-anon-key" content="">
+    <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
+    <meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->

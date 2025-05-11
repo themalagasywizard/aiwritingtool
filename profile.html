@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kalligram - Profile & Settings</title>
     <!-- Supabase Configuration -->
-    <meta name="supabase-url" content="">
-    <meta name="supabase-anon-key" content="">
+    <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
+    <meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
     <!-- Environment Variables Script -->
     <script>
         window.ENV = {
-            SUPABASE_URL: '',
-            SUPABASE_ANON_KEY: ''
+            SUPABASE_URL: '<%= process.env.SUPABASE_URL %>',
+            SUPABASE_ANON_KEY: '<%= process.env.SUPABASE_ANON_KEY %>'
         };
     </script>
     <!-- Google Fonts -->
