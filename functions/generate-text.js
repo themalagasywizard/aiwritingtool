@@ -492,15 +492,15 @@ Generate a detailed response of approximately ${desiredWords} words${tone ? ` in
 Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
 
 IMPORTANT INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
-1. You MUST incorporate ALL characters, locations, and events from the project context in your response.
+1. You can use ALL characters, locations, and events from the project context to inspire your response. Maintain narrative consistency and interest. You do not have to reference an event if unrelated to current chapter.
 2. When continuing a specific chapter, you MUST start EXACTLY where that chapter left off, maintaining perfect continuity.
 3. Your writing MUST follow the user's specific instructions (e.g., "kill protagonist," "end with a cliffhanger") while maintaining narrative consistency.
 4. You MUST explicitly use character names, locations, timeline events, and plot points from the context.
 5. You MUST resolve any cliffhangers or open questions from the previous chapter unless specifically instructed not to.
 6. You MUST maintain consistent character voices, relationships, and plot threads established in previous chapters.
-7. Never invent new major plot elements unless clearly asked by the user.
-8. Avoid contradicting established facts in previous chapters or project context.
-9. When continuing a chapter, use the exact scene, location, time of day, and character positions from where the previous chapter ended.
+7. Avoid contradicting established facts in previous chapters or project context.
+
+
 
 ${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):
 ${contextString}
