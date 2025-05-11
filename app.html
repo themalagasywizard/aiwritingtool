@@ -1652,7 +1652,7 @@
     </script>
 
     <script type="module">
-        import { auth } from './lib/supabase.js';
+        import { auth, profiles } from './lib/supabase.js';
         
         // Initialize with a default user avatar and handle sign out
         document.addEventListener('DOMContentLoaded', () => {
@@ -1661,15 +1661,37 @@
             const signOutBtn = document.querySelector('#signOutBtn');
             
             // Update user info if authenticated
-            auth.getUser().then(({ data: { user } }) => {
+            auth.getUser().then(async ({ data: { user } }) => {
                 if (user && userAvatar) {
-                    // Update avatar with user email or name
-                    const nameInitial = user.email ? user.email.charAt(0).toUpperCase() : 'G';
-                    userAvatar.src = `https://ui-avatars.com/api/?name=${nameInitial}&background=4B5EAA&color=fff`;
-                    
-                    // Update user display name
-                    if (userDisplayName) {
-                        userDisplayName.textContent = user.email || 'Signed In User';
+                    try {
+                        // Get user profile data
+                        const { data: profile, error } = await profiles.get();
+                        
+                        // Update display name with first name if available
+                        if (userDisplayName) {
+                            if (profile && profile.first_name) {
+                                userDisplayName.textContent = profile.first_name;
+                            } else {
+                                // Fallback to email
+                                userDisplayName.textContent = user.email.split('@')[0];
+                            }
+                        }
+                        
+                        // Update avatar with first letter of name or email
+                        const nameInitial = profile?.first_name ? profile.first_name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+                        userAvatar.src = `https://ui-avatars.com/api/?name=${nameInitial}&background=4B5EAA&color=fff`;
+                        
+                        // If we have a profile picture URL, use it
+                        if (profile?.profile_picture_url) {
+                            userAvatar.src = profile.profile_picture_url;
+                        }
+                    } catch (error) {
+                        console.error('Error loading user profile:', error);
+                        // Fallback to email-based display
+                        if (userDisplayName) {
+                            userDisplayName.textContent = user.email.split('@')[0];
+                        }
+                        userAvatar.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
                     }
                 }
             }).catch(error => {
