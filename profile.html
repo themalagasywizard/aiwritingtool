@@ -111,9 +111,10 @@
                                 <img id="profilePicture" src="https://ui-avatars.com/api/?name=User&background=4B5EAA&color=fff" 
                                      alt="Profile Picture" 
                                      class="w-20 h-20 rounded-full">
-                                <button class="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 shadow-lg hover:bg-opacity-90">
+                                <button id="uploadPictureBtn" class="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 shadow-lg hover:bg-opacity-90">
                                     <i class="fas fa-camera"></i>
                                 </button>
+                                <input type="file" id="pictureInput" accept="image/*" class="hidden">
                             </div>
                             <div>
                                 <h3 class="font-medium" id="userDisplayName">Loading...</h3>
@@ -280,7 +281,7 @@
     </div>
 
     <script type="module">
-        import { auth } from './lib/supabase.js';
+        import { auth, profiles } from './lib/supabase.js';
 
         // DOM Elements
         const saveChangesBtn = document.getElementById('saveChangesBtn');
@@ -374,19 +375,61 @@
                     userEmail.textContent = 'demo@example.com';
                     userDisplayName.textContent = 'Demo User';
                     profilePicture.src = `https://ui-avatars.com/api/?name=DU&background=4B5EAA&color=fff`;
+                    document.getElementById('firstName').value = 'Demo';
+                    document.getElementById('lastName').value = 'User';
+                    document.getElementById('userBio').value = 'This is a demo account for showcasing the platform.';
+                    document.getElementById('location').value = 'Demo City, USA';
                     
                     // Add a notice about mock mode
                     showToast('Using demo mode with mock data', 'warning');
                     return;
                 }
 
+                // Load profile data from Supabase
+                const { data: profile, error } = await profiles.get();
+                
                 // Regular user data loading
                 userEmail.textContent = user.email;
                 userDisplayName.textContent = user.email.split('@')[0]; // Temporary display name
-                profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
-
-                // TODO: Load additional user profile data from database
                 
+                // If we have a profile, populate the form fields
+                if (profile) {
+                    if (profile.first_name) document.getElementById('firstName').value = profile.first_name;
+                    if (profile.last_name) document.getElementById('lastName').value = profile.last_name;
+                    if (profile.bio) document.getElementById('userBio').value = profile.bio;
+                    if (profile.location) document.getElementById('location').value = profile.location;
+                    
+                    // Update display name if we have first and last name
+                    if (profile.first_name && profile.last_name) {
+                        userDisplayName.textContent = `${profile.first_name} ${profile.last_name}`;
+                    }
+                    
+                    // Update profile picture if available
+                    if (profile.profile_picture_url) {
+                        profilePicture.src = profile.profile_picture_url;
+                    } else {
+                        // Use default avatar with first letter of email
+                        profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
+                    }
+                    
+                    // Update subscription info if available
+                    if (profile.subscription_plan) {
+                        const planElement = document.getElementById('currentPlan');
+                        if (planElement) planElement.textContent = profile.subscription_plan.charAt(0).toUpperCase() + profile.subscription_plan.slice(1);
+                        
+                        // Update expiration date if available
+                        if (profile.subscription_expires_at) {
+                            const expirationElement = document.getElementById('nextBillingDate');
+                            if (expirationElement) {
+                                const expirationDate = new Date(profile.subscription_expires_at);
+                                expirationElement.textContent = expirationDate.toLocaleDateString();
+                            }
+                        }
+                    }
+                } else {
+                    // Default avatar if no profile
+                    profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
+                }
             } catch (error) {
                 console.error('Error loading user data:', error);
                 showToast('Error loading user data, using demo mode', 'error');
@@ -406,8 +449,34 @@
         // Save changes
         saveChangesBtn.addEventListener('click', async () => {
             try {
-                // TODO: Implement save functionality
-                showToast('Changes saved successfully');
+                // Get form field values
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const bio = document.getElementById('userBio').value;
+                const location = document.getElementById('location').value;
+                
+                // Create profile data object
+                const profileData = {
+                    first_name: firstName,
+                    last_name: lastName,
+                    bio,
+                    location
+                };
+                
+                // Update profile
+                const { error } = await profiles.upsert(profileData);
+                
+                if (error) throw error;
+                
+                // Hide save button
+                saveChangesBtn.classList.add('hidden');
+                
+                // Update display name if we have first and last name
+                if (firstName && lastName) {
+                    userDisplayName.textContent = `${firstName} ${lastName}`;
+                }
+                
+                showToast('Profile updated successfully');
             } catch (error) {
                 console.error('Error saving changes:', error);
                 showToast('Error saving changes', 'error');
@@ -424,6 +493,85 @@
                 saveChangesBtn.classList.remove('hidden');
             });
         });
+
+        // Add this for handling profile picture uploads
+        document.getElementById('uploadPictureBtn').addEventListener('click', () => {
+            document.getElementById('pictureInput').click();
+        });
+
+        document.getElementById('pictureInput').addEventListener('change', async (e) => {
+            if (e.target.files.length === 0) return;
+            
+            const file = e.target.files[0];
+            
+            // Only accept images
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file', 'error');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                profilePicture.classList.add('opacity-50');
+                document.getElementById('uploadPictureBtn').disabled = true;
+                
+                // Upload the file
+                const { publicUrl, error } = await profiles.uploadProfilePicture(file);
+                
+                if (error) throw error;
+                
+                // Update profile picture
+                profilePicture.src = publicUrl;
+                
+                showToast('Profile picture updated');
+            } catch (error) {
+                console.error('Error uploading profile picture:', error);
+                showToast('Error uploading profile picture', 'error');
+            } finally {
+                // Reset loading state
+                profilePicture.classList.remove('opacity-50');
+                document.getElementById('uploadPictureBtn').disabled = false;
+            }
+        });
+
+        // Helper function to format dates
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        // Update subscription plan (simplified example)
+        async function updateSubscription(plan) {
+            try {
+                // In a real app, this would integrate with Stripe or another payment provider
+                // For now, just update the Supabase profile
+                const expirationDate = new Date();
+                expirationDate.setFullYear(expirationDate.getFullYear() + 1); // 1 year subscription
+                
+                const { error } = await profiles.upsert({
+                    subscription_plan: plan,
+                    subscription_expires_at: expirationDate.toISOString()
+                });
+                
+                if (error) throw error;
+                
+                // Update the UI
+                document.getElementById('currentPlan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+                document.getElementById('nextBillingDate').textContent = formatDate(expirationDate);
+                
+                showToast(`Subscription updated to ${plan} plan`);
+            } catch (error) {
+                console.error('Error updating subscription:', error);
+                showToast('Error updating subscription', 'error');
+            }
+        }
+
+        // Add event listeners for plan buttons
+        document.getElementById('upgradeToPro').addEventListener('click', () => updateSubscription('pro'));
+        document.getElementById('upgradeToStarter').addEventListener('click', () => updateSubscription('starter'));
     </script>
 </body>
 </html> 
