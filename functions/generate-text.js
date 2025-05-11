@@ -170,8 +170,8 @@ const fetchProjectContext = async (projectId, userId) => {
   }
 };
 
-// Helper function to fetch previous chapters
-const fetchPreviousChapters = async (projectId, userId) => {
+// Helper function to fetch previous chapters with focus on continuity
+const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
   try {
     // Check if Supabase client is available
     if (!supabase) {
@@ -180,6 +180,11 @@ const fetchPreviousChapters = async (projectId, userId) => {
     
     console.log(`Fetching previous chapters for project_id: ${projectId}`);
     
+    // Extract chapter number from prompt if it exists (e.g., "continue chapter 4" -> 4)
+    const chapterMatch = prompt.match(/chapter\s+(\d+)/i);
+    const targetChapter = chapterMatch ? parseInt(chapterMatch[1]) : null;
+    
+    // Fetch all chapters
     const { data, error } = await supabase
       .from('chapters')
       .select('content, title, order_index')
@@ -189,15 +194,54 @@ const fetchPreviousChapters = async (projectId, userId) => {
     if (error) throw error;
     
     if (data && data.length > 0) {
-      console.log(`Found ${data.length} previous chapters`);
+      console.log(`Found ${data.length} chapters`);
       let chaptersText = 'PREVIOUS CHAPTERS:\n\n';
       
-      data.forEach((chapter, index) => {
-        if (chapter.content) {
-          chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
-          chaptersText += `${summarizeText(chapter.content)}\n\n`;
+      if (targetChapter) {
+        // If continuing a specific chapter, focus on that chapter and its immediate predecessor
+        const targetIndex = data.findIndex(chapter => chapter.order_index === targetChapter - 1);
+        if (targetIndex !== -1) {
+          // Add the target chapter
+          const targetChapterData = data[targetIndex];
+          chaptersText += `CURRENT CHAPTER TO CONTINUE FROM (Chapter ${targetChapter}):\n`;
+          chaptersText += `Title: ${targetChapterData.title || 'Untitled'}\n`;
+          chaptersText += `${targetChapterData.content}\n\n`;
+          
+          // Add the previous chapter for context if it exists
+          if (targetIndex > 0) {
+            const previousChapter = data[targetIndex - 1];
+            chaptersText += `PREVIOUS CHAPTER (Chapter ${targetChapter - 1}):\n`;
+            chaptersText += `Title: ${previousChapter.title || 'Untitled'}\n`;
+            chaptersText += `${summarizeText(previousChapter.content)}\n\n`;
+          }
+          
+          // Add a brief summary of earlier chapters
+          if (targetIndex > 1) {
+            chaptersText += 'EARLIER CHAPTERS SUMMARY:\n';
+            data.slice(0, targetIndex - 1).forEach((chapter, index) => {
+              chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
+              chaptersText += `${summarizeText(chapter.content, 200)}\n\n`;
+            });
+          }
+        } else {
+          chaptersText += `Warning: Chapter ${targetChapter} not found. Here are all available chapters:\n\n`;
+          data.forEach((chapter, index) => {
+            chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
+            chaptersText += `${summarizeText(chapter.content)}\n\n`;
+          });
         }
-      });
+      } else {
+        // If not continuing a specific chapter, include all chapters with most recent in full
+        data.forEach((chapter, index) => {
+          chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
+          // Show full content for the most recent chapter, summaries for others
+          if (index === data.length - 1) {
+            chaptersText += `${chapter.content}\n\n`;
+          } else {
+            chaptersText += `${summarizeText(chapter.content)}\n\n`;
+          }
+        });
+      }
       
       return chaptersText;
     }
@@ -438,7 +482,7 @@ exports.handler = async (event) => {
                 contextString = await fetchProjectContext(project_id, user_id);
                 
                 // Fetch all previous chapters
-                previousChapters = await fetchPreviousChapters(project_id, user_id);
+                previousChapters = await fetchPreviousChapters(project_id, user_id, prompt);
                 
                 console.log('Fetched context data successfully');
             } else {
@@ -466,19 +510,20 @@ Ensure the response is well-structured and complete, with proper paragraph break
 
 IMPORTANT INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
 1. You MUST incorporate ALL characters, locations, and events from the project context in your response.
-2. You MUST directly reference the PREVIOUS CHAPTERS provided below when continuing the story.
+2. When continuing a specific chapter, you MUST start EXACTLY where that chapter left off, maintaining perfect continuity.
 3. Your writing MUST follow the user's specific instructions (e.g., "kill protagonist," "end with a cliffhanger") while maintaining narrative consistency.
 4. You MUST explicitly use character names, locations, timeline events, and plot points from the context.
-5. When continuing from a previous chapter, ensure your writing flows directly from where the last chapter ended.
-6. If the previous chapter ends with an open question or cliffhanger, you must resolve or build upon it.
+5. You MUST resolve any cliffhangers or open questions from the previous chapter unless specifically instructed not to.
+6. You MUST maintain consistent character voices, relationships, and plot threads established in previous chapters.
 7. Never invent new major plot elements unless clearly asked by the user.
 8. Avoid contradicting established facts in previous chapters or project context.
+9. When continuing a chapter, use the exact scene, location, time of day, and character positions from where the previous chapter ended.
 
 ${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):
 ${contextString}
 ` : ''}
 ${previousChapters ? `${previousChapters}` : ''}
-FAILURE TO INCORPORATE THE ABOVE CONTEXT AND HISTORY INTO YOUR RESPONSE IS NOT ALLOWED.`;
+FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED.`;
 
         // Create request body
         const requestBody = isDeepSeekModel ? {
