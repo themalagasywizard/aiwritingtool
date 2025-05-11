@@ -421,21 +421,18 @@ const timeoutPromise = (ms, message) => new Promise((_, reject) =>
     setTimeout(() => reject(new Error(message || 'Request timed out')), ms)
 );
 
-// Helper function to calculate dynamic timeout based on tokens
+// Helper function to calculate dynamic timeout based on tokens and mode
 const calculateTimeout = (maxTokens, mode, isDeepSeekModel) => {
-    const BASE_TIMEOUT = 30000;   // 30 seconds base
+    const BASE_TIMEOUT = mode === 'chat' ? 20000 : 30000;   // Lower base timeout for chat mode
     const MAX_TIMEOUT = 110000;   // 110 seconds maximum
-    const MIN_TIMEOUT = 15000;    // 15 seconds minimum
-    const MS_PER_TOKEN = 100;     // 100ms per token for scaling
+    const MIN_TIMEOUT = mode === 'chat' ? 10000 : 15000;    // Lower minimum timeout for chat mode
+    const MS_PER_TOKEN = mode === 'chat' ? 50 : 100;     // Faster per-token scaling for chat mode
 
-    if (mode === 'chat' && isDeepSeekModel) {
+    if (isDeepSeekModel) {
         const scaledTimeout = BASE_TIMEOUT + (maxTokens * MS_PER_TOKEN);
         return Math.min(MAX_TIMEOUT, Math.max(MIN_TIMEOUT, scaledTimeout));
-    } else if (isDeepSeekModel) {
-        const scaledTimeout = BASE_TIMEOUT + (maxTokens * 75);
-        return Math.min(110000, Math.max(MIN_TIMEOUT, scaledTimeout));
     } else {
-        return mode === 'chat' ? 45000 : 60000;
+        return mode === 'chat' ? 30000 : 60000;
     }
 };
 
@@ -457,6 +454,59 @@ const fetchWithTimeout = async (url, options, timeout) => {
             throw new Error('Request timed out');
         }
         throw error;
+    }
+};
+
+// Create system message based on desired length, tone, and context data
+const createSystemMessage = (mode, userName, desiredWords, tone, contextString, previousChapters) => {
+    // Common intro for both modes
+    let baseIntro = `You are an AI writing assistant helping ${userName} with a creative writing project.`;
+    
+    // Different system messages based on mode
+    if (mode === 'chat') {
+        return `${baseIntro} You are in BRAINSTORMING MODE.
+
+As a brainstorming and world-building assistant, your role is to help the user explore ideas, develop characters, 
+plan plot points, and refine their creative vision WITHOUT generating full narrative text.
+
+GUIDELINES:
+1. Focus on DISCUSSING rather than CREATING final content.
+2. Ask thoughtful questions to help the user develop their ideas further.
+3. Provide concise, helpful suggestions rather than extended prose.
+4. Help organize thoughts and explore possibilities.
+5. When analyzing characters, settings, or plot points, refer specifically to elements in the project context.
+6. Respond conversationally with shorter, more direct answers.
+7. Your suggestions should prompt the user's own creativity rather than replacing it.
+
+${contextString ? `PROJECT CONTEXT (Reference these elements in your responses):
+${contextString}
+` : ''}
+${previousChapters ? `${previousChapters}` : ''}
+
+Remember, you are helping brainstorm and plan, not writing the actual content. Keep responses under ${Math.min(desiredWords, 300)} words${tone ? ` in a ${tone} tone` : ''}.`;
+    } else {
+        // Default 'generate' mode - focused on producing actual content
+        return `${baseIntro} You are in WRITING MODE.
+
+Generate a detailed response of approximately ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
+Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
+
+IMPORTANT INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
+1. You MUST incorporate ALL characters, locations, and events from the project context in your response.
+2. When continuing a specific chapter, you MUST start EXACTLY where that chapter left off, maintaining perfect continuity.
+3. Your writing MUST follow the user's specific instructions (e.g., "kill protagonist," "end with a cliffhanger") while maintaining narrative consistency.
+4. You MUST explicitly use character names, locations, timeline events, and plot points from the context.
+5. You MUST resolve any cliffhangers or open questions from the previous chapter unless specifically instructed not to.
+6. You MUST maintain consistent character voices, relationships, and plot threads established in previous chapters.
+7. Never invent new major plot elements unless clearly asked by the user.
+8. Avoid contradicting established facts in previous chapters or project context.
+9. When continuing a chapter, use the exact scene, location, time of day, and character positions from where the previous chapter ended.
+
+${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):
+${contextString}
+` : ''}
+${previousChapters ? `${previousChapters}` : ''}
+FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED.`;
     }
 };
 
@@ -520,7 +570,7 @@ exports.handler = async (event) => {
         const { 
             prompt = '', 
             context = [], 
-            mode = 'generate', 
+            mode = 'generate', // Default to generate mode
             tone = '', 
             length = '500',
             user_id = '',
@@ -604,6 +654,7 @@ exports.handler = async (event) => {
                 
                 // Log the context being fed to the AI
                 console.log('========== CONTEXT BEING FED TO AI ==========');
+                console.log('Mode:', mode);
                 console.log('Context String:', contextString);
                 console.log('----------------------------------------');
                 console.log('Previous Chapters:', previousChapters);
@@ -623,8 +674,11 @@ exports.handler = async (event) => {
             ? 'https://api.deepseek.com/v1/chat/completions'
             : `https://api-inference.huggingface.co/models/${modelName}`;
 
-        // Convert desired word length to tokens and ensure minimum/maximum bounds
-        const desiredWords = Math.min(Math.max(parseInt(length) || 500, 50), 5000);
+        // Convert desired word length to tokens and ensure minimum/maximum bounds based on mode
+        const maxDesiredWords = mode === 'chat' ? 500 : 5000; // Limit chat responses to 500 words max
+        const minDesiredWords = mode === 'chat' ? 50 : 100;   // Different minimums for each mode
+        
+        const desiredWords = Math.min(Math.max(parseInt(length) || (mode === 'chat' ? 200 : 500), minDesiredWords), maxDesiredWords);
         const maxTokens = wordsToTokens(desiredWords);
         const timeout = calculateTimeout(maxTokens, mode, isDeepSeekModel);
         
@@ -633,31 +687,18 @@ exports.handler = async (event) => {
             contextString,
             previousChapters,
             modelName,
+            mode,
             requestedWords: desiredWords
             // Don't include actualWords and tokensUsed yet - they'll be added after generation
         };
 
         // Create system message based on desired length, tone, and context data
-        const systemMessage = `You are a creative writing assistant helping ${userName} write a coherent narrative arc.
-Generate a detailed response of approximately ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
-Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
+        const systemMessage = createSystemMessage(mode, userName, desiredWords, tone, contextString, previousChapters);
 
-IMPORTANT INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
-1. You MUST incorporate ALL characters, locations, and events from the project context in your response.
-2. When continuing a specific chapter, you MUST start EXACTLY where that chapter left off, maintaining perfect continuity.
-3. Your writing MUST follow the user's specific instructions (e.g., "kill protagonist," "end with a cliffhanger") while maintaining narrative consistency.
-4. You MUST explicitly use character names, locations, timeline events, and plot points from the context.
-5. You MUST resolve any cliffhangers or open questions from the previous chapter unless specifically instructed not to.
-6. You MUST maintain consistent character voices, relationships, and plot threads established in previous chapters.
-7. Never invent new major plot elements unless clearly asked by the user.
-8. Avoid contradicting established facts in previous chapters or project context.
-9. When continuing a chapter, use the exact scene, location, time of day, and character positions from where the previous chapter ended.
-
-${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):
-${contextString}
-` : ''}
-${previousChapters ? `${previousChapters}` : ''}
-FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED.`;
+        // Adjust parameters based on mode
+        const temperature = mode === 'chat' ? 0.9 : 0.8; // Higher temperature for chat mode to encourage more varied responses
+        const presencePenalty = mode === 'chat' ? 0.8 : 0.5; // Higher presence penalty for chat to reduce repetition
+        const frequencyPenalty = mode === 'chat' ? 0.7 : 0.5; // Higher frequency penalty for chat to reduce repetition
 
         // Create request body
         const requestBody = isDeepSeekModel ? {
@@ -672,23 +713,23 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
                     content: prompt
                 }
             ],
-            temperature: 0.8,
+            temperature: temperature,
             top_p: 0.95,
             max_tokens: maxTokens,
             stream: false,
-            presence_penalty: 0.5,  // Increased to encourage more diverse content
-            frequency_penalty: 0.5,  // Increased to reduce repetition
+            presence_penalty: presencePenalty,
+            frequency_penalty: frequencyPenalty,
             stop: ["###"]  // Add a stop sequence to prevent mid-sentence cutoff
         } : {
             inputs: `${systemMessage}\n\n${prompt}\n\nResponse:`,
             parameters: {
-                temperature: 0.8,
+                temperature: temperature,
                 top_p: 0.95,
                 max_new_tokens: maxTokens,
                 do_sample: true,
                 num_return_sequences: 1,
-                length_penalty: 1.5,  // Increased to encourage longer outputs
-                repetition_penalty: 1.3,  // Increased to reduce repetition
+                length_penalty: mode === 'chat' ? 1.0 : 1.5,  // Lower length penalty for chat
+                repetition_penalty: mode === 'chat' ? 1.5 : 1.3,  // Higher repetition penalty for chat
                 early_stopping: true,
                 stop: ["###"]
             }
@@ -763,6 +804,7 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
                 text: generatedText,
                 model: modelName,
                 userName: userName,
+                mode: mode,
                 contextProvided: !!contextString,
                 previousChaptersProvided: !!previousChapters,
                 usage: usage || null,
