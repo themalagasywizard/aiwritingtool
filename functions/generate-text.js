@@ -77,22 +77,51 @@ const fetchProjectContext = async (projectId, userId) => {
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
     
-    // Debug: Log the query we're about to make
-    console.log('Querying locations with:', { project_id: projectId });
-    
-    // Fetch locations with detailed query logging
-    const { data: locations, error: locationsError } = await supabase
+    // Fetch locations with specific fields and detailed logging
+    console.log('Executing locations query with project_id:', projectId);
+    const locationsQuery = supabase
       .from('locations')
-      .select('*')
+      .select('id, name, type, description, key_features')
       .eq('project_id', projectId);
+    
+    console.log('Locations query:', locationsQuery.toSQL()); // Log the SQL query
+    
+    const { data: locations, error: locationsError } = await locationsQuery;
     
     if (locationsError) {
       console.error('Location query error:', locationsError);
       throw locationsError;
     }
-    console.log('Raw locations data:', locations);
-    console.log(`Fetched ${locations ? locations.length : 0} locations`);
+
+    // Log the exact data received
+    console.log('Locations query response:', {
+      success: !!locations,
+      count: locations?.length || 0,
+      data: locations
+    });
     
+    if (!locations) {
+      console.warn('No locations data returned from query');
+    } else if (locations.length === 0) {
+      console.warn('Zero locations found for project:', projectId);
+    } else {
+      console.log('Successfully fetched locations:', locations.map(l => ({
+        id: l.id,
+        name: l.name,
+        type: l.type
+      })));
+    }
+
+    // Test query to verify table access
+    const { count, error: countError } = await supabase
+      .from('locations')
+      .select('*', { count: 'exact' });
+      
+    console.log('Total locations in database:', count);
+    if (countError) {
+      console.error('Error counting locations:', countError);
+    }
+
     // Fetch timeline events with relationships
     console.log('Querying timeline_events with:', { project_id: projectId });
     const { data: events, error: eventsError } = await supabase
@@ -210,7 +239,13 @@ const fetchProjectContext = async (projectId, userId) => {
     
     return contextString;
   } catch (error) {
-    console.error('Error fetching project context:', error);
+    console.error('Error in fetchProjectContext:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint
+    });
     throw error;
   }
 };
