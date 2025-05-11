@@ -77,158 +77,74 @@ const fetchProjectContext = async (projectId, userId) => {
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
     
-    // Debug available tables to see what we have
-    try {
-      console.log('Attempting to discover available tables...');
-      // Try to query the system tables to get table info
-      const { data: tablesData, error: tablesError } = await supabase
-        .rpc('get_table_names');
-      
-      if (tablesError) {
-        console.error('Unable to discover tables:', tablesError);
-      } else {
-        console.log('Available tables:', tablesData);
-      }
-    } catch (e) {
-      console.log('Table discovery error:', e.message);
-    }
+    // Skip table discovery since we know the table names
+    console.log('Using known table schema from configuration');
     
-    // Fetch locations with more basic query first - try different table names if needed
-    let locations = [];
-    let locationsError = null;
-    
-    // Try 'locations' table first
-    console.log('Trying first query with "locations" table...');
-    let result = await supabase
+    // Fetch locations - we know the exact table name is "locations"
+    console.log('Querying "locations" table with project_id:', projectId);
+    const { data: locations, error: locationsError } = await supabase
       .from('locations')
       .select('*')
       .eq('project_id', projectId);
     
-    if (result.error) {
-      console.error('First locations query error:', result.error);
-      locationsError = result.error;
-      
-      // Try alternate table name 'location'
-      console.log('Trying alternate query with "location" table...');
-      result = await supabase
-        .from('location')
-        .select('*')
-        .eq('project_id', projectId);
-      
-      if (!result.error) {
-        locations = result.data || [];
-        locationsError = null;
-      }
-    } else {
-      locations = result.data || [];
-    }
-    
-    // Log final location query results
-    console.log('Locations query final result:', {
-      success: !locationsError,
-      count: locations?.length || 0,
-      error: locationsError?.message
-    });
-    
     if (locationsError) {
-      console.warn('Unable to fetch locations:', locationsError.message);
-    } else if (locations.length === 0) {
-      console.warn('No locations found for project:', projectId);
-      
-      // Additional debug: try querying without the project_id filter to see if any locations exist
-      const { data: allLocations, error: allLocationError } = await supabase
-        .from('locations')
-        .select('count');
-      
-      if (!allLocationError) {
-        console.log(`Total locations in database: ${allLocations.length}`);
-        
-        // If there are locations but none for this project, show sample project_ids
-        if (allLocations.length > 0) {
-          const { data: sampleLocations } = await supabase
-            .from('locations')
-            .select('project_id')
-            .limit(5);
-          
-          console.log('Sample project_ids in locations table:', 
-            sampleLocations?.map(l => l.project_id) || []);
-        }
-      }
+      console.error('Locations query error:', locationsError);
+    } else {
+      console.log('Locations query results:', {
+        count: locations?.length || 0,
+        sample: locations?.slice(0, 2) || []
+      });
     }
     
-    // Fetch characters with the same approach
-    let characters = [];
-    let charactersError = null;
-    
-    // Try 'characters' table first
-    console.log('Trying query with "characters" table...');
-    result = await supabase
+    // Fetch characters - we know the exact table name is "characters"
+    console.log('Querying "characters" table with project_id:', projectId);
+    const { data: characters, error: charactersError } = await supabase
       .from('characters')
       .select('*')
       .eq('project_id', projectId);
     
-    if (result.error) {
-      console.error('Characters query error:', result.error);
-      charactersError = result.error;
-      
-      // Try alternate table name 'character'
-      console.log('Trying alternate query with "character" table...');
-      result = await supabase
-        .from('character')
-        .select('*')
-        .eq('project_id', projectId);
-      
-      if (!result.error) {
-        characters = result.data || [];
-        charactersError = null;
-      }
+    if (charactersError) {
+      console.error('Characters query error:', charactersError);
     } else {
-      characters = result.data || [];
+      console.log('Characters query results:', {
+        count: characters?.length || 0,
+        sample: characters?.slice(0, 2) || []
+      });
     }
     
-    // Log character query results
-    console.log('Characters query results:', {
-      success: !charactersError,
-      count: characters?.length || 0,
-      error: charactersError?.message
-    });
-    
-    // Fetch timeline events with the same approach
-    let events = [];
-    let eventsError = null;
-    
-    // Try 'timeline_events' table first
-    console.log('Trying query with "timeline_events" table...');
-    result = await supabase
+    // Fetch timeline events - we know the exact table name is "timeline_events"
+    console.log('Querying "timeline_events" table with project_id:', projectId);
+    const { data: events, error: eventsError } = await supabase
       .from('timeline_events')
       .select('*')
       .eq('project_id', projectId);
     
-    if (result.error) {
-      console.error('Events query error:', result.error);
-      eventsError = result.error;
-      
-      // Try alternate table name 'timeline_event'
-      console.log('Trying alternate query with "timeline_event" table...');
-      result = await supabase
-        .from('timeline_event')
-        .select('*')
-        .eq('project_id', projectId);
-      
-      if (!result.error) {
-        events = result.data || [];
-        eventsError = null;
-      }
+    if (eventsError) {
+      console.error('Events query error:', eventsError);
     } else {
-      events = result.data || [];
+      console.log('Events query results:', {
+        count: events?.length || 0,
+        sample: events?.slice(0, 2) || []
+      });
     }
     
-    // Log events query results
-    console.log('Events query results:', {
-      success: !eventsError,
-      count: events?.length || 0,
-      error: eventsError?.message
-    });
+    // Try to fetch all timeline_event_characters links if they exist
+    console.log('Querying "timeline_event_characters" table...');
+    let eventCharacterLinks = [];
+    try {
+      const { data: links, error: linksError } = await supabase
+        .from('timeline_event_characters')
+        .select('*');
+      
+      if (!linksError) {
+        eventCharacterLinks = links || [];
+        console.log(`Found ${eventCharacterLinks.length} timeline_event_characters links`);
+      } else {
+        console.log('No timeline_event_characters table found or error:', linksError.message);
+      }
+    } catch (e) {
+      console.log('Error checking for timeline_event_characters:', e.message);
+    }
     
     // Format the context string with more detailed information
     let contextString = 'Project Context:\n\n';
@@ -241,6 +157,23 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += `  Role: ${char.role || 'Unspecified'}\n`;
         if (char.traits) contextString += `  Traits: ${truncateText(char.traits, 200)}\n`;
         if (char.backstory) contextString += `  Backstory: ${truncateText(char.backstory, 300)}\n`;
+        
+        // Try to add event connections if we have the links table data
+        if (eventCharacterLinks.length > 0) {
+          const characterEvents = events?.filter(event => 
+            eventCharacterLinks.some(link => 
+              link.character_id === char.id && link.event_id === event.id
+            )
+          );
+          
+          if (characterEvents?.length > 0) {
+            contextString += `  Appears in events:\n`;
+            characterEvents.forEach(event => {
+              contextString += `    - ${event.name} (${event.date_time || 'unknown time'})\n`;
+            });
+          }
+        }
+        
         contextString += '\n';
       });
     } else {
@@ -255,6 +188,16 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += `  Type: ${loc.type || 'Unspecified'}\n`;
         if (loc.description) contextString += `  Description: ${truncateText(loc.description, 200)}\n`;
         if (loc.key_features) contextString += `  Key Features: ${truncateText(loc.key_features, 200)}\n`;
+        
+        // Add events that occur at this location
+        const locationEvents = events?.filter(event => event.location_id === loc.id);
+        if (locationEvents?.length > 0) {
+          contextString += `  Events at this location:\n`;
+          locationEvents.forEach(event => {
+            contextString += `    - ${event.name} (${event.date_time || 'unknown time'})\n`;
+          });
+        }
+        
         contextString += '\n';
       });
     } else {
@@ -265,16 +208,48 @@ const fetchProjectContext = async (projectId, userId) => {
     contextString += 'Timeline Events (in chronological order):\n';
     if (events && events.length > 0) {
       // Sort events by date_time if it exists
-      if (events[0].date_time) {
-        events.sort((a, b) => new Date(a.date_time || 0) - new Date(b.date_time || 0));
+      const eventsWithTime = events.filter(e => e.date_time);
+      if (eventsWithTime.length > 0) {
+        eventsWithTime.sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
+        
+        eventsWithTime.forEach(event => {
+          const location = locations?.find(loc => loc.id === event.location_id);
+          
+          contextString += `Event: ${event.name || 'Unnamed Event'}\n`;
+          contextString += `  Time: ${event.date_time}\n`;
+          if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
+          if (location) contextString += `  Location: ${location.name}\n`;
+          
+          // Try to add character connections
+          if (eventCharacterLinks.length > 0) {
+            const eventCharacters = characters?.filter(char => 
+              eventCharacterLinks.some(link => 
+                link.event_id === event.id && link.character_id === char.id
+              )
+            );
+            
+            if (eventCharacters?.length > 0) {
+              contextString += `  Characters involved: ${eventCharacters.map(c => c.name).join(', ')}\n`;
+            }
+          }
+          
+          contextString += '\n';
+        });
       }
       
-      events.forEach(event => {
-        contextString += `Event: ${event.name || 'Unnamed Event'}\n`;
-        if (event.date_time) contextString += `  Time: ${event.date_time}\n`;
-        if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
-        contextString += '\n';
-      });
+      // Add events without timestamps at the end
+      const eventsWithoutTime = events.filter(e => !e.date_time);
+      if (eventsWithoutTime.length > 0) {
+        contextString += 'Events without specific timing:\n';
+        eventsWithoutTime.forEach(event => {
+          const location = locations?.find(loc => loc.id === event.location_id);
+          
+          contextString += `Event: ${event.name || 'Unnamed Event'}\n`;
+          if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
+          if (location) contextString += `  Location: ${location.name}\n`;
+          contextString += '\n';
+        });
+      }
     } else {
       contextString += 'No timeline events found.\n';
     }
@@ -304,76 +279,24 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
     // Extract chapter number from prompt if it exists
     const chapterMatch = prompt.match(/chapter\s+(\d+)/i);
     const targetChapter = chapterMatch ? parseInt(chapterMatch[1]) : null;
+    console.log('Target chapter from prompt:', targetChapter);
     
-    // Try different table names for chapters
-    let chapters = [];
-    let chaptersError = null;
-    
-    // Try 'chapters' table first
-    console.log('Querying chapters with:', { project_id: projectId });
-    let result = await supabase
+    // Direct query using known table name
+    console.log('Querying "chapters" table with project_id:', projectId);
+    const { data: chapters, error: chaptersError } = await supabase
       .from('chapters')
       .select('*')
       .eq('project_id', projectId)
       .order('order_index', { ascending: true });
     
-    if (result.error) {
-      console.error('Chapters query error:', result.error);
-      chaptersError = result.error;
-      
-      // Try alternate table name 'chapter'
-      console.log('Trying alternate query with "chapter" table...');
-      result = await supabase
-        .from('chapter')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('order_index', { ascending: true });
-      
-      if (!result.error) {
-        chapters = result.data || [];
-        chaptersError = null;
-      }
-    } else {
-      chapters = result.data || [];
+    if (chaptersError) {
+      console.error('Chapters query error:', chaptersError);
+      return 'Error fetching chapters: ' + chaptersError.message;
     }
     
-    console.log('Raw chapters data:', chapters);
-    console.log(`Fetched ${chapters ? chapters.length : 0} chapters`);
-    
-    // If no chapters found, try one more diagnostic query
-    if (chapters.length === 0 && !chaptersError) {
-      // Try querying with a different column name, like 'book_id' instead of 'project_id'
-      console.log('Trying query with different column for project reference...');
-      
-      // First get all chapters to see what columns exist
-      const { data: sampleChapters, error: sampleError } = await supabase
-        .from('chapters')
-        .select('*')
-        .limit(1);
-      
-      if (!sampleError && sampleChapters && sampleChapters.length > 0) {
-        console.log('Sample chapter columns:', Object.keys(sampleChapters[0]));
-        
-        // Try alternate column names for project reference
-        const possibleProjectColumns = ['book_id', 'story_id', 'project_ref'];
-        
-        for (const colName of possibleProjectColumns) {
-          if (Object.keys(sampleChapters[0]).includes(colName)) {
-            console.log(`Trying with column ${colName} instead of project_id`);
-            const { data: altChapters } = await supabase
-              .from('chapters')
-              .select('*')
-              .eq(colName, projectId)
-              .order('order_index', { ascending: true });
-            
-            if (altChapters && altChapters.length > 0) {
-              chapters = altChapters;
-              console.log(`Found ${chapters.length} chapters using ${colName} column!`);
-              break;
-            }
-          }
-        }
-      }
+    console.log(`Retrieved ${chapters?.length || 0} chapters from database`);
+    if (chapters?.length > 0) {
+      console.log('Sample chapter data:', chapters[0]);
     }
     
     if (chapters && chapters.length > 0) {
@@ -384,10 +307,12 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
         // If continuing a specific chapter, focus on that chapter and its immediate predecessor
         const targetIndex = chapters.findIndex(chapter => 
           chapter.order_index === targetChapter - 1 || 
-          chapter.chapter_number === targetChapter
+          (chapter.chapter_number && chapter.chapter_number === targetChapter)
         );
         
         if (targetIndex !== -1) {
+          console.log(`Found target chapter at index ${targetIndex}`);
+          
           // Add the target chapter
           const targetChapterData = chapters[targetIndex];
           chaptersText += `CURRENT CHAPTER TO CONTINUE FROM (Chapter ${targetChapter}):\n`;
@@ -397,7 +322,8 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
           // Add the previous chapter for context if it exists
           if (targetIndex > 0) {
             const previousChapter = chapters[targetIndex - 1];
-            chaptersText += `PREVIOUS CHAPTER (Chapter ${targetChapter - 1}):\n`;
+            const prevChapterNum = previousChapter.chapter_number || targetChapter - 1;
+            chaptersText += `PREVIOUS CHAPTER (Chapter ${prevChapterNum}):\n`;
             chaptersText += `Title: ${previousChapter.title || 'Untitled'}\n`;
             chaptersText += `${summarizeText(previousChapter.content)}\n\n`;
           }
@@ -406,11 +332,13 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
           if (targetIndex > 1) {
             chaptersText += 'EARLIER CHAPTERS SUMMARY:\n';
             chapters.slice(0, targetIndex - 1).forEach((chapter, index) => {
-              chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
+              const chapterNum = chapter.chapter_number || index + 1;
+              chaptersText += `Chapter ${chapterNum}: ${chapter.title || 'Untitled'}\n`;
               chaptersText += `${summarizeText(chapter.content, 200)}\n\n`;
             });
           }
         } else {
+          console.log(`Target chapter ${targetChapter} not found in retrieved chapters`);
           chaptersText += `Warning: Chapter ${targetChapter} not found. Here are all available chapters:\n\n`;
           chapters.forEach((chapter, index) => {
             const chapterNum = chapter.chapter_number || chapter.order_index || (index + 1);
@@ -420,6 +348,7 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
         }
       } else {
         // If not continuing a specific chapter, include all chapters with most recent in full
+        console.log('No specific chapter targeted, including all chapters');
         chapters.forEach((chapter, index) => {
           const chapterNum = chapter.chapter_number || chapter.order_index || (index + 1);
           chaptersText += `Chapter ${chapterNum}: ${chapter.title || 'Untitled'}\n`;
