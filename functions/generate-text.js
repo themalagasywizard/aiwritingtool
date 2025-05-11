@@ -44,64 +44,123 @@ const fetchProjectContext = async (projectId, userId) => {
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
     
-    // Fetch locations
+    // Fetch locations with all details
     const { data: locations, error: locationsError } = await supabase
       .from('locations')
-      .select('name, type, description, key_features')
+      .select('id, name, type, description, key_features')
       .eq('project_id', projectId);
     
     if (locationsError) throw locationsError;
     console.log(`Fetched ${locations ? locations.length : 0} locations`);
     
-    // Fetch timeline events
+    // Fetch timeline events with related characters and locations
     const { data: events, error: eventsError } = await supabase
       .from('timeline_events')
-      .select('name, date_time, description, created_at')
-      .eq('project_id', projectId);
+      .select(`
+        id,
+        name,
+        date_time,
+        description,
+        location_id,
+        locations (id, name),
+        timeline_event_characters (
+          character_id,
+          characters (id, name, role)
+        )
+      `)
+      .eq('project_id', projectId)
+      .order('date_time', { ascending: true });
     
     if (eventsError) throw eventsError;
     console.log(`Fetched ${events ? events.length : 0} events`);
     
-    // Fetch characters
+    // Fetch characters with all details
     const { data: characters, error: charactersError } = await supabase
       .from('characters')
-      .select('name, role, traits, backstory')
+      .select('id, name, role, traits, backstory')
       .eq('project_id', projectId);
     
     if (charactersError) throw charactersError;
     console.log(`Fetched ${characters ? characters.length : 0} characters`);
     
-    // Format the context string
+    // Format the context string with more detailed information
     let contextString = 'Project Context:\n';
     
-    // Add locations
+    // Add characters section with detailed information
+    contextString += '\nCharacters:\n';
+    if (characters && characters.length > 0) {
+      characters.forEach(char => {
+        contextString += `Character: ${char.name}\n`;
+        contextString += `  Role: ${char.role}\n`;
+        if (char.traits) contextString += `  Traits: ${truncateText(char.traits, 200)}\n`;
+        if (char.backstory) contextString += `  Backstory: ${truncateText(char.backstory, 300)}\n`;
+        
+        // Add character's involvement in events
+        const characterEvents = events?.filter(event => 
+          event.timeline_event_characters?.some(tec => 
+            tec.characters?.id === char.id
+          )
+        );
+        if (characterEvents?.length > 0) {
+          contextString += `  Appears in events:\n`;
+          characterEvents.forEach(event => {
+            contextString += `    - ${event.name} (${event.date_time})\n`;
+          });
+        }
+        contextString += '\n';
+      });
+    } else {
+      contextString += 'No characters found.\n';
+    }
+    
+    // Add locations section with detailed information
     contextString += '\nLocations:\n';
     if (locations && locations.length > 0) {
       locations.forEach(loc => {
-        contextString += `Location: ${loc.name} (${loc.type}, ${truncateText(loc.description, 200)}, ${truncateText(loc.key_features, 200)})\n`;
+        contextString += `Location: ${loc.name}\n`;
+        contextString += `  Type: ${loc.type}\n`;
+        if (loc.description) contextString += `  Description: ${truncateText(loc.description, 200)}\n`;
+        if (loc.key_features) contextString += `  Key Features: ${truncateText(loc.key_features, 200)}\n`;
+        
+        // Add events that occur at this location
+        const locationEvents = events?.filter(event => event.location_id === loc.id);
+        if (locationEvents?.length > 0) {
+          contextString += `  Events at this location:\n`;
+          locationEvents.forEach(event => {
+            contextString += `    - ${event.name} (${event.date_time})\n`;
+          });
+        }
+        contextString += '\n';
       });
     } else {
       contextString += 'No locations found.\n';
     }
     
-    // Add timeline events
-    contextString += '\nTimeline Events:\n';
+    // Add timeline events section with detailed information
+    contextString += '\nTimeline Events (in chronological order):\n';
     if (events && events.length > 0) {
       events.forEach(event => {
-        contextString += `Event: ${event.name} on ${event.date_time} (${truncateText(event.description, 200)})\n`;
+        contextString += `Event: ${event.name}\n`;
+        contextString += `  Time: ${event.date_time}\n`;
+        if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
+        
+        // Add location information
+        if (event.locations) {
+          contextString += `  Location: ${event.locations.name}\n`;
+        }
+        
+        // Add involved characters
+        const involvedCharacters = event.timeline_event_characters
+          ?.map(tec => tec.characters?.name)
+          .filter(Boolean);
+        
+        if (involvedCharacters?.length > 0) {
+          contextString += `  Characters involved: ${involvedCharacters.join(', ')}\n`;
+        }
+        contextString += '\n';
       });
     } else {
       contextString += 'No timeline events found.\n';
-    }
-    
-    // Add characters
-    contextString += '\nCharacters:\n';
-    if (characters && characters.length > 0) {
-      characters.forEach(char => {
-        contextString += `Character: ${char.name} (${char.role}, ${truncateText(char.traits, 200)}, ${truncateText(char.backstory, 200)})\n`;
-      });
-    } else {
-      contextString += 'No characters found.\n';
     }
     
     return contextString;
@@ -111,35 +170,43 @@ const fetchProjectContext = async (projectId, userId) => {
   }
 };
 
-// Helper function to fetch previous chapter
-const fetchPreviousChapter = async (projectId, userId) => {
+// Helper function to fetch previous chapters
+const fetchPreviousChapters = async (projectId, userId) => {
   try {
     // Check if Supabase client is available
     if (!supabase) {
-      return 'Supabase connection not available. Previous chapter could not be loaded.';
+      return 'Supabase connection not available. Previous chapters could not be loaded.';
     }
     
-    console.log(`Fetching previous chapter for project_id: ${projectId}`);
+    console.log(`Fetching previous chapters for project_id: ${projectId}`);
     
     const { data, error } = await supabase
       .from('chapters')
-      .select('content, title')
+      .select('content, title, order_index')
       .eq('project_id', projectId)
-      .order('created_at', { ascending: false })
-      .limit(1);
+      .order('order_index', { ascending: true });
     
     if (error) throw error;
     
-    if (data && data.length > 0 && data[0].content) {
-      console.log(`Found previous chapter: ${data[0].title || 'Untitled'}`);
-      return `Chapter: ${data[0].title || 'Previous Chapter'}\n${summarizeText(data[0].content)}`;
+    if (data && data.length > 0) {
+      console.log(`Found ${data.length} previous chapters`);
+      let chaptersText = 'PREVIOUS CHAPTERS:\n\n';
+      
+      data.forEach((chapter, index) => {
+        if (chapter.content) {
+          chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
+          chaptersText += `${summarizeText(chapter.content)}\n\n`;
+        }
+      });
+      
+      return chaptersText;
     }
     
-    console.log('No previous chapter found');
-    return 'No previous chapter found.';
+    console.log('No previous chapters found');
+    return 'No previous chapters found.';
   } catch (error) {
-    console.error('Error fetching previous chapter:', error);
-    return 'Error fetching previous chapter: ' + error.message;
+    console.error('Error fetching previous chapters:', error);
+    return 'Error fetching previous chapters: ' + error.message;
   }
 };
 
@@ -337,10 +404,10 @@ exports.handler = async (event) => {
             };
         }
         
-        // Fetch user data, project context, and previous chapter
+        // Fetch user data, project context, and previous chapters
         let userName = 'User'; // Default value
         let contextString = '';
-        let previousChapter = '';
+        let previousChapters = '';
         
         try {
             // Get authenticated user data if Supabase is available
@@ -370,8 +437,8 @@ exports.handler = async (event) => {
                 // Fetch project context
                 contextString = await fetchProjectContext(project_id, user_id);
                 
-                // Fetch previous chapter
-                previousChapter = await fetchPreviousChapter(project_id, user_id);
+                // Fetch all previous chapters
+                previousChapters = await fetchPreviousChapters(project_id, user_id);
                 
                 console.log('Fetched context data successfully');
             } else {
@@ -393,22 +460,25 @@ exports.handler = async (event) => {
         const timeout = calculateTimeout(maxTokens, mode, isDeepSeekModel);
 
         // Create system message based on desired length, tone, and context data
-        const systemMessage = `You are a creative writing assistant that creates imaginative and engaging content for ${userName}. 
+        const systemMessage = `You are a creative writing assistant helping ${userName} write a coherent narrative arc.
 Generate a detailed response of approximately ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
 Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
-Do not stop mid-sentence. If approaching the token limit, find a natural ending point.
 
 IMPORTANT INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
 1. You MUST incorporate ALL characters, locations, and events from the project context in your response.
-2. You MUST directly reference the previous chapter content when continuing the story.
+2. You MUST directly reference the PREVIOUS CHAPTERS provided below when continuing the story.
 3. Your writing MUST follow the user's specific instructions (e.g., "kill protagonist," "end with a cliffhanger") while maintaining narrative consistency.
-4. You MUST explicitly use character names, locations, and timeline events from the context.
-5. When user asks to "continue chapter X", ensure your writing flows directly from the previous chapter content provided.
+4. You MUST explicitly use character names, locations, timeline events, and plot points from the context.
+5. When continuing from a previous chapter, ensure your writing flows directly from where the last chapter ended.
+6. If the previous chapter ends with an open question or cliffhanger, you must resolve or build upon it.
+7. Never invent new major plot elements unless clearly asked by the user.
+8. Avoid contradicting established facts in previous chapters or project context.
 
-${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):\n${contextString}\n\n` : ''}
-${previousChapter ? `PREVIOUS CHAPTER TO CONTINUE FROM:\n${previousChapter}\n\n` : ''}
-
-FAILURE TO INCORPORATE THE ABOVE CONTEXT ELEMENTS INTO YOUR RESPONSE IS NOT ALLOWED.`;
+${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):
+${contextString}
+` : ''}
+${previousChapters ? `${previousChapters}` : ''}
+FAILURE TO INCORPORATE THE ABOVE CONTEXT AND HISTORY INTO YOUR RESPONSE IS NOT ALLOWED.`;
 
         // Create request body
         const requestBody = isDeepSeekModel ? {
@@ -511,7 +581,7 @@ FAILURE TO INCORPORATE THE ABOVE CONTEXT ELEMENTS INTO YOUR RESPONSE IS NOT ALLO
                 model: modelName,
                 userName: userName,
                 contextProvided: !!contextString,
-                previousChapterProvided: !!previousChapter,
+                previousChaptersProvided: !!previousChapters,
                 usage: usage || null,
                 requestedWords: desiredWords,
                 actualWords: actualWords,
