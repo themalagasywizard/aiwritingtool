@@ -413,13 +413,19 @@
         async function loadUserData() {
             try {
                 const isMockClient = await checkMockClient();
-                const { data: { user } } = await auth.getUser();
+                const { data: { user }, error: userError } = await auth.getUser();
+                
+                if (userError) throw userError;
                 
                 if (!user && !isMockClient) {
                     // Only redirect if we're not using a mock client
                     window.location.href = '/auth/auth.html';
                     return;
                 }
+                
+                // Regular user data loading
+                userEmail.textContent = user ? user.email : 'Loading...';
+                userDisplayName.textContent = user ? user.email.split('@')[0] : 'Loading...'; // Temporary display name
                 
                 // If using mock client and no user, populate with sample data
                 if (!user && isMockClient) {
@@ -436,54 +442,79 @@
                     return;
                 }
 
-                // Load profile data from Supabase
-                const { data: profile, error } = await profiles.get();
-                
-                // Regular user data loading
-                userEmail.textContent = user.email;
-                userDisplayName.textContent = user.email.split('@')[0]; // Temporary display name
-                
-                // If we have a profile, populate the form fields
-                if (profile) {
-                    if (profile.first_name) document.getElementById('firstName').value = profile.first_name;
-                    if (profile.last_name) document.getElementById('lastName').value = profile.last_name;
-                    if (profile.bio) document.getElementById('userBio').value = profile.bio;
-                    if (profile.location) document.getElementById('location').value = profile.location;
+                try {
+                    // Load profile data from Supabase
+                    const { data: profile, error: profileError } = await profiles.get();
                     
-                    // Update display name if we have first and last name
-                    if (profile.first_name && profile.last_name) {
-                        userDisplayName.textContent = `${profile.first_name} ${profile.last_name}`;
+                    if (profileError) {
+                        console.error('Error fetching profile:', profileError);
+                        showToast('Error loading profile data', 'error');
+                        return;
                     }
                     
-                    // Update profile picture if available
-                    if (profile.profile_picture_url) {
-                        profilePicture.src = profile.profile_picture_url;
-                    } else {
-                        // Use default avatar with first letter of email
-                        profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
-                    }
+                    console.log('Fetched profile data:', profile);
                     
-                    // Update subscription info if available
-                    if (profile.subscription_plan) {
-                        const planElement = document.getElementById('currentPlan');
-                        if (planElement) planElement.textContent = profile.subscription_plan.charAt(0).toUpperCase() + profile.subscription_plan.slice(1);
+                    // If we have a profile, populate the form fields
+                    if (profile) {
+                        if (profile.first_name) document.getElementById('firstName').value = profile.first_name;
+                        if (profile.last_name) document.getElementById('lastName').value = profile.last_name;
+                        if (profile.bio) document.getElementById('userBio').value = profile.bio;
+                        if (profile.location) document.getElementById('location').value = profile.location;
                         
-                        // Update expiration date if available
-                        if (profile.subscription_expires_at) {
-                            const expirationElement = document.getElementById('nextBillingDate');
-                            if (expirationElement) {
-                                const expirationDate = new Date(profile.subscription_expires_at);
-                                expirationElement.textContent = expirationDate.toLocaleDateString();
+                        // Update display name if we have first and last name
+                        if (profile.first_name && profile.last_name) {
+                            userDisplayName.textContent = `${profile.first_name} ${profile.last_name}`;
+                        }
+                        
+                        // Update profile picture if available
+                        if (profile.profile_picture_url) {
+                            profilePicture.src = profile.profile_picture_url;
+                        } else {
+                            // Use default avatar with first letter of email
+                            profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
+                        }
+                        
+                        // Update subscription info if available
+                        if (profile.subscription_plan) {
+                            const planElement = document.getElementById('currentPlan');
+                            if (planElement) {
+                                planElement.textContent = profile.subscription_plan.charAt(0).toUpperCase() + profile.subscription_plan.slice(1);
+                            }
+                            
+                            // Update expiration date if available
+                            if (profile.subscription_expires_at) {
+                                const expirationElement = document.getElementById('nextBillingDate');
+                                if (expirationElement) {
+                                    const expirationDate = new Date(profile.subscription_expires_at);
+                                    expirationElement.textContent = formatDate(expirationDate);
+                                }
                             }
                         }
+                    } else {
+                        // No profile exists yet, create one with basic info
+                        const { error: createError } = await profiles.upsert({
+                            id: user.id,
+                            email: user.email,
+                            first_name: '',
+                            last_name: '',
+                            subscription_plan: 'free'
+                        });
+                        
+                        if (createError) {
+                            console.error('Error creating initial profile:', createError);
+                            showToast('Error creating profile', 'error');
+                        }
+                        
+                        // Set default avatar
+                        profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
                     }
-                } else {
-                    // Default avatar if no profile
-                    profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
+                } catch (profileError) {
+                    console.error('Error in profile operations:', profileError);
+                    showToast('Error loading profile data', 'error');
                 }
             } catch (error) {
-                console.error('Error loading user data:', error);
-                showToast('Error loading user data, using demo mode', 'error');
+                console.error('Error in loadUserData:', error);
+                showToast('Error loading user data', 'error');
                 
                 // Fall back to demo data
                 userEmail.textContent = 'demo@example.com';
