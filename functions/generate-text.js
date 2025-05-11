@@ -77,81 +77,158 @@ const fetchProjectContext = async (projectId, userId) => {
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
     
-    // Fetch locations with specific fields and detailed logging
-    console.log('Executing locations query with project_id:', projectId);
+    // Debug available tables to see what we have
+    try {
+      console.log('Attempting to discover available tables...');
+      // Try to query the system tables to get table info
+      const { data: tablesData, error: tablesError } = await supabase
+        .rpc('get_table_names');
+      
+      if (tablesError) {
+        console.error('Unable to discover tables:', tablesError);
+      } else {
+        console.log('Available tables:', tablesData);
+      }
+    } catch (e) {
+      console.log('Table discovery error:', e.message);
+    }
     
-    const { data: locations, error: locationsError } = await supabase
+    // Fetch locations with more basic query first - try different table names if needed
+    let locations = [];
+    let locationsError = null;
+    
+    // Try 'locations' table first
+    console.log('Trying first query with "locations" table...');
+    let result = await supabase
       .from('locations')
-      .select('id, name, type, description, key_features')
+      .select('*')
       .eq('project_id', projectId);
     
-    if (locationsError) {
-      console.error('Location query error:', locationsError);
-      throw locationsError;
+    if (result.error) {
+      console.error('First locations query error:', result.error);
+      locationsError = result.error;
+      
+      // Try alternate table name 'location'
+      console.log('Trying alternate query with "location" table...');
+      result = await supabase
+        .from('location')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (!result.error) {
+        locations = result.data || [];
+        locationsError = null;
+      }
+    } else {
+      locations = result.data || [];
     }
-
-    // Log the exact data received
-    console.log('Locations query response:', {
-      success: !!locations,
+    
+    // Log final location query results
+    console.log('Locations query final result:', {
+      success: !locationsError,
       count: locations?.length || 0,
-      data: locations
+      error: locationsError?.message
     });
     
-    if (!locations) {
-      console.warn('No locations data returned from query');
+    if (locationsError) {
+      console.warn('Unable to fetch locations:', locationsError.message);
     } else if (locations.length === 0) {
-      console.warn('Zero locations found for project:', projectId);
-    } else {
-      console.log('Successfully fetched locations:', locations.map(l => ({
-        id: l.id,
-        name: l.name,
-        type: l.type
-      })));
-    }
-
-    // Test query to verify table access
-    const { count, error: countError } = await supabase
-      .from('locations')
-      .select('*', { count: 'exact' });
+      console.warn('No locations found for project:', projectId);
       
-    console.log('Total locations in database:', count);
-    if (countError) {
-      console.error('Error counting locations:', countError);
+      // Additional debug: try querying without the project_id filter to see if any locations exist
+      const { data: allLocations, error: allLocationError } = await supabase
+        .from('locations')
+        .select('count');
+      
+      if (!allLocationError) {
+        console.log(`Total locations in database: ${allLocations.length}`);
+        
+        // If there are locations but none for this project, show sample project_ids
+        if (allLocations.length > 0) {
+          const { data: sampleLocations } = await supabase
+            .from('locations')
+            .select('project_id')
+            .limit(5);
+          
+          console.log('Sample project_ids in locations table:', 
+            sampleLocations?.map(l => l.project_id) || []);
+        }
+      }
     }
-
-    // Fetch timeline events with relationships
-    console.log('Querying timeline_events with:', { project_id: projectId });
-    const { data: events, error: eventsError } = await supabase
-      .from('timeline_events')
-      .select(`
-        *,
-        locations (id, name),
-        timeline_event_characters (
-          characters (id, name, role)
-        )
-      `)
-      .eq('project_id', projectId);
     
-    if (eventsError) {
-      console.error('Events query error:', eventsError);
-      throw eventsError;
-    }
-    console.log('Raw events data:', events);
-    console.log(`Fetched ${events ? events.length : 0} events`);
+    // Fetch characters with the same approach
+    let characters = [];
+    let charactersError = null;
     
-    // Fetch characters with detailed query logging
-    console.log('Querying characters with:', { project_id: projectId });
-    const { data: characters, error: charactersError } = await supabase
+    // Try 'characters' table first
+    console.log('Trying query with "characters" table...');
+    result = await supabase
       .from('characters')
       .select('*')
       .eq('project_id', projectId);
     
-    if (charactersError) {
-      console.error('Characters query error:', charactersError);
-      throw charactersError;
+    if (result.error) {
+      console.error('Characters query error:', result.error);
+      charactersError = result.error;
+      
+      // Try alternate table name 'character'
+      console.log('Trying alternate query with "character" table...');
+      result = await supabase
+        .from('character')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (!result.error) {
+        characters = result.data || [];
+        charactersError = null;
+      }
+    } else {
+      characters = result.data || [];
     }
-    console.log('Raw characters data:', characters);
-    console.log(`Fetched ${characters ? characters.length : 0} characters`);
+    
+    // Log character query results
+    console.log('Characters query results:', {
+      success: !charactersError,
+      count: characters?.length || 0,
+      error: charactersError?.message
+    });
+    
+    // Fetch timeline events with the same approach
+    let events = [];
+    let eventsError = null;
+    
+    // Try 'timeline_events' table first
+    console.log('Trying query with "timeline_events" table...');
+    result = await supabase
+      .from('timeline_events')
+      .select('*')
+      .eq('project_id', projectId);
+    
+    if (result.error) {
+      console.error('Events query error:', result.error);
+      eventsError = result.error;
+      
+      // Try alternate table name 'timeline_event'
+      console.log('Trying alternate query with "timeline_event" table...');
+      result = await supabase
+        .from('timeline_event')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (!result.error) {
+        events = result.data || [];
+        eventsError = null;
+      }
+    } else {
+      events = result.data || [];
+    }
+    
+    // Log events query results
+    console.log('Events query results:', {
+      success: !eventsError,
+      count: events?.length || 0,
+      error: eventsError?.message
+    });
     
     // Format the context string with more detailed information
     let contextString = 'Project Context:\n\n';
@@ -161,22 +238,9 @@ const fetchProjectContext = async (projectId, userId) => {
     if (characters && characters.length > 0) {
       characters.forEach(char => {
         contextString += `Character: ${char.name}\n`;
-        contextString += `  Role: ${char.role}\n`;
+        contextString += `  Role: ${char.role || 'Unspecified'}\n`;
         if (char.traits) contextString += `  Traits: ${truncateText(char.traits, 200)}\n`;
         if (char.backstory) contextString += `  Backstory: ${truncateText(char.backstory, 300)}\n`;
-        
-        // Add character's involvement in events
-        const characterEvents = events?.filter(event => 
-          event.timeline_event_characters?.some(tec => 
-            tec.characters?.id === char.id
-          )
-        );
-        if (characterEvents?.length > 0) {
-          contextString += `  Appears in events:\n`;
-          characterEvents.forEach(event => {
-            contextString += `    - ${event.name} (${event.date_time})\n`;
-          });
-        }
         contextString += '\n';
       });
     } else {
@@ -191,15 +255,6 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += `  Type: ${loc.type || 'Unspecified'}\n`;
         if (loc.description) contextString += `  Description: ${truncateText(loc.description, 200)}\n`;
         if (loc.key_features) contextString += `  Key Features: ${truncateText(loc.key_features, 200)}\n`;
-        
-        // Add events that occur at this location
-        const locationEvents = events?.filter(event => event.location_id === loc.id);
-        if (locationEvents?.length > 0) {
-          contextString += `  Events at this location:\n`;
-          locationEvents.forEach(event => {
-            contextString += `    - ${event.name} (${event.date_time})\n`;
-          });
-        }
         contextString += '\n';
       });
     } else {
@@ -209,25 +264,15 @@ const fetchProjectContext = async (projectId, userId) => {
     // Add timeline events section with detailed information
     contextString += 'Timeline Events (in chronological order):\n';
     if (events && events.length > 0) {
-      events.sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
+      // Sort events by date_time if it exists
+      if (events[0].date_time) {
+        events.sort((a, b) => new Date(a.date_time || 0) - new Date(b.date_time || 0));
+      }
+      
       events.forEach(event => {
-        contextString += `Event: ${event.name}\n`;
-        contextString += `  Time: ${event.date_time}\n`;
+        contextString += `Event: ${event.name || 'Unnamed Event'}\n`;
+        if (event.date_time) contextString += `  Time: ${event.date_time}\n`;
         if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
-        
-        // Add location information
-        if (event.locations) {
-          contextString += `  Location: ${event.locations.name}\n`;
-        }
-        
-        // Add involved characters
-        const involvedCharacters = event.timeline_event_characters
-          ?.map(tec => tec.characters?.name)
-          .filter(Boolean);
-        
-        if (involvedCharacters?.length > 0) {
-          contextString += `  Characters involved: ${involvedCharacters.join(', ')}\n`;
-        }
         contextString += '\n';
       });
     } else {
@@ -243,7 +288,8 @@ const fetchProjectContext = async (projectId, userId) => {
       details: error.details,
       hint: error.hint
     });
-    throw error;
+    // Return a simplified context string even in case of error
+    return 'Project Context:\n\nError fetching project context: ' + error.message;
   }
 };
 
@@ -254,44 +300,103 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
     await ensureSupabaseConnection();
     
     console.log(`Fetching previous chapters for project_id: ${projectId}`);
-    console.log('Querying chapters with:', { project_id: projectId });
     
     // Extract chapter number from prompt if it exists
     const chapterMatch = prompt.match(/chapter\s+(\d+)/i);
     const targetChapter = chapterMatch ? parseInt(chapterMatch[1]) : null;
     
-    // Fetch all chapters with detailed query logging
-    const { data, error } = await supabase
+    // Try different table names for chapters
+    let chapters = [];
+    let chaptersError = null;
+    
+    // Try 'chapters' table first
+    console.log('Querying chapters with:', { project_id: projectId });
+    let result = await supabase
       .from('chapters')
       .select('*')
       .eq('project_id', projectId)
       .order('order_index', { ascending: true });
     
-    if (error) {
-      console.error('Chapters query error:', error);
-      throw error;
+    if (result.error) {
+      console.error('Chapters query error:', result.error);
+      chaptersError = result.error;
+      
+      // Try alternate table name 'chapter'
+      console.log('Trying alternate query with "chapter" table...');
+      result = await supabase
+        .from('chapter')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('order_index', { ascending: true });
+      
+      if (!result.error) {
+        chapters = result.data || [];
+        chaptersError = null;
+      }
+    } else {
+      chapters = result.data || [];
     }
     
-    console.log('Raw chapters data:', data);
-    console.log(`Fetched ${data ? data.length : 0} chapters`);
+    console.log('Raw chapters data:', chapters);
+    console.log(`Fetched ${chapters ? chapters.length : 0} chapters`);
     
-    if (data && data.length > 0) {
-      console.log(`Found ${data.length} chapters`);
+    // If no chapters found, try one more diagnostic query
+    if (chapters.length === 0 && !chaptersError) {
+      // Try querying with a different column name, like 'book_id' instead of 'project_id'
+      console.log('Trying query with different column for project reference...');
+      
+      // First get all chapters to see what columns exist
+      const { data: sampleChapters, error: sampleError } = await supabase
+        .from('chapters')
+        .select('*')
+        .limit(1);
+      
+      if (!sampleError && sampleChapters && sampleChapters.length > 0) {
+        console.log('Sample chapter columns:', Object.keys(sampleChapters[0]));
+        
+        // Try alternate column names for project reference
+        const possibleProjectColumns = ['book_id', 'story_id', 'project_ref'];
+        
+        for (const colName of possibleProjectColumns) {
+          if (Object.keys(sampleChapters[0]).includes(colName)) {
+            console.log(`Trying with column ${colName} instead of project_id`);
+            const { data: altChapters } = await supabase
+              .from('chapters')
+              .select('*')
+              .eq(colName, projectId)
+              .order('order_index', { ascending: true });
+            
+            if (altChapters && altChapters.length > 0) {
+              chapters = altChapters;
+              console.log(`Found ${chapters.length} chapters using ${colName} column!`);
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    if (chapters && chapters.length > 0) {
+      console.log(`Found ${chapters.length} chapters`);
       let chaptersText = 'PREVIOUS CHAPTERS:\n\n';
       
       if (targetChapter) {
         // If continuing a specific chapter, focus on that chapter and its immediate predecessor
-        const targetIndex = data.findIndex(chapter => chapter.order_index === targetChapter - 1);
+        const targetIndex = chapters.findIndex(chapter => 
+          chapter.order_index === targetChapter - 1 || 
+          chapter.chapter_number === targetChapter
+        );
+        
         if (targetIndex !== -1) {
           // Add the target chapter
-          const targetChapterData = data[targetIndex];
+          const targetChapterData = chapters[targetIndex];
           chaptersText += `CURRENT CHAPTER TO CONTINUE FROM (Chapter ${targetChapter}):\n`;
           chaptersText += `Title: ${targetChapterData.title || 'Untitled'}\n`;
           chaptersText += `${targetChapterData.content}\n\n`;
           
           // Add the previous chapter for context if it exists
           if (targetIndex > 0) {
-            const previousChapter = data[targetIndex - 1];
+            const previousChapter = chapters[targetIndex - 1];
             chaptersText += `PREVIOUS CHAPTER (Chapter ${targetChapter - 1}):\n`;
             chaptersText += `Title: ${previousChapter.title || 'Untitled'}\n`;
             chaptersText += `${summarizeText(previousChapter.content)}\n\n`;
@@ -300,24 +405,26 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
           // Add a brief summary of earlier chapters
           if (targetIndex > 1) {
             chaptersText += 'EARLIER CHAPTERS SUMMARY:\n';
-            data.slice(0, targetIndex - 1).forEach((chapter, index) => {
+            chapters.slice(0, targetIndex - 1).forEach((chapter, index) => {
               chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
               chaptersText += `${summarizeText(chapter.content, 200)}\n\n`;
             });
           }
         } else {
           chaptersText += `Warning: Chapter ${targetChapter} not found. Here are all available chapters:\n\n`;
-          data.forEach((chapter, index) => {
-            chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
+          chapters.forEach((chapter, index) => {
+            const chapterNum = chapter.chapter_number || chapter.order_index || (index + 1);
+            chaptersText += `Chapter ${chapterNum}: ${chapter.title || 'Untitled'}\n`;
             chaptersText += `${summarizeText(chapter.content)}\n\n`;
           });
         }
       } else {
         // If not continuing a specific chapter, include all chapters with most recent in full
-        data.forEach((chapter, index) => {
-          chaptersText += `Chapter ${index + 1}: ${chapter.title || 'Untitled'}\n`;
+        chapters.forEach((chapter, index) => {
+          const chapterNum = chapter.chapter_number || chapter.order_index || (index + 1);
+          chaptersText += `Chapter ${chapterNum}: ${chapter.title || 'Untitled'}\n`;
           // Show full content for the most recent chapter, summaries for others
-          if (index === data.length - 1) {
+          if (index === chapters.length - 1) {
             chaptersText += `${chapter.content}\n\n`;
           } else {
             chaptersText += `${summarizeText(chapter.content)}\n\n`;
@@ -566,16 +673,7 @@ exports.handler = async (event) => {
                 // Fetch all previous chapters
                 previousChapters = await fetchPreviousChapters(project_id, user_id, prompt);
                 
-                // Store the context information
-                const debugInfo = {
-                    contextString,
-                    previousChapters,
-                    modelName,
-                    requestedWords: desiredWords,
-                    actualWords,
-                    tokensUsed: usage?.total_tokens || null
-                };
-                
+                // Log the context being fed to the AI
                 console.log('========== CONTEXT BEING FED TO AI ==========');
                 console.log('Context String:', contextString);
                 console.log('----------------------------------------');
@@ -600,6 +698,15 @@ exports.handler = async (event) => {
         const desiredWords = Math.min(Math.max(parseInt(length) || 500, 50), 5000);
         const maxTokens = wordsToTokens(desiredWords);
         const timeout = calculateTimeout(maxTokens, mode, isDeepSeekModel);
+        
+        // Move the debugInfo creation here, after all variables are defined
+        const debugInfo = {
+            contextString,
+            previousChapters,
+            modelName,
+            requestedWords: desiredWords
+            // Don't include actualWords and tokensUsed yet - they'll be added after generation
+        };
 
         // Create system message based on desired length, tone, and context data
         const systemMessage = `You are a creative writing assistant helping ${userName} write a coherent narrative arc.
@@ -714,15 +821,9 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
         // Count actual words
         const actualWords = generatedText.trim().split(/\s+/).length;
 
-        // Create debug info object
-        const debugInfo = {
-            contextString,
-            previousChapters,
-            modelName,
-            requestedWords: desiredWords,
-            actualWords,
-            tokensUsed: usage?.total_tokens || null
-        };
+        // Add actualWords and tokensUsed to debugInfo
+        debugInfo.actualWords = actualWords;
+        debugInfo.tokensUsed = usage?.total_tokens || null;
 
         // Return success response with debug info
         return {
