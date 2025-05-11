@@ -154,34 +154,85 @@
                     <div class="bg-primaryLight rounded-lg p-4 mb-6">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h3 class="font-medium text-primary">Current Plan: <span id="currentPlan">Pro</span></h3>
-                                <p class="text-sm text-gray-600">Next billing date: <span id="nextBillingDate">January 1, 2024</span></p>
+                                <h3 class="font-medium text-primary">Current Plan: <span id="currentPlan">Free</span></h3>
+                                <p class="text-sm text-gray-600">Next billing date: <span id="nextBillingDate">N/A</span></p>
                             </div>
-                            <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
-                                Manage Plan
-                            </button>
+                            <div class="space-x-2">
+                                <button id="upgradeToStarter" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                    Starter Plan
+                                </button>
+                                <button id="upgradeToPro" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                    Upgrade to Pro
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="border-t border-gray-200 pt-6">
-                        <h3 class="font-medium mb-4">Plan Features</h3>
-                        <ul class="space-y-2">
-                            <li class="flex items-center text-sm text-gray-600">
-                                <i class="fas fa-check text-success mr-2"></i>
-                                Unlimited words
-                            </li>
-                            <li class="flex items-center text-sm text-gray-600">
-                                <i class="fas fa-check text-success mr-2"></i>
-                                Advanced AI writing tools
-                            </li>
-                            <li class="flex items-center text-sm text-gray-600">
-                                <i class="fas fa-check text-success mr-2"></i>
-                                Priority support
-                            </li>
-                            <li class="flex items-center text-sm text-gray-600">
-                                <i class="fas fa-check text-success mr-2"></i>
-                                Collaboration features
-                            </li>
-                        </ul>
+                        <h3 class="font-medium mb-4">Available Plans</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Free Plan -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h4 class="font-semibold text-lg mb-2">Free</h4>
+                                <p class="text-gray-600 text-sm mb-4">Get started with basic features</p>
+                                <ul class="space-y-2 mb-4">
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        1,000 words/month
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Basic AI tools
+                                    </li>
+                                </ul>
+                                <p class="font-medium">$0/month</p>
+                            </div>
+                            
+                            <!-- Starter Plan -->
+                            <div class="border border-primary rounded-lg p-4 bg-primaryLight">
+                                <h4 class="font-semibold text-lg mb-2">Starter</h4>
+                                <p class="text-gray-600 text-sm mb-4">Perfect for beginners</p>
+                                <ul class="space-y-2 mb-4">
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        10,000 words/month
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Advanced AI tools
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Email support
+                                    </li>
+                                </ul>
+                                <p class="font-medium">$9/month</p>
+                            </div>
+                            
+                            <!-- Pro Plan -->
+                            <div class="border border-accent rounded-lg p-4 bg-accent bg-opacity-10">
+                                <h4 class="font-semibold text-lg mb-2">Pro</h4>
+                                <p class="text-gray-600 text-sm mb-4">For serious writers</p>
+                                <ul class="space-y-2 mb-4">
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Unlimited words
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        All AI features
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Priority support
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Collaboration tools
+                                    </li>
+                                </ul>
+                                <p class="font-medium">$29/month</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -543,9 +594,15 @@
             });
         }
 
-        // Update subscription plan (simplified example)
+        // Update subscription plan
         async function updateSubscription(plan) {
             try {
+                // Show loading state
+                const button = plan === 'pro' ? document.getElementById('upgradeToPro') : document.getElementById('upgradeToStarter');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                button.disabled = true;
+                
                 // In a real app, this would integrate with Stripe or another payment provider
                 // For now, just update the Supabase profile
                 const expirationDate = new Date();
@@ -562,16 +619,29 @@
                 document.getElementById('currentPlan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
                 document.getElementById('nextBillingDate').textContent = formatDate(expirationDate);
                 
-                showToast(`Subscription updated to ${plan} plan`);
+                showToast(`Successfully upgraded to ${plan} plan`);
             } catch (error) {
                 console.error('Error updating subscription:', error);
                 showToast('Error updating subscription', 'error');
+            } finally {
+                // Reset button state
+                const button = plan === 'pro' ? document.getElementById('upgradeToPro') : document.getElementById('upgradeToStarter');
+                button.innerHTML = plan === 'pro' ? 'Upgrade to Pro' : 'Starter Plan';
+                button.disabled = false;
             }
         }
 
-        // Add event listeners for plan buttons
-        document.getElementById('upgradeToPro').addEventListener('click', () => updateSubscription('pro'));
-        document.getElementById('upgradeToStarter').addEventListener('click', () => updateSubscription('starter'));
+        // Add event listeners for plan buttons (only if they exist)
+        const upgradeToProBtn = document.getElementById('upgradeToPro');
+        const upgradeToStarterBtn = document.getElementById('upgradeToStarter');
+        
+        if (upgradeToProBtn) {
+            upgradeToProBtn.addEventListener('click', () => updateSubscription('pro'));
+        }
+        
+        if (upgradeToStarterBtn) {
+            upgradeToStarterBtn.addEventListener('click', () => updateSubscription('starter'));
+        }
     </script>
 </body>
 </html> 
