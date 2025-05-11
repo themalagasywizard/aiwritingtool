@@ -7,17 +7,52 @@ const { createClient } = require('@supabase/supabase-js');
 let supabase;
 try {
   // Check if Supabase environment variables are set
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
-    console.warn('Supabase credentials missing. Some features will be unavailable.');
-    supabase = null;
-  } else {
-    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-    console.log('Supabase client initialized successfully');
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    throw new Error('Supabase credentials missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
   }
+
+  // Initialize Supabase client with explicit error handling
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: false // Since this is a serverless function
+      }
+    }
+  );
+
+  // Test the connection
+  console.log('Testing Supabase connection...');
+  supabase.from('projects').select('count').limit(1)
+    .then(() => {
+      console.log('Supabase connection successful');
+    })
+    .catch(error => {
+      console.error('Supabase connection test failed:', error);
+      throw error;
+    });
+
 } catch (error) {
   console.error('Error initializing Supabase client:', error);
   supabase = null;
 }
+
+// Add a helper function to check Supabase connection
+const ensureSupabaseConnection = async () => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized. Please check your environment variables.');
+  }
+  
+  try {
+    // Test the connection with a simple query
+    await supabase.from('projects').select('count').limit(1);
+    return true;
+  } catch (error) {
+    console.error('Supabase connection test failed:', error);
+    throw new Error('Failed to connect to Supabase. Please check your configuration.');
+  }
+};
 
 // Helper function to truncate text to a maximum length
 const truncateText = (text, maxLength = 1000) => {
@@ -37,10 +72,8 @@ const summarizeText = (text) => {
 // Helper function to fetch project context from Supabase
 const fetchProjectContext = async (projectId, userId) => {
   try {
-    // Check if Supabase client is available
-    if (!supabase) {
-      return 'Supabase connection not available. Project context could not be loaded.';
-    }
+    // Ensure Supabase connection is working
+    await ensureSupabaseConnection();
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
     
@@ -173,10 +206,8 @@ const fetchProjectContext = async (projectId, userId) => {
 // Helper function to fetch previous chapters with focus on continuity
 const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
   try {
-    // Check if Supabase client is available
-    if (!supabase) {
-      return 'Supabase connection not available. Previous chapters could not be loaded.';
-    }
+    // Ensure Supabase connection is working
+    await ensureSupabaseConnection();
     
     console.log(`Fetching previous chapters for project_id: ${projectId}`);
     
@@ -485,6 +516,11 @@ exports.handler = async (event) => {
                 previousChapters = await fetchPreviousChapters(project_id, user_id, prompt);
                 
                 // Log the context being fed to the AI
+                const contextLogs = {
+                    contextString: contextString,
+                    previousChapters: previousChapters
+                };
+                
                 console.log('========== CONTEXT BEING FED TO AI ==========');
                 console.log('Context String:', contextString);
                 console.log('----------------------------------------');
@@ -623,7 +659,7 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
         // Count actual words
         const actualWords = generatedText.trim().split(/\s+/).length;
 
-        // Return success response
+        // Return success response with added logs
         return {
             statusCode: 200,
             headers,
@@ -637,7 +673,11 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
                 usage: usage || null,
                 requestedWords: desiredWords,
                 actualWords: actualWords,
-                actualTokens: usage?.total_tokens || null
+                actualTokens: usage?.total_tokens || null,
+                // Add the context logs to the response
+                debug: {
+                    contextLogs: contextLogs
+                }
             })
         };
 
