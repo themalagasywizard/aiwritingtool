@@ -484,6 +484,13 @@ exports.handler = async (event) => {
                 // Fetch all previous chapters
                 previousChapters = await fetchPreviousChapters(project_id, user_id, prompt);
                 
+                // Log the context being fed to the AI
+                console.log('========== CONTEXT BEING FED TO AI ==========');
+                console.log('Context String:', contextString);
+                console.log('----------------------------------------');
+                console.log('Previous Chapters:', previousChapters);
+                console.log('==========================================');
+                
                 console.log('Fetched context data successfully');
             } else {
                 console.warn('Supabase client not available, skipping context fetching');
