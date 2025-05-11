@@ -298,17 +298,20 @@
             
             if (type === 'success') {
                 toast.classList.add('bg-success');
-                toast.classList.remove('bg-error');
-            } else {
+                toast.classList.remove('bg-error', 'bg-warning');
+            } else if (type === 'error') {
                 toast.classList.add('bg-error');
-                toast.classList.remove('bg-success');
+                toast.classList.remove('bg-success', 'bg-warning');
+            } else if (type === 'warning') {
+                toast.classList.add('bg-warning');
+                toast.classList.remove('bg-success', 'bg-error');
             }
             
             setTimeout(() => {
                 toast.classList.add('translate-y-full');
                 setTimeout(() => {
                     toast.classList.add('hidden');
-                    toast.classList.remove('translate-y-full', 'bg-success', 'bg-error');
+                    toast.classList.remove('translate-y-full', 'bg-success', 'bg-error', 'bg-warning');
                 }, 300);
             }, 3000);
         }
@@ -328,16 +331,56 @@
             });
         });
 
+        // Check if we're using mock client
+        async function checkMockClient() {
+            try {
+                // Capture console logs to check for mock client message
+                const originalConsoleLog = console.log;
+                let logCaptured = '';
+                
+                console.log = function(message) {
+                    if (message && typeof message === 'string' && message.includes('mock')) {
+                        logCaptured = message;
+                    }
+                    originalConsoleLog.apply(console, arguments);
+                };
+                
+                // Try auth call which will trigger mock client message if using mock
+                await auth.getUser();
+                
+                // Restore console.log
+                console.log = originalConsoleLog;
+                
+                return logCaptured.includes('mock');
+            } catch (error) {
+                return false;
+            }
+        }
+
         // Load user data
         async function loadUserData() {
             try {
+                const isMockClient = await checkMockClient();
                 const { data: { user } } = await auth.getUser();
-                if (!user) {
+                
+                if (!user && !isMockClient) {
+                    // Only redirect if we're not using a mock client
                     window.location.href = '/auth/auth.html';
                     return;
                 }
+                
+                // If using mock client and no user, populate with sample data
+                if (!user && isMockClient) {
+                    userEmail.textContent = 'demo@example.com';
+                    userDisplayName.textContent = 'Demo User';
+                    profilePicture.src = `https://ui-avatars.com/api/?name=DU&background=4B5EAA&color=fff`;
+                    
+                    // Add a notice about mock mode
+                    showToast('Using demo mode with mock data', 'warning');
+                    return;
+                }
 
-                // Update profile information
+                // Regular user data loading
                 userEmail.textContent = user.email;
                 userDisplayName.textContent = user.email.split('@')[0]; // Temporary display name
                 profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
@@ -346,7 +389,12 @@
                 
             } catch (error) {
                 console.error('Error loading user data:', error);
-                showToast('Error loading user data', 'error');
+                showToast('Error loading user data, using demo mode', 'error');
+                
+                // Fall back to demo data
+                userEmail.textContent = 'demo@example.com';
+                userDisplayName.textContent = 'Demo User';
+                profilePicture.src = `https://ui-avatars.com/api/?name=DU&background=4B5EAA&color=fff`;
             }
         }
 
