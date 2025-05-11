@@ -1,6 +1,147 @@
 // functions/generate-text.js
 const fetch = require('node-fetch');
 const config = require('./config');
+const { createClient } = require('@supabase/supabase-js');
+
+// Initialize the Supabase client with error handling
+let supabase;
+try {
+  // Check if Supabase environment variables are set
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
+    console.warn('Supabase credentials missing. Some features will be unavailable.');
+    supabase = null;
+  } else {
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+    console.log('Supabase client initialized successfully');
+  }
+} catch (error) {
+  console.error('Error initializing Supabase client:', error);
+  supabase = null;
+}
+
+// Helper function to truncate text to a maximum length
+const truncateText = (text, maxLength = 1000) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+// Helper function to summarize text (for previous chapter content)
+const summarizeText = (text) => {
+  if (!text) return '';
+  const maxLength = 500;
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+// Helper function to fetch project context from Supabase
+const fetchProjectContext = async (projectId, userId) => {
+  try {
+    // Check if Supabase client is available
+    if (!supabase) {
+      return 'Supabase connection not available. Project context could not be loaded.';
+    }
+    
+    console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
+    
+    // Fetch locations
+    const { data: locations, error: locationsError } = await supabase
+      .from('locations')
+      .select('name, type, description, key_features')
+      .eq('project_id', projectId);
+    
+    if (locationsError) throw locationsError;
+    console.log(`Fetched ${locations ? locations.length : 0} locations`);
+    
+    // Fetch timeline events
+    const { data: events, error: eventsError } = await supabase
+      .from('timeline_events')
+      .select('name, date_time, description, created_at')
+      .eq('project_id', projectId);
+    
+    if (eventsError) throw eventsError;
+    console.log(`Fetched ${events ? events.length : 0} events`);
+    
+    // Fetch characters
+    const { data: characters, error: charactersError } = await supabase
+      .from('characters')
+      .select('name, role, traits, backstory')
+      .eq('project_id', projectId);
+    
+    if (charactersError) throw charactersError;
+    console.log(`Fetched ${characters ? characters.length : 0} characters`);
+    
+    // Format the context string
+    let contextString = 'Project Context:\n';
+    
+    // Add locations
+    contextString += '\nLocations:\n';
+    if (locations && locations.length > 0) {
+      locations.forEach(loc => {
+        contextString += `Location: ${loc.name} (${loc.type}, ${truncateText(loc.description, 200)}, ${truncateText(loc.key_features, 200)})\n`;
+      });
+    } else {
+      contextString += 'No locations found.\n';
+    }
+    
+    // Add timeline events
+    contextString += '\nTimeline Events:\n';
+    if (events && events.length > 0) {
+      events.forEach(event => {
+        contextString += `Event: ${event.name} on ${event.date_time} (${truncateText(event.description, 200)})\n`;
+      });
+    } else {
+      contextString += 'No timeline events found.\n';
+    }
+    
+    // Add characters
+    contextString += '\nCharacters:\n';
+    if (characters && characters.length > 0) {
+      characters.forEach(char => {
+        contextString += `Character: ${char.name} (${char.role}, ${truncateText(char.traits, 200)}, ${truncateText(char.backstory, 200)})\n`;
+      });
+    } else {
+      contextString += 'No characters found.\n';
+    }
+    
+    return contextString;
+  } catch (error) {
+    console.error('Error fetching project context:', error);
+    return 'Error fetching project context: ' + error.message;
+  }
+};
+
+// Helper function to fetch previous chapter
+const fetchPreviousChapter = async (projectId, userId) => {
+  try {
+    // Check if Supabase client is available
+    if (!supabase) {
+      return 'Supabase connection not available. Previous chapter could not be loaded.';
+    }
+    
+    console.log(`Fetching previous chapter for project_id: ${projectId}`);
+    
+    const { data, error } = await supabase
+      .from('chapters')
+      .select('content, title')
+      .eq('project_id', projectId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (error) throw error;
+    
+    if (data && data.length > 0 && data[0].content) {
+      console.log(`Found previous chapter: ${data[0].title || 'Untitled'}`);
+      return `Chapter: ${data[0].title || 'Previous Chapter'}\n${summarizeText(data[0].content)}`;
+    }
+    
+    console.log('No previous chapter found');
+    return 'No previous chapter found.';
+  } catch (error) {
+    console.error('Error fetching previous chapter:', error);
+    return 'Error fetching previous chapter: ' + error.message;
+  }
+};
 
 // Helper function to validate API keys
 const validateApiKeys = (modelName) => {
@@ -152,7 +293,9 @@ exports.handler = async (event) => {
             context = [], 
             mode = 'generate', 
             tone = '', 
-            length = '500' 
+            length = '500',
+            user_id = '',
+            project_id = ''
         } = parsedBody;
 
         if (!prompt) {
@@ -161,6 +304,18 @@ exports.handler = async (event) => {
                 headers,
                 body: JSON.stringify({
                     error: 'Prompt is required',
+                    success: false
+                })
+            };
+        }
+        
+        // Validate user_id and project_id
+        if (!user_id || !project_id) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({
+                    error: 'user_id and project_id are required',
                     success: false
                 })
             };
@@ -181,6 +336,51 @@ exports.handler = async (event) => {
                 })
             };
         }
+        
+        // Fetch user data, project context, and previous chapter
+        let userName = 'User'; // Default value
+        let contextString = '';
+        let previousChapter = '';
+        
+        try {
+            // Get authenticated user data if Supabase is available
+            if (supabase) {
+                // Get user from auth
+                const { data: authData, error: authError } = await supabase.auth.getUser();
+                
+                if (!authError && authData && authData.user) {
+                    // Try to get user's name from auth.users table
+                    const { data: userData, error: userError } = await supabase
+                        .from('profiles')  // Assuming a profiles table exists with user names
+                        .select('name')
+                        .eq('id', authData.user.id)
+                        .single();
+                    
+                    if (!userError && userData && userData.name) {
+                        userName = userData.name;
+                    } else {
+                        console.log('User profile not found, using email or default name');
+                        // Fallback to email address if available
+                        userName = authData.user.email?.split('@')[0] || 'User';
+                    }
+                } else {
+                    console.log('Auth user not found, using default name');
+                }
+                
+                // Fetch project context
+                contextString = await fetchProjectContext(project_id, user_id);
+                
+                // Fetch previous chapter
+                previousChapter = await fetchPreviousChapter(project_id, user_id);
+                
+                console.log('Fetched context data successfully');
+            } else {
+                console.warn('Supabase client not available, skipping context fetching');
+            }
+        } catch (contextError) {
+            console.error('Error fetching context data:', contextError);
+            // Don't fail the entire request, just log the error and proceed with defaults
+        }
 
         const isDeepSeekModel = modelName.includes('deepseek');
         const apiUrl = isDeepSeekModel 
@@ -192,11 +392,23 @@ exports.handler = async (event) => {
         const maxTokens = wordsToTokens(desiredWords);
         const timeout = calculateTimeout(maxTokens, mode, isDeepSeekModel);
 
-        // Create system message based on desired length and tone
-        const systemMessage = `You are a creative writing assistant that creates imaginative and engaging content. 
+        // Create system message based on desired length, tone, and context data
+        const systemMessage = `You are a creative writing assistant that creates imaginative and engaging content for ${userName}. 
 Generate a detailed response of approximately ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
 Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
-Do not stop mid-sentence. If approaching the token limit, find a natural ending point.`;
+Do not stop mid-sentence. If approaching the token limit, find a natural ending point.
+
+IMPORTANT INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
+1. You MUST incorporate ALL characters, locations, and events from the project context in your response.
+2. You MUST directly reference the previous chapter content when continuing the story.
+3. Your writing MUST follow the user's specific instructions (e.g., "kill protagonist," "end with a cliffhanger") while maintaining narrative consistency.
+4. You MUST explicitly use character names, locations, and timeline events from the context.
+5. When user asks to "continue chapter X", ensure your writing flows directly from the previous chapter content provided.
+
+${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):\n${contextString}\n\n` : ''}
+${previousChapter ? `PREVIOUS CHAPTER TO CONTINUE FROM:\n${previousChapter}\n\n` : ''}
+
+FAILURE TO INCORPORATE THE ABOVE CONTEXT ELEMENTS INTO YOUR RESPONSE IS NOT ALLOWED.`;
 
         // Create request body
         const requestBody = isDeepSeekModel ? {
@@ -297,6 +509,9 @@ Do not stop mid-sentence. If approaching the token limit, find a natural ending 
                 success: true,
                 text: generatedText,
                 model: modelName,
+                userName: userName,
+                contextProvided: !!contextString,
+                previousChapterProvided: !!previousChapter,
                 usage: usage || null,
                 requestedWords: desiredWords,
                 actualWords: actualWords,
