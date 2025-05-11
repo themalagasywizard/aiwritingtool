@@ -1721,14 +1721,18 @@
                      alt="User Avatar" 
                      class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
                 <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
-                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                        <i class="fas fa-user-circle text-primary mr-2"></i>
-                        <span id="userDisplayName">Guest User</span>
-        </div>
-                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                        <i class="fas fa-cog text-secondary mr-2"></i>
-                        <span>Settings</span>
-                    </div>
+                    <a href="/profile.html" class="block">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-user-circle text-primary mr-2"></i>
+                            <span id="userDisplayName">Guest User</span>
+                        </div>
+                    </a>
+                    <a href="/profile.html#preferences" class="block">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-cog text-secondary mr-2"></i>
+                            <span>Settings</span>
+                        </div>
+                    </a>
                     <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
                         <i class="fas fa-sign-out-alt mr-2"></i>
                         <span>Sign Out</span>

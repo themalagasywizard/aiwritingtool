@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalligram - Profile & Settings</title>
+    <!-- Supabase Configuration -->
+    <meta name="supabase-url" content="">
+    <meta name="supabase-anon-key" content="">
+    <!-- Environment Variables Script -->
+    <script>
+        window.ENV = {
+            SUPABASE_URL: '',
+            SUPABASE_ANON_KEY: ''
+        };
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4B5EAA',
+                        primaryLight: '#E6E9F0',
+                        secondary: '#6B7280',
+                        accent: '#F472B6',
+                        background: '#F9FAFB',
+                        textPrimary: '#1F2937',
+                        textSecondary: '#9CA3AF',
+                        success: '#34D399',
+                        error: '#EF4444',
+                        warning: '#FBBF24',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+        }
+    </style>
+</head>
+<body class="bg-background">
+    <!-- Top Bar -->
+    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center space-x-4">
+            <a href="/app.html" class="text-gray-500 hover:text-primary">
+                <i class="fas fa-arrow-left"></i>
+                <span class="ml-2">Back to App</span>
+            </a>
+            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
+                <i class="fas fa-feather-alt"></i>
+            </div>
+            <h1 class="text-xl font-semibold text-primary hidden md:block">Profile & Settings</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="saveChangesBtn" class="btn bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors hidden">
+                <i class="fas fa-save"></i>
+                <span class="ml-2">Save Changes</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <!-- Left Sidebar - Navigation -->
+            <div class="md:col-span-1">
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <nav class="space-y-2">
+                        <a href="#profile" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-primary bg-primaryLight">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Profile</span>
+                        </a>
+                        <a href="#subscription" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-primaryLight hover:text-primary">
+                            <i class="fas fa-crown"></i>
+                            <span>Subscription</span>
+                        </a>
+                        <a href="#preferences" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-primaryLight hover:text-primary">
+                            <i class="fas fa-cog"></i>
+                            <span>Preferences</span>
+                        </a>
+                        <a href="#security" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-primaryLight hover:text-primary">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Security</span>
+                        </a>
+                        <a href="#notifications" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-primaryLight hover:text-primary">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Right Content Area -->
+            <div class="md:col-span-3">
+                <!-- Profile Section -->
+                <div id="profile" class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-6">Profile Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Profile Picture -->
+                        <div class="md:col-span-2 flex items-center space-x-4">
+                            <div class="relative">
+                                <img id="profilePicture" src="https://ui-avatars.com/api/?name=User&background=4B5EAA&color=fff" 
+                                     alt="Profile Picture" 
+                                     class="w-20 h-20 rounded-full">
+                                <button class="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 shadow-lg hover:bg-opacity-90">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                            </div>
+                            <div>
+                                <h3 class="font-medium" id="userDisplayName">Loading...</h3>
+                                <p class="text-sm text-gray-500" id="userEmail">Loading...</p>
+                            </div>
+                        </div>
+
+                        <!-- Name Fields -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input type="text" id="firstName" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input type="text" id="lastName" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+
+                        <!-- Bio -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                            <textarea id="userBio" rows="4" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                                      placeholder="Tell us about yourself..."></textarea>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                            <input type="text" id="location" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                                   placeholder="City, Country">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Section -->
+                <div id="subscription" class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-6">Subscription Plan</h2>
+                    <div class="bg-primaryLight rounded-lg p-4 mb-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-medium text-primary">Current Plan: <span id="currentPlan">Pro</span></h3>
+                                <p class="text-sm text-gray-600">Next billing date: <span id="nextBillingDate">January 1, 2024</span></p>
+                            </div>
+                            <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                Manage Plan
+                            </button>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="font-medium mb-4">Plan Features</h3>
+                        <ul class="space-y-2">
+                            <li class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-check text-success mr-2"></i>
+                                Unlimited words
+                            </li>
+                            <li class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-check text-success mr-2"></i>
+                                Advanced AI writing tools
+                            </li>
+                            <li class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-check text-success mr-2"></i>
+                                Priority support
+                            </li>
+                            <li class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-check text-success mr-2"></i>
+                                Collaboration features
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Preferences Section -->
+                <div id="preferences" class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-6">Preferences</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded">
+                                <span>Enable dark mode</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded" checked>
+                                <span>Auto-save every 5 minutes</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Default Writing Font</label>
+                            <select class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option>Merriweather</option>
+                                <option>Inter</option>
+                                <option>Times New Roman</option>
+                                <option>Arial</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Section -->
+                <div id="security" class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-6">Security</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="font-medium mb-4">Change Password</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                                    <input type="password" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                    <input type="password" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                    <input type="password" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                    Update Password
+                                </button>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-200 pt-6">
+                            <h3 class="font-medium mb-4">Two-Factor Authentication</h3>
+                            <p class="text-sm text-gray-600 mb-4">Add an extra layer of security to your account</p>
+                            <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                Enable 2FA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div id="notifications" class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-xl font-semibold mb-6">Notifications</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded" checked>
+                                <span>Email notifications for updates</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded" checked>
+                                <span>Email notifications for comments</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded">
+                                <span>Marketing emails</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-success text-white p-3 rounded-lg shadow-md hidden transform transition-transform duration-300">
+        <p class="text-sm"></p>
+    </div>
+
+    <script type="module">
+        import { auth } from './lib/supabase.js';
+
+        // DOM Elements
+        const saveChangesBtn = document.getElementById('saveChangesBtn');
+        const toast = document.getElementById('toast');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const userDisplayName = document.getElementById('userDisplayName');
+        const userEmail = document.getElementById('userEmail');
+        const profilePicture = document.getElementById('profilePicture');
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            toast.querySelector('p').textContent = message;
+            toast.classList.remove('hidden');
+            toast.classList.add('transform', 'translate-y-0');
+            
+            if (type === 'success') {
+                toast.classList.add('bg-success');
+                toast.classList.remove('bg-error');
+            } else {
+                toast.classList.add('bg-error');
+                toast.classList.remove('bg-success');
+            }
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-full');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('translate-y-full', 'bg-success', 'bg-error');
+                }, 300);
+            }, 3000);
+        }
+
+        // Handle navigation
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                // Remove active class from all links
+                navLinks.forEach(l => {
+                    l.classList.remove('bg-primaryLight', 'text-primary');
+                    l.classList.add('text-gray-600');
+                });
+                
+                // Add active class to clicked link
+                link.classList.add('bg-primaryLight', 'text-primary');
+                link.classList.remove('text-gray-600');
+            });
+        });
+
+        // Load user data
+        async function loadUserData() {
+            try {
+                const { data: { user } } = await auth.getUser();
+                if (!user) {
+                    window.location.href = '/auth/auth.html';
+                    return;
+                }
+
+                // Update profile information
+                userEmail.textContent = user.email;
+                userDisplayName.textContent = user.email.split('@')[0]; // Temporary display name
+                profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
+
+                // TODO: Load additional user profile data from database
+                
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                showToast('Error loading user data', 'error');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+        });
+
+        // Save changes
+        saveChangesBtn.addEventListener('click', async () => {
+            try {
+                // TODO: Implement save functionality
+                showToast('Changes saved successfully');
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                showToast('Error saving changes', 'error');
+            }
+        });
+
+        // Show/hide save button when changes are made
+        const inputs = document.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('change', () => {
+                saveChangesBtn.classList.remove('hidden');
+            });
+            input.addEventListener('input', () => {
+                saveChangesBtn.classList.remove('hidden');
+            });
+        });
+    </script>
+</body>
+</html> 
