@@ -515,10 +515,10 @@ exports.handler = async (event) => {
                 // Fetch all previous chapters
                 previousChapters = await fetchPreviousChapters(project_id, user_id, prompt);
                 
-                // Log the context being fed to the AI
-                const contextLogs = {
-                    contextString: contextString,
-                    previousChapters: previousChapters
+                // Store the context information
+                const debugInfo = {
+                    contextString,
+                    previousChapters
                 };
                 
                 console.log('========== CONTEXT BEING FED TO AI ==========');
@@ -659,7 +659,7 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
         // Count actual words
         const actualWords = generatedText.trim().split(/\s+/).length;
 
-        // Return success response with added logs
+        // Return success response with debug info
         return {
             statusCode: 200,
             headers,
@@ -674,10 +674,7 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
                 requestedWords: desiredWords,
                 actualWords: actualWords,
                 actualTokens: usage?.total_tokens || null,
-                // Add the context logs to the response
-                debug: {
-                    contextLogs: contextLogs
-                }
+                debug: debugInfo
             })
         };
 
