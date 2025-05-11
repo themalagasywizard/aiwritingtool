@@ -79,14 +79,11 @@ const fetchProjectContext = async (projectId, userId) => {
     
     // Fetch locations with specific fields and detailed logging
     console.log('Executing locations query with project_id:', projectId);
-    const locationsQuery = supabase
+    
+    const { data: locations, error: locationsError } = await supabase
       .from('locations')
       .select('id, name, type, description, key_features')
       .eq('project_id', projectId);
-    
-    console.log('Locations query:', locationsQuery.toSQL()); // Log the SQL query
-    
-    const { data: locations, error: locationsError } = await locationsQuery;
     
     if (locationsError) {
       console.error('Location query error:', locationsError);
@@ -572,7 +569,11 @@ exports.handler = async (event) => {
                 // Store the context information
                 const debugInfo = {
                     contextString,
-                    previousChapters
+                    previousChapters,
+                    modelName,
+                    requestedWords: desiredWords,
+                    actualWords,
+                    tokensUsed: usage?.total_tokens || null
                 };
                 
                 console.log('========== CONTEXT BEING FED TO AI ==========');
@@ -713,6 +714,16 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
         // Count actual words
         const actualWords = generatedText.trim().split(/\s+/).length;
 
+        // Create debug info object
+        const debugInfo = {
+            contextString,
+            previousChapters,
+            modelName,
+            requestedWords: desiredWords,
+            actualWords,
+            tokensUsed: usage?.total_tokens || null
+        };
+
         // Return success response with debug info
         return {
             statusCode: 200,
@@ -744,7 +755,11 @@ FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED
             headers,
             body: JSON.stringify({
                 error: error.message,
-                success: false
+                success: false,
+                debug: {
+                    error: error.message,
+                    stack: error.stack
+                }
             })
         };
     }
