@@ -400,9 +400,19 @@ const validateApiKeys = (modelName) => {
         throw new Error('DEEPSEEK_API_KEY is not configured. Please set this environment variable.');
     }
     
-    if (isQwen3Model && (!process.env.DASHSCOPE_API_KEY || process.env.DASHSCOPE_API_KEY === '')) {
-        throw new Error('DASHSCOPE_API_KEY is not configured. Please set this environment variable.');
+    if (isQwen3Model && (!process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY === '')) {
+        throw new Error('OPENROUTER_API_KEY is not configured. Please set this environment variable.');
     }
+};
+
+// Helper function to get the OpenRouter model name
+const getOpenRouterModelName = (modelName) => {
+    const modelMap = {
+        'qwen3-72b': 'qwen/qwen1.5-72b-chat',
+        'qwen3-8b': 'qwen/qwen1.5-7b-chat',
+        'qwen3-1.8b': 'qwen/qwen1.5-0.5b-chat'
+    };
+    return modelMap[modelName] || modelName;
 };
 
 // Helper function to convert words to tokens (approximate)
@@ -827,32 +837,31 @@ exports.handler = async (event) => {
             frequency_penalty: frequencyPenalty,
             stop: ["###"]  // Add a stop sequence to prevent mid-sentence cutoff
         } : {
-            model: modelName.replace('qwen3-', 'qwen-'), // Convert to actual model name format
-            input: {
-                messages: [
-                    {
-                        role: "system",
-                        content: systemMessage
-                    },
-                    {
-                        role: "user",
-                        content: prompt
-                    }
-                ]
-            },
-            parameters: {
-                temperature: temperature,
-                top_p: 0.95,
-                max_tokens: maxTokens,
-                stop: ["###"],
-                result_format: "message"
+            model: getOpenRouterModelName(modelName),
+            messages: [
+                {
+                    role: "system",
+                    content: systemMessage
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            temperature: temperature,
+            top_p: 0.95,
+            max_tokens: maxTokens,
+            stop: ["###"],
+            headers: {
+                'HTTP-Referer': 'https://github.com/themalagasywizard/aiwritingtool', // Replace with your actual domain
+                'X-Title': 'AIStoryCraft'  // Replace with your app name
             }
         };
 
         // Make API request
         const apiUrl = isDeepSeekModel 
             ? 'https://api.deepseek.com/v1/chat/completions'
-            : 'https://api.dashscope.com/v1/services/chat/completions';
+            : 'https://openrouter.ai/api/v1/chat/completions';
 
         const response = await fetchWithTimeout(
             apiUrl,
@@ -862,7 +871,11 @@ exports.handler = async (event) => {
                     'Content-Type': 'application/json',
                     'Authorization': isDeepSeekModel 
                         ? `Bearer ${process.env.DEEPSEEK_API_KEY}` 
-                        : `Bearer ${process.env.DASHSCOPE_API_KEY}`
+                        : `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                    ...(isQwen3Model ? {
+                        'HTTP-Referer': 'https://github.com/themalagasywizard/aiwritingtool', // Replace with your actual domain
+                        'X-Title': 'AIStoryCraft'  // Replace with your app name
+                    } : {})
                 },
                 body: JSON.stringify(requestBody)
             },
@@ -893,8 +906,8 @@ exports.handler = async (event) => {
         if (isDeepSeekModel && result.choices?.[0]?.message?.content) {
             generatedText = result.choices[0].message.content;
             usage = result.usage;
-        } else if (isQwen3Model && result.output?.choices?.[0]?.message?.content) {
-            generatedText = result.output.choices[0].message.content;
+        } else if (isQwen3Model && result.choices?.[0]?.message?.content) {
+            generatedText = result.choices[0].message.content;
             usage = result.usage;
         } else {
             throw new Error('Invalid response format from API');
