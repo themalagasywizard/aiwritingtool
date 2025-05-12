@@ -408,9 +408,16 @@ const validateApiKeys = (modelName) => {
 // Helper function to get the OpenRouter model name
 const getOpenRouterModelName = (modelName) => {
     const modelMap = {
-        'qwen3-32b': 'anthropic/claude-3-opus',  // Using Claude as fallback for 32B
-        'qwen3-235b': 'anthropic/claude-3-sonnet',  // Using Claude as fallback for 235B
-        'qwen3-a22b': 'gryphe/mythomax-l2-13b'  // Using MythoMax as alternative
+        // Premium Models
+        'qwen3-32b': 'anthropic/claude-3-opus',
+        'qwen3-235b': 'anthropic/claude-3-sonnet',
+        'qwen3-a22b': 'gryphe/mythomax-l2-13b',
+        
+        // Free Models
+        'mistral-7b': 'mistralai/mistral-7b-instruct',
+        'llama-8b': 'meta-llama/llama-2-13b-chat',
+        'qwen-7b': 'qwen/qwen1.5-7b-chat',
+        'qwen-1.8b': 'qwen/qwen1.5-1.8b-chat'
     };
     return modelMap[modelName] || modelName;
 };
