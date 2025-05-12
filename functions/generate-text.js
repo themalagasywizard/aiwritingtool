@@ -566,49 +566,50 @@ MAINTAIN PERFECT CONTINUITY WITH PREVIOUS CONTENT.`;
 
 Your Task:
 Write an engaging and creative continuation of the story, approximately ${desiredWords} words long${tone ? `, in a ${tone} tone` : ''}.
-The narrative must flow naturally from any preceding text, advance the plot, develop characters, and maintain deep consistency with the established world.
+The narrative must flow seamlessly from the previous chapter, maintaining perfect continuity while advancing the plot and developing characters.
 
 Core Principles for Your Writing:
 
-1.  **NARRATIVE PROGRESSION & CREATIVITY:**
-    *   Your primary objective is to **advance the story in a meaningful way**. Introduce new developments, dialogues, internal monologues, or actions that are logical and engaging.
-    *   **Show, Don't Just Tell.** Instead of stating a character is brave, describe their brave actions.
-    *   Develop characters by revealing their reactions, decisions, and emotional states in response to unfolding events.
-    *   While you must honor established facts, you are encouraged to **creatively build upon them**. Introduce plausible minor details, consequences, or sensory information that enriches the scene and world.
-    *   **Avoid stagnation.** Do not merely rephrase or summarize previous events or context. The story must move forward.
+1. **PERFECT CONTINUITY (Top Priority):**
+   * If PREVIOUS CHAPTERS are provided, your writing MUST start EXACTLY where the most recent chapter ends.
+   * Preserve ALL details from the end of the last chapter, including:
+     - Scene: Location, time of day, weather, and atmosphere.
+     - Characters: Their positions, emotions, ongoing actions, and dialogue context.
+     - Plot: Immediate cliffhangers, unresolved questions, or ongoing events.
+   * Example: If the last chapter ends with "Jane stood at the edge of Darkwood Forest, her sword drawn as the enemy approached," your chapter MUST begin with Jane in Darkwood Forest, sword drawn, facing the enemy.
+   * Do NOT introduce new characters, locations, or major plot elements unless explicitly requested in the prompt or logically inferred from the context.
 
-2.  **INTEGRATING PROVIDED INFORMATION (CONTEXT & PREVIOUS CHAPTERS):**
-    *   The "BACKGROUND LORE" and "PREVIOUS CHAPTERS" sections are your **foundational knowledge base and continuity anchor**. They are NOT a rigid script or a checklist of items to be explicitly namedropped.
-    *   **Subtlety and organic integration are key.** Use this information to ensure your writing is *implicitly consistent* with established character traits, backstories, relationships, settings, and past events.
-    *   For instance, if a character has a known fear, their behavior in a relevant new situation should reflect that, without you needing to state, "Because Character X fears Y, they..."
-    *   The history or nature of a location should subtly color the atmosphere or events that unfold there.
-    *   **Explicitly mention names, places, or past events from the context ONLY when it feels natural and serves the narrative** (e.g., a character recalling a specific memory, or a direct interaction with a known element).
+2. **NARRATIVE PROGRESSION:**
+   * Advance the story in a meaningful way by continuing the immediate plot thread.
+   * Resolve or build upon cliffhangers and ongoing events from the last chapter.
+   * Develop characters through their reactions, decisions, and interactions, consistent with their established traits and backstories.
+   * Use vivid, evocative language to engage the reader, but prioritize continuity over descriptive embellishment.
 
-3.  **SEAMLESS CONTINUITY:**
-    *   If the user's prompt indicates continuing a specific chapter or scene (e.g., "Continue Chapter 3," or the prompt directly follows previous text), **pick up precisely where it left off.** Maintain the established scene, location, time of day, character positions, and immediate plot points.
-    *   Ensure character voices, motivations, and relationships remain consistent with everything established.
-    *   Address or resolve any immediate cliffhangers or pressing questions from the directly preceding text, unless the user's prompt explicitly directs otherwise (e.g., "Maintain the suspense").
+3. **USING BACKGROUND LORE (Secondary Goal):**
+   * Use the BACKGROUND LORE to ensure consistency and inspire creativity.
+   * Characters, locations, and events from the lore should influence the narrative naturally (e.g., a character's backstory affects their decisions, a location's features shape the scene).
+   * Only explicitly mention lore elements when relevant to the current scene or plot progression.
 
-4.  **EXECUTING THE USER'S PROMPT:**
-    *   Carefully analyze and fulfill the user's specific instructions in the prompt (e.g., "Character A confronts Character B," "Describe the journey to the Mystic Mountain," "End with a cliffhanger"). Weave these instructions into a coherent and compelling narrative segment that respects all other guidelines.
+4. **EXECUTING THE USER'S PROMPT:**
+   * Follow the user's specific instructions (e.g., "end with a cliffhanger") while ensuring they align with the established narrative.
+   * If the prompt conflicts with continuity (e.g., "add a new character" when the scene is isolated), prioritize continuity and weave the instruction in logically.
 
-5.  **WRITING QUALITY:**
-    *   Produce well-structured prose with clear paragraphs and complete, grammatically correct sentences.
-    *   Use vivid and evocative language to engage the reader.
-    *   Strive for the requested word count, but prioritize a narratively satisfying and complete segment.
+5. **WRITING QUALITY:**
+   * Produce well-structured prose with clear paragraphs and complete sentences.
+   * Avoid stopping mid-sentence; find a natural ending point if approaching the token limit.
+   * Ensure the narrative feels complete and satisfying within the word limit.
 
 What to AVOID:
-*   **Mechanical Listing:** Do not simply list facts from the context.
-*   **Forced Mentions:** Avoid awkwardly inserting context elements if they don't fit the current narrative beat.
-*   **Contradictions:** Do not contradict established lore, character arcs, or plot points.
-*   **Introducing major, unprompted plot twists, characters, or locations that feel out of place or overshadow existing elements.** Minor, plausible, and supportive additions are acceptable if they enhance the current scene.
+* Contradicting the previous chapter's details (e.g., changing location, time, or character states).
+* Introducing unprompted elements that break immersion (e.g., sudden new characters in an isolated scene).
+* Overusing lore elements at the expense of the immediate plot thread.
 
 ${contextString ? `
-BACKGROUND LORE (Your guide for consistency and inspiration):
+BACKGROUND LORE (Use for consistency and inspiration):
 ${contextString}
 ` : ''}
 ${previousChapters ? `
-PREVIOUS CHAPTERS (Ensure your writing flows logically from here):
+PREVIOUS CHAPTERS (Start EXACTLY where the most recent chapter ends):
 ${previousChapters}
 ` : ''}
 
