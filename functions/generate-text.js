@@ -423,42 +423,80 @@ const timeoutPromise = (ms, message) => new Promise((_, reject) =>
 
 // Helper function to calculate dynamic timeout based on tokens and mode
 const calculateTimeout = (maxTokens, mode, isDeepSeekModel) => {
-    const BASE_TIMEOUT = mode === 'chat' ? 20000 : 30000;   // Lower base timeout for chat mode
-    const MAX_TIMEOUT = 110000;   // 110 seconds maximum
-    const MIN_TIMEOUT = mode === 'chat' ? 10000 : 15000;    // Lower minimum timeout for chat mode
-    const MS_PER_TOKEN = mode === 'chat' ? 50 : 100;     // Faster per-token scaling for chat mode
+    // Increased base timeouts for all requests
+    const BASE_TIMEOUT = mode === 'chat' ? 30000 : 45000;   // Increased base timeout
+    const MAX_TIMEOUT = 90000;   // 90 seconds maximum to stay within Netlify 120s limit
+    const MIN_TIMEOUT = mode === 'chat' ? 20000 : 30000;    // Increased minimum timeout
+    const MS_PER_TOKEN = mode === 'chat' ? 30 : 60;     // More efficient per-token scaling
 
+    // Give DeepSeek more time as it tends to require longer processing
     if (isDeepSeekModel) {
-        const scaledTimeout = BASE_TIMEOUT + (maxTokens * MS_PER_TOKEN);
+        // Add system message complexity factor - our template is large
+        const systemMessageComplexityFactor = 15000; // Add 15 seconds for the complex system message
+        const scaledTimeout = BASE_TIMEOUT + (maxTokens * MS_PER_TOKEN) + systemMessageComplexityFactor;
         return Math.min(MAX_TIMEOUT, Math.max(MIN_TIMEOUT, scaledTimeout));
     } else {
-        return mode === 'chat' ? 30000 : 60000;
+        // Also increase non-DeepSeek timeouts
+        return mode === 'chat' ? 40000 : 70000;
     }
 };
 
-// Helper function to fetch with timeout
+// Helper function to fetch with timeout and retry mechanism
 const fetchWithTimeout = async (url, options, timeout) => {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
-        const response = await Promise.race([
-            fetch(url, { ...options, signal: controller.signal }),
-            timeoutPromise(timeout)
-        ]);
-        
-        clearTimeout(timeoutId);
-        return response;
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            throw new Error('Request timed out');
+    const MAX_RETRIES = 2;
+    let lastError = null;
+    
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            // If this is a retry, log it and add a small delay to avoid rate limiting
+            if (attempt > 0) {
+                console.log(`Retry attempt ${attempt}/${MAX_RETRIES} for API request`);
+                // Add a small delay before retrying (increasing with each attempt)
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+            
+            const response = await Promise.race([
+                fetch(url, { ...options, signal: controller.signal }),
+                timeoutPromise(timeout, `Request timed out after ${timeout}ms`)
+            ]);
+            
+            clearTimeout(timeoutId);
+            
+            // If the response is not ok but it's a 429 (rate limit) or a 5xx error,
+            // these are retryable errors
+            if (!response.ok && (response.status === 429 || response.status >= 500)) {
+                throw new Error(`Server responded with status ${response.status}`);
+            }
+            
+            return response;
+        } catch (error) {
+            lastError = error;
+            const isRetryableError = 
+                error.name === 'AbortError' || 
+                error.message.includes('timed out') ||
+                error.message.includes('status 429') ||
+                error.message.includes('status 5');
+                
+            // If this is the last attempt or the error is not retryable, throw it
+            if (attempt === MAX_RETRIES || !isRetryableError) {
+                // Add context to the error message
+                if (error.name === 'AbortError' || error.message.includes('timed out')) {
+                    throw new Error(`Request to ${url.split('?')[0]} timed out after ${timeout}ms. Try reducing the length parameter or simplifying the prompt.`);
+                }
+                throw error;
+            }
+            
+            // Otherwise, continue to the next retry attempt
+            console.warn(`Request failed (${error.message}). Retrying...`);
         }
-        throw error;
     }
 };
 
 // Create system message based on desired length, tone, and context data
-const createSystemMessage = (mode, userName, desiredWords, tone, contextString, previousChapters) => {
+const createSystemMessage = (mode, userName, desiredWords, tone, contextString, previousChapters, isDeepSeekModel = false) => {
     // Common intro for both modes
     let baseIntro = `You are an AI writing assistant helping ${userName} with a creative writing project.`;
     
@@ -485,7 +523,26 @@ ${previousChapters ? `${previousChapters}` : ''}
 
 Remember, you are helping brainstorm and plan, not writing the actual content. Keep responses under ${Math.min(desiredWords, 300)} words${tone ? ` in a ${tone} tone` : ''}.`;
     } else {
-        // Updated 'generate' mode with enhanced writing instructions
+        // For DeepSeek models, use a more concise system message to prevent timeouts
+        if (isDeepSeekModel) {
+            return `${baseIntro} You are in WRITING MODE.
+
+Write a creative story continuation of ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
+Your writing must:
+1. Flow naturally from previous text
+2. Advance the plot and develop characters consistent with context
+3. Show, don't tell
+4. Maintain continuity with previous chapters
+5. Follow user's specific instructions
+6. Use vivid language and well-structured paragraphs
+
+${contextString ? `BACKGROUND: ${contextString.substring(0, Math.min(contextString.length, 4000))}` : ''}
+${previousChapters ? `PREVIOUS CONTENT: ${previousChapters.substring(0, Math.min(previousChapters.length, 5000))}` : ''}
+
+MAINTAIN PERFECT CONTINUITY WITH PREVIOUS CONTENT.`;
+        }
+        
+        // Standard generate mode with enhanced writing instructions
         return `${baseIntro} You are in WRITING MODE.
 
 Your Task:
@@ -723,7 +780,7 @@ exports.handler = async (event) => {
         };
 
         // Create system message based on desired length, tone, and context data
-        const systemMessage = createSystemMessage(mode, userName, desiredWords, tone, contextString, previousChapters);
+        const systemMessage = createSystemMessage(mode, userName, desiredWords, tone, contextString, previousChapters, isDeepSeekModel);
 
         // Adjust parameters based on mode
         const temperature = mode === 'chat' ? 0.9 : 0.8; // Higher temperature for chat mode to encourage more varied responses
@@ -848,19 +905,33 @@ exports.handler = async (event) => {
     } catch (error) {
         console.error('Error in generate-text:', error);
         
-        const statusCode = error.message.includes('timed out') ? 408 
-            : error.message.includes('API key') ? 401 
-            : 500;
+        // Provide more helpful error messages based on error type
+        let errorMessage = error.message;
+        let statusCode = 500;
+        
+        if (error.message.includes('timed out') || error.name === 'AbortError') {
+            statusCode = 408; // Request Timeout
+            errorMessage = 'Your request timed out. This might be due to high server load or a complex prompt. Try the following:\n1. Reduce the word count (length) parameter\n2. Use a simpler prompt\n3. Try again in a few minutes';
+        } else if (error.message.includes('API key')) {
+            statusCode = 401; // Unauthorized
+            errorMessage = 'API key error: ' + error.message;
+        } else if (error.message.includes('status 429')) {
+            statusCode = 429; // Too Many Requests
+            errorMessage = 'Rate limit exceeded. Please try again in a few minutes.';
+        } else if (error.message.includes('status 5')) {
+            statusCode = 503; // Service Unavailable
+            errorMessage = 'The AI service is currently unavailable. Please try again later.';
+        }
 
         return {
             statusCode,
             headers,
             body: JSON.stringify({
-                error: error.message,
+                error: errorMessage,
                 success: false,
                 debug: {
                     error: error.message,
-                    stack: error.stack
+                    stack: process.env.NODE_ENV === 'development' ? error.stack : null
                 }
             })
         };
