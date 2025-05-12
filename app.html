@@ -606,45 +606,45 @@
                 }
             }
         }
+
+        /* Context selection styles */
+        .context-item-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .context-item-checkbox:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .context-item-checkbox:checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            line-height: 1;
+        }
+        
+        .context-item-checkbox:focus {
+            outline: none;
+            ring: 2px var(--primary);
+        }
+        
+        #contextSelectionPanel {
+            transition: max-height 0.3s ease-in-out;
+            overflow: hidden;
+        }
     </style>
-    
-    /* Context selection styles */
-    .context-item-checkbox {
-        appearance: none;
-        -webkit-appearance: none;
-        width: 16px;
-        height: 16px;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        background-color: white;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-    }
-    
-    .context-item-checkbox:checked {
-        background-color: var(--primary);
-        border-color: var(--primary);
-    }
-    
-    .context-item-checkbox:checked::after {
-        content: '✓';
-        color: white;
-        font-size: 12px;
-        line-height: 1;
-    }
-    
-    .context-item-checkbox:focus {
-        outline: none;
-        ring: 2px var(--primary);
-    }
-    
-    #contextSelectionPanel {
-        transition: max-height 0.3s ease-in-out;
-        overflow: hidden;
-    }
 </head>
 <body class="h-screen flex flex-col">
     <!-- Import Supabase client and make it available globally -->
