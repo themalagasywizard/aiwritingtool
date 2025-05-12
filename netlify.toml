@@ -75,11 +75,11 @@
 
 # Environment variable validation
 [context.production]
-  environment = { NODE_VERSION = "18" }
+  environment = { NODE_VERSION = "18", SITE_URL = "https://aiwritingtool.netlify.app" }
   # Add your environment variables in the Netlify dashboard
-  # SUPABASE_URL, SUPABASE_ANON_KEY
+  # SUPABASE_URL, SUPABASE_ANON_KEY, OPENROUTER_API_KEY
 
 [context.deploy-preview]
-  environment = { NODE_VERSION = "18" } 
+  environment = { NODE_VERSION = "18", SITE_URL = "https://deploy-preview-aiwritingtool.netlify.app" }
   # Add your environment variables in the Netlify dashboard
-  # SUPABASE_URL, SUPABASE_ANON_KEY 
+  # SUPABASE_URL, SUPABASE_ANON_KEY, OPENROUTER_API_KEY 

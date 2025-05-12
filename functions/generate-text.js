@@ -851,11 +851,7 @@ exports.handler = async (event) => {
             temperature: temperature,
             top_p: 0.95,
             max_tokens: maxTokens,
-            stop: ["###"],
-            headers: {
-                'HTTP-Referer': 'https://github.com/themalagasywizard/aiwritingtool', // Replace with your actual domain
-                'X-Title': 'AIStoryCraft'  // Replace with your app name
-            }
+            stop: ["###"]
         };
 
         // Make API request
@@ -863,20 +859,25 @@ exports.handler = async (event) => {
             ? 'https://api.deepseek.com/v1/chat/completions'
             : 'https://openrouter.ai/api/v1/chat/completions';
 
+        // Prepare headers based on the API being used
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        if (isDeepSeekModel) {
+            headers['Authorization'] = `Bearer ${process.env.DEEPSEEK_API_KEY}`;
+        } else {
+            headers['Authorization'] = `Bearer ${process.env.OPENROUTER_API_KEY}`;
+            // Required OpenRouter headers
+            headers['HTTP-Referer'] = process.env.SITE_URL || 'https://github.com/themalagasywizard/aiwritingtool';
+            headers['X-Title'] = 'AIStoryCraft';
+        }
+
         const response = await fetchWithTimeout(
             apiUrl,
             {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': isDeepSeekModel 
-                        ? `Bearer ${process.env.DEEPSEEK_API_KEY}` 
-                        : `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                    ...(isQwen3Model ? {
-                        'HTTP-Referer': 'https://github.com/themalagasywizard/aiwritingtool', // Replace with your actual domain
-                        'X-Title': 'AIStoryCraft'  // Replace with your app name
-                    } : {})
-                },
+                headers: headers,
                 body: JSON.stringify(requestBody)
             },
             timeout
@@ -885,16 +886,7 @@ exports.handler = async (event) => {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('API Error:', response.status, errorText);
-            
-            return {
-                statusCode: response.status,
-                headers,
-                body: JSON.stringify({
-                    error: `API request failed with status ${response.status}`,
-                    details: errorText,
-                    success: false
-                })
-            };
+            throw new Error(`API request failed with status ${response.status}: ${errorText}`);
         }
 
         const result = await response.json();
@@ -910,6 +902,7 @@ exports.handler = async (event) => {
             generatedText = result.choices[0].message.content;
             usage = result.usage;
         } else {
+            console.error('Unexpected API response:', result);
             throw new Error('Invalid response format from API');
         }
 
