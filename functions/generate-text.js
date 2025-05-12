@@ -400,8 +400,8 @@ const validateApiKeys = (modelName) => {
         throw new Error('DEEPSEEK_API_KEY is not configured. Please set this environment variable.');
     }
     
-    if (isQwen3Model && (!process.env.QWEN3_API_KEY || process.env.QWEN3_API_KEY === '')) {
-        throw new Error('QWEN3_API_KEY is not configured. Please set this environment variable.');
+    if (isQwen3Model && (!process.env.DASHSCOPE_API_KEY || process.env.DASHSCOPE_API_KEY === '')) {
+        throw new Error('DASHSCOPE_API_KEY is not configured. Please set this environment variable.');
     }
 };
 
@@ -779,7 +779,6 @@ exports.handler = async (event) => {
 
         const isDeepSeekModel = modelName.includes('deepseek');
         const isQwen3Model = modelName.includes('qwen3');
-        const apiUrl = isDeepSeekModel ? 'https://api.deepseek.com/v1/chat/completions' : 'https://api.qwen.ai/v1/chat/completions';
 
         // Convert desired word length to tokens and ensure minimum/maximum bounds based on mode
         const maxDesiredWords = mode === 'chat' ? 500 : 5000; // Limit chat responses to 500 words max
@@ -828,34 +827,42 @@ exports.handler = async (event) => {
             frequency_penalty: frequencyPenalty,
             stop: ["###"]  // Add a stop sequence to prevent mid-sentence cutoff
         } : {
-            model: modelName.replace('qwen3-', 'Qwen-'), // Convert to actual model name format
-            messages: [
-                {
-                    role: "system",
-                    content: systemMessage
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
-            ],
-            temperature: temperature,
-            top_p: 0.95,
-            max_tokens: maxTokens,
-            stream: false,
-            presence_penalty: presencePenalty,
-            frequency_penalty: frequencyPenalty,
-            stop: ["###"]
+            model: modelName.replace('qwen3-', 'qwen-'), // Convert to actual model name format
+            input: {
+                messages: [
+                    {
+                        role: "system",
+                        content: systemMessage
+                    },
+                    {
+                        role: "user",
+                        content: prompt
+                    }
+                ]
+            },
+            parameters: {
+                temperature: temperature,
+                top_p: 0.95,
+                max_tokens: maxTokens,
+                stop: ["###"],
+                result_format: "message"
+            }
         };
 
         // Make API request
+        const apiUrl = isDeepSeekModel 
+            ? 'https://api.deepseek.com/v1/chat/completions'
+            : 'https://api.dashscope.com/v1/services/chat/completions';
+
         const response = await fetchWithTimeout(
             apiUrl,
             {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${isDeepSeekModel ? process.env.DEEPSEEK_API_KEY : process.env.QWEN3_API_KEY}`
+                    'Authorization': isDeepSeekModel 
+                        ? `Bearer ${process.env.DEEPSEEK_API_KEY}` 
+                        : `Bearer ${process.env.DASHSCOPE_API_KEY}`
                 },
                 body: JSON.stringify(requestBody)
             },
@@ -883,8 +890,11 @@ exports.handler = async (event) => {
         let generatedText = '';
         let usage = null;
 
-        if ((isDeepSeekModel || isQwen3Model) && result.choices?.[0]?.message?.content) {
+        if (isDeepSeekModel && result.choices?.[0]?.message?.content) {
             generatedText = result.choices[0].message.content;
+            usage = result.usage;
+        } else if (isQwen3Model && result.output?.choices?.[0]?.message?.content) {
+            generatedText = result.output.choices[0].message.content;
             usage = result.usage;
         } else {
             throw new Error('Invalid response format from API');
