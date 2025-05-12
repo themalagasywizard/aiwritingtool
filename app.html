@@ -3282,19 +3282,35 @@
             
             // Get the active context items
             function getActiveContext() {
-                const selectedContext = [];
+                const selectedContext = {
+                    characters: [],
+                    locations: [],
+                    events: []
+                };
                 
                 // Get all checked context items
                 document.querySelectorAll('.context-item-checkbox:checked').forEach(checkbox => {
-                    selectedContext.push({
+                    const type = checkbox.getAttribute('data-type');
+                    const item = {
                         id: checkbox.getAttribute('data-id'),
-                        name: checkbox.getAttribute('data-name'),
-                        type: checkbox.getAttribute('data-type')
-                    });
+                        name: checkbox.getAttribute('data-name')
+                    };
+                    
+                    // Add to appropriate category
+                    switch(type) {
+                        case 'character':
+                            selectedContext.characters.push(item);
+                            break;
+                        case 'location':
+                            selectedContext.locations.push(item);
+                            break;
+                        case 'event':
+                            selectedContext.events.push(item);
+                            break;
+                    }
                 });
                 
-                // Return just the names for sending to the API
-                return selectedContext.map(item => item.name);
+                return selectedContext;
             }
             
             // Update the context summary based on selected items
@@ -3651,12 +3667,16 @@
                     const user_id = window.appState?.currentUser?.id || '';
                     const project_id = window.appState?.currentProject?.id || '';
                     
+                    // Get selected context items
+                    const selectedContext = getActiveContext();
+                    console.log('Selected context for AI:', selectedContext);
+                    
                     const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             prompt: prompt,
-                            context: getActiveContext(),
+                            context: selectedContext,
                             mode: currentMode,
                             tone: tone,
                             length: length,

@@ -70,80 +70,114 @@ const summarizeText = (text) => {
 };
 
 // Helper function to fetch project context from Supabase
-const fetchProjectContext = async (projectId, userId) => {
+const fetchProjectContext = async (projectId, userId, selectedContext = null) => {
   try {
     // Ensure Supabase connection is working
     await ensureSupabaseConnection();
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
+    console.log('Selected context:', selectedContext);
     
-    // Skip table discovery since we know the table names
-    console.log('Using known table schema from configuration');
+    let characters = [], locations = [], events = [];
     
-    // Fetch locations - we know the exact table name is "locations"
-    console.log('Querying "locations" table with project_id:', projectId);
-    const { data: locations, error: locationsError } = await supabase
-      .from('locations')
-      .select('*')
-      .eq('project_id', projectId);
-    
-    if (locationsError) {
-      console.error('Locations query error:', locationsError);
-    } else {
-      console.log('Locations query results:', {
-        count: locations?.length || 0,
-        sample: locations?.slice(0, 2) || []
-      });
-    }
-    
-    // Fetch characters - we know the exact table name is "characters"
-    console.log('Querying "characters" table with project_id:', projectId);
-    const { data: characters, error: charactersError } = await supabase
-      .from('characters')
-      .select('*')
-      .eq('project_id', projectId);
-    
-    if (charactersError) {
-      console.error('Characters query error:', charactersError);
-    } else {
-      console.log('Characters query results:', {
-        count: characters?.length || 0,
-        sample: characters?.slice(0, 2) || []
-      });
-    }
-    
-    // Fetch timeline events - we know the exact table name is "timeline_events"
-    console.log('Querying "timeline_events" table with project_id:', projectId);
-    const { data: events, error: eventsError } = await supabase
-      .from('timeline_events')
-      .select('*')
-      .eq('project_id', projectId);
-    
-    if (eventsError) {
-      console.error('Events query error:', eventsError);
-    } else {
-      console.log('Events query results:', {
-        count: events?.length || 0,
-        sample: events?.slice(0, 2) || []
-      });
-    }
-    
-    // Try to fetch all timeline_event_characters links if they exist
-    console.log('Querying "timeline_event_characters" table...');
-    let eventCharacterLinks = [];
-    try {
-      const { data: links, error: linksError } = await supabase
-        .from('timeline_event_characters')
-        .select('*');
-      
-      if (!linksError) {
-        eventCharacterLinks = links || [];
-        console.log(`Found ${eventCharacterLinks.length} timeline_event_characters links`);
-      } else {
-        console.log('No timeline_event_characters table found or error:', linksError.message);
+    // If selectedContext is provided, fetch only selected items
+    if (selectedContext) {
+      // Fetch selected characters
+      if (selectedContext.characters.length > 0) {
+        const { data: selectedCharacters, error: charError } = await supabase
+          .from('characters')
+          .select('*')
+          .eq('project_id', projectId)
+          .in('id', selectedContext.characters.map(c => c.id));
+        
+        if (charError) {
+          console.error('Characters query error:', charError);
+        } else {
+          characters = selectedCharacters || [];
+        }
       }
-    } catch (e) {
-      console.log('Error checking for timeline_event_characters:', e.message);
+      
+      // Fetch selected locations
+      if (selectedContext.locations.length > 0) {
+        const { data: selectedLocations, error: locError } = await supabase
+          .from('locations')
+          .select('*')
+          .eq('project_id', projectId)
+          .in('id', selectedContext.locations.map(l => l.id));
+        
+        if (locError) {
+          console.error('Locations query error:', locError);
+        } else {
+          locations = selectedLocations || [];
+        }
+      }
+      
+      // Fetch selected events
+      if (selectedContext.events.length > 0) {
+        const { data: selectedEvents, error: eventsError } = await supabase
+          .from('timeline_events')
+          .select('*')
+          .eq('project_id', projectId)
+          .in('id', selectedContext.events.map(e => e.id));
+        
+        if (eventsError) {
+          console.error('Events query error:', eventsError);
+        } else {
+          events = selectedEvents || [];
+        }
+      }
+    } else {
+      // If no selection provided, fetch all context items
+      const { data: allCharacters, error: charError } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (charError) {
+        console.error('Characters query error:', charError);
+      } else {
+        characters = allCharacters || [];
+      }
+      
+      const { data: allLocations, error: locError } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (locError) {
+        console.error('Locations query error:', locError);
+      } else {
+        locations = allLocations || [];
+      }
+      
+      const { data: allEvents, error: eventsError } = await supabase
+        .from('timeline_events')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (eventsError) {
+        console.error('Events query error:', eventsError);
+      } else {
+        events = allEvents || [];
+      }
+    }
+    
+    // Try to fetch all timeline_event_characters links if we have events
+    let eventCharacterLinks = [];
+    if (events.length > 0) {
+      try {
+        const { data: links, error: linksError } = await supabase
+          .from('timeline_event_characters')
+          .select('*')
+          .in('event_id', events.map(e => e.id));
+        
+        if (!linksError) {
+          eventCharacterLinks = links || [];
+          console.log(`Found ${eventCharacterLinks.length} timeline_event_characters links`);
+        }
+      } catch (e) {
+        console.log('Error checking for timeline_event_characters:', e.message);
+      }
     }
     
     // Format the context string with more detailed information
@@ -151,22 +185,22 @@ const fetchProjectContext = async (projectId, userId) => {
     
     // Add characters section with detailed information
     contextString += 'Characters:\n';
-    if (characters && characters.length > 0) {
+    if (characters.length > 0) {
       characters.forEach(char => {
         contextString += `Character: ${char.name}\n`;
         contextString += `  Role: ${char.role || 'Unspecified'}\n`;
         if (char.traits) contextString += `  Traits: ${truncateText(char.traits, 200)}\n`;
         if (char.backstory) contextString += `  Backstory: ${truncateText(char.backstory, 300)}\n`;
         
-        // Try to add event connections if we have the links table data
+        // Add event connections if we have them
         if (eventCharacterLinks.length > 0) {
-          const characterEvents = events?.filter(event => 
+          const characterEvents = events.filter(event => 
             eventCharacterLinks.some(link => 
               link.character_id === char.id && link.event_id === event.id
             )
           );
           
-          if (characterEvents?.length > 0) {
+          if (characterEvents.length > 0) {
             contextString += `  Appears in events:\n`;
             characterEvents.forEach(event => {
               contextString += `    - ${event.name} (${event.date_time || 'unknown time'})\n`;
@@ -177,12 +211,12 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += '\n';
       });
     } else {
-      contextString += 'No characters found.\n\n';
+      contextString += 'No characters selected.\n\n';
     }
     
     // Add locations section with detailed information
     contextString += 'Locations:\n';
-    if (locations && locations.length > 0) {
+    if (locations.length > 0) {
       locations.forEach(loc => {
         contextString += `Location: ${loc.name}\n`;
         contextString += `  Type: ${loc.type || 'Unspecified'}\n`;
@@ -190,8 +224,8 @@ const fetchProjectContext = async (projectId, userId) => {
         if (loc.key_features) contextString += `  Key Features: ${truncateText(loc.key_features, 200)}\n`;
         
         // Add events that occur at this location
-        const locationEvents = events?.filter(event => event.location_id === loc.id);
-        if (locationEvents?.length > 0) {
+        const locationEvents = events.filter(event => event.location_id === loc.id);
+        if (locationEvents.length > 0) {
           contextString += `  Events at this location:\n`;
           locationEvents.forEach(event => {
             contextString += `    - ${event.name} (${event.date_time || 'unknown time'})\n`;
@@ -201,57 +235,43 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += '\n';
       });
     } else {
-      contextString += 'No locations found.\n\n';
+      contextString += 'No locations selected.\n\n';
     }
     
-    // Add timeline events section with detailed information
-    contextString += 'Timeline Events (in chronological order):\n';
-    if (events && events.length > 0) {
-      // Sort events by date_time if it exists
-      const eventsWithTime = events.filter(e => e.date_time);
-      if (eventsWithTime.length > 0) {
-        eventsWithTime.sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
-        
-        eventsWithTime.forEach(event => {
-          const location = locations?.find(loc => loc.id === event.location_id);
-          
-          contextString += `Event: ${event.name || 'Unnamed Event'}\n`;
-          contextString += `  Time: ${event.date_time}\n`;
-          if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
-          if (location) contextString += `  Location: ${location.name}\n`;
-          
-          // Try to add character connections
-          if (eventCharacterLinks.length > 0) {
-            const eventCharacters = characters?.filter(char => 
-              eventCharacterLinks.some(link => 
-                link.event_id === event.id && link.character_id === char.id
-              )
-            );
-            
-            if (eventCharacters?.length > 0) {
-              contextString += `  Characters involved: ${eventCharacters.map(c => c.name).join(', ')}\n`;
-            }
-          }
-          
-          contextString += '\n';
-        });
-      }
+    // Add timeline events section
+    contextString += 'Timeline Events:\n';
+    if (events.length > 0) {
+      // Sort events by date_time if available
+      const sortedEvents = [...events].sort((a, b) => {
+        if (!a.date_time) return 1;
+        if (!b.date_time) return -1;
+        return new Date(a.date_time) - new Date(b.date_time);
+      });
       
-      // Add events without timestamps at the end
-      const eventsWithoutTime = events.filter(e => !e.date_time);
-      if (eventsWithoutTime.length > 0) {
-        contextString += 'Events without specific timing:\n';
-        eventsWithoutTime.forEach(event => {
-          const location = locations?.find(loc => loc.id === event.location_id);
-          
-          contextString += `Event: ${event.name || 'Unnamed Event'}\n`;
-          if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
-          if (location) contextString += `  Location: ${location.name}\n`;
-          contextString += '\n';
-        });
-      }
+      sortedEvents.forEach(event => {
+        contextString += `Event: ${event.name}\n`;
+        if (event.date_time) contextString += `  Time: ${event.date_time}\n`;
+        if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
+        
+        // Add location if available
+        const location = locations.find(loc => loc.id === event.location_id);
+        if (location) contextString += `  Location: ${location.name}\n`;
+        
+        // Add involved characters
+        const involvedCharacters = characters.filter(char =>
+          eventCharacterLinks.some(link =>
+            link.event_id === event.id && link.character_id === char.id
+          )
+        );
+        
+        if (involvedCharacters.length > 0) {
+          contextString += `  Characters involved: ${involvedCharacters.map(c => c.name).join(', ')}\n`;
+        }
+        
+        contextString += '\n';
+      });
     } else {
-      contextString += 'No timeline events found.\n';
+      contextString += 'No timeline events selected.\n';
     }
     
     return contextString;
@@ -263,8 +283,7 @@ const fetchProjectContext = async (projectId, userId) => {
       details: error.details,
       hint: error.hint
     });
-    // Return a simplified context string even in case of error
-    return 'Project Context:\n\nError fetching project context: ' + error.message;
+    return 'Error fetching project context: ' + error.message;
   }
 };
 
@@ -734,7 +753,7 @@ exports.handler = async (event) => {
                 }
                 
                 // Fetch project context
-                contextString = await fetchProjectContext(project_id, user_id);
+                contextString = await fetchProjectContext(project_id, user_id, context);
                 
                 // Fetch all previous chapters
                 previousChapters = await fetchPreviousChapters(project_id, user_id, prompt);
