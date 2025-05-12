@@ -534,7 +534,9 @@ ${contextString}
 ${previousChapters ? `
 PREVIOUS CHAPTERS (Ensure your writing flows logically from here):
 ${previousChapters}
-` : ''}`;
+` : ''}
+
+FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED.`;
     }
 };
 
