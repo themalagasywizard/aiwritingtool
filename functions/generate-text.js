@@ -394,13 +394,14 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
 // Helper function to validate API keys
 const validateApiKeys = (modelName) => {
     const isDeepSeekModel = modelName.includes('deepseek');
+    const isQwen3Model = modelName.includes('qwen3');
     
     if (isDeepSeekModel && (!process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY === '')) {
         throw new Error('DEEPSEEK_API_KEY is not configured. Please set this environment variable.');
     }
     
-    if (!isDeepSeekModel && (!process.env.HF_API_KEY || process.env.HF_API_KEY === '')) {
-        throw new Error('HF_API_KEY is not configured. Please set this environment variable.');
+    if (isQwen3Model && (!process.env.QWEN3_API_KEY || process.env.QWEN3_API_KEY === '')) {
+        throw new Error('QWEN3_API_KEY is not configured. Please set this environment variable.');
     }
 };
 
@@ -777,9 +778,8 @@ exports.handler = async (event) => {
         }
 
         const isDeepSeekModel = modelName.includes('deepseek');
-        const apiUrl = isDeepSeekModel 
-            ? 'https://api.deepseek.com/v1/chat/completions'
-            : `https://api-inference.huggingface.co/models/${modelName}`;
+        const isQwen3Model = modelName.includes('qwen3');
+        const apiUrl = isDeepSeekModel ? 'https://api.deepseek.com/v1/chat/completions' : 'https://api.qwen.ai/v1/chat/completions';
 
         // Convert desired word length to tokens and ensure minimum/maximum bounds based on mode
         const maxDesiredWords = mode === 'chat' ? 500 : 5000; // Limit chat responses to 500 words max
@@ -828,18 +828,24 @@ exports.handler = async (event) => {
             frequency_penalty: frequencyPenalty,
             stop: ["###"]  // Add a stop sequence to prevent mid-sentence cutoff
         } : {
-            inputs: `${systemMessage}\n\n${prompt}\n\nResponse:`,
-            parameters: {
-                temperature: temperature,
-                top_p: 0.95,
-                max_new_tokens: maxTokens,
-                do_sample: true,
-                num_return_sequences: 1,
-                length_penalty: mode === 'chat' ? 1.0 : 1.5,  // Lower length penalty for chat
-                repetition_penalty: mode === 'chat' ? 1.5 : 1.3,  // Higher repetition penalty for chat
-                early_stopping: true,
-                stop: ["###"]
-            }
+            model: modelName.replace('qwen3-', 'Qwen-'), // Convert to actual model name format
+            messages: [
+                {
+                    role: "system",
+                    content: systemMessage
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            temperature: temperature,
+            top_p: 0.95,
+            max_tokens: maxTokens,
+            stream: false,
+            presence_penalty: presencePenalty,
+            frequency_penalty: frequencyPenalty,
+            stop: ["###"]
         };
 
         // Make API request
@@ -849,7 +855,7 @@ exports.handler = async (event) => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${isDeepSeekModel ? process.env.DEEPSEEK_API_KEY : process.env.HF_API_KEY}`
+                    'Authorization': `Bearer ${isDeepSeekModel ? process.env.DEEPSEEK_API_KEY : process.env.QWEN3_API_KEY}`
                 },
                 body: JSON.stringify(requestBody)
             },
@@ -877,13 +883,9 @@ exports.handler = async (event) => {
         let generatedText = '';
         let usage = null;
 
-        if (isDeepSeekModel && result.choices?.[0]?.message?.content) {
+        if ((isDeepSeekModel || isQwen3Model) && result.choices?.[0]?.message?.content) {
             generatedText = result.choices[0].message.content;
             usage = result.usage;
-        } else if (Array.isArray(result) && result[0]?.generated_text) {
-            generatedText = result[0].generated_text;
-        } else if (result.generated_text) {
-            generatedText = result.generated_text;
         } else {
             throw new Error('Invalid response format from API');
         }
