@@ -647,6 +647,13 @@
     }
 </head>
 <body class="h-screen flex flex-col">
+    <!-- Import Supabase client and make it available globally -->
+    <script type="module">
+        import { projects, chapters, characters, auth, locations, timelineEvents } from './lib/supabase.js';
+        // Make services available to non-module scripts
+        window.supabaseServices = { auth, projects, chapters, characters, locations, timelineEvents };
+    </script>
+    
     <script type="module">
         import { projects, chapters, characters, auth } from './lib/supabase.js';
         
@@ -1162,116 +1169,50 @@
 
         // Context Management
         async function loadContextItems() {
-            // Characters
-            const charactersList = document.getElementById('characterContextItems');
-            charactersList.innerHTML = ''; // Clear loading message
-            
-            // Locations
-            const locationsList = document.getElementById('locationContextItems');
-            locationsList.innerHTML = '';
-            
-            // Timeline events
-            const timelineList = document.getElementById('timelineContextItems');
-            timelineList.innerHTML = '';
-            
             try {
-                // Check if Supabase services are available
-                if (!window.supabaseServices || !window.supabaseServices.characters) {
-                    console.log('Supabase services not available, using demo data');
-                    throw new Error('Supabase services not available');
-                }
-            
-                if (!window.appState?.currentProject) {
-                    throw new Error('No current project');
-                }
+                if (!appState.currentProject) return;
                 
                 // Load characters
-                const { data: projectCharacters, error: charError } = await window.supabaseServices.characters.getByProject(
-                    window.appState.currentProject.id
-                );
+                const { data: projectCharacters, error: charError } = await characters.getByProject(appState.currentProject.id);
                 
                 if (charError) throw charError;
                 
-                // Load locations
-                const { data: projectLocations, error: locError } = await window.supabaseServices.locations.getByProject(
-                    window.appState.currentProject.id
-                );
+                // TODO: Load settings and timeline events when those functions are implemented
                 
-                if (locError) throw locError;
+                // Clear context list
+                elements.contextList.innerHTML = '';
                 
-                // Load timeline events
-                const { data: projectEvents, error: eventsError } = await window.supabaseServices.timelineEvents.getByProject(
-                    window.appState.currentProject.id
-                );
+                // Count total context items
+                const totalItems = (projectCharacters?.length || 0);
+                elements.contextCount.textContent = totalItems + ' items';
                 
-                if (eventsError) throw eventsError;
+                if (totalItems === 0) {
+                    elements.contextList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No context items yet</div>';
+                    return;
+                }
                 
                 // Add characters to the list
                 if (projectCharacters && projectCharacters.length > 0) {
                     projectCharacters.forEach(character => {
-                        const item = createContextItem(character.id, character.name, 'character');
-                        charactersList.appendChild(item);
+                        const itemElement = document.createElement('div');
+                        itemElement.className = 'p-2 text-sm hover:bg-gray-50 rounded cursor-pointer';
+                        
+                        itemElement.innerHTML = `
+                            <div class="font-medium">${character.name}</div>
+                            <div class="text-xs text-textSecondary">${character.role}</div>
+                        `;
+                        
+                        elements.contextList.appendChild(itemElement);
                     });
-                } else {
-                    charactersList.innerHTML = '<div class="text-xs text-gray-500 italic">No characters found</div>';
                 }
                 
-                // Add locations to the list
-                if (projectLocations && projectLocations.length > 0) {
-                    projectLocations.forEach(location => {
-                        const item = createContextItem(location.id, location.name, 'location');
-                        locationsList.appendChild(item);
-                    });
-                } else {
-                    locationsList.innerHTML = '<div class="text-xs text-gray-500 italic">No locations found</div>';
-                }
-                
-                // Add timeline events to the list
-                if (projectEvents && projectEvents.length > 0) {
-                    projectEvents.forEach(event => {
-                        const item = createContextItem(event.id, event.name, 'event');
-                        timelineList.appendChild(item);
-                    });
-                } else {
-                    timelineList.innerHTML = '<div class="text-xs text-gray-500 italic">No timeline events found</div>';
-                }
+                // TODO: Add settings and timeline events to the list
             } catch (error) {
                 console.error('Error loading context items:', error);
-                
-                // Fallback to some demo data if we have errors
-                charactersList.innerHTML = '';
-                [
-                    { id: 'char1', name: 'John Doe', type: 'character' },
-                    { id: 'char2', name: 'Mystery Figure', type: 'character' },
-                    { id: 'char3', name: 'Sarah', type: 'character' }
-                ].forEach(char => {
-                    const item = createContextItem(char.id, char.name, char.type);
-                    charactersList.appendChild(item);
-                });
-                
-                locationsList.innerHTML = '';
-                [
-                    { id: 'loc1', name: 'New York City', type: 'location' },
-                    { id: 'loc2', name: 'Darkwood Forest', type: 'location' }
-                ].forEach(loc => {
-                    const item = createContextItem(loc.id, loc.name, loc.type);
-                    locationsList.appendChild(item);
-                });
-                
-                timelineList.innerHTML = '';
-                [
-                    { id: 'evt1', name: 'The Accident', type: 'event' },
-                    { id: 'evt2', name: 'Full Moon Encounter', type: 'event' }
-                ].forEach(evt => {
-                    const item = createContextItem(evt.id, evt.name, evt.type);
-                    timelineList.appendChild(item);
-                });
+                elements.contextList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-exclamation-circle mr-2 text-error"></i>Error loading context</div>';
             }
-            
-            // Update the context summary based on default selected items
-            setTimeout(updateContextSummary, 100);
         }
-        
+
         // Show toast message
         function showToast(message, type = 'success') {
             const toast = document.getElementById('aiToast');
@@ -3397,12 +3338,12 @@
                 timelineList.innerHTML = '';
                 
                 try {
-                    // Check if Supabase services are available
+                    // Check if supabase services are available
                     if (!window.supabaseServices || !window.supabaseServices.characters) {
-                        console.log('Supabase services not available, using demo data');
-                        throw new Error('Supabase services not available');
+                        console.warn('Supabase services not available, using fallback data');
+                        throw new Error('Supabase services not initialized');
                     }
-                
+                    
                     if (!window.appState?.currentProject) {
                         throw new Error('No current project');
                     }
@@ -3570,7 +3511,7 @@
                 // Initialize with some selected items (when the panel opens for the first time)
                 loadContextItems();
             }
-
+            
             // Handle input validation and submit button state
             function validateInput(input) {
                 const isValid = input.value.trim().length > 0;
