@@ -607,6 +607,44 @@
             }
         }
     </style>
+    
+    /* Context selection styles */
+    .context-item-checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 16px;
+        height: 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        background-color: white;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    .context-item-checkbox:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+    
+    .context-item-checkbox:checked::after {
+        content: '✓';
+        color: white;
+        font-size: 12px;
+        line-height: 1;
+    }
+    
+    .context-item-checkbox:focus {
+        outline: none;
+        ring: 2px var(--primary);
+    }
+    
+    #contextSelectionPanel {
+        transition: max-height 0.3s ease-in-out;
+        overflow: hidden;
+    }
 </head>
 <body class="h-screen flex flex-col">
     <script type="module">
@@ -1959,11 +1997,53 @@
                 <div class="flex-shrink-0 bg-primaryLight/20 p-3 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <span class="text-xs text-secondary">Using context:</span>
-                        <button class="text-xs text-primary hover:text-primary/80">
+                        <button id="editContextBtn" class="text-xs text-primary hover:text-primary/80">
                             <i class="fas fa-edit mr-1"></i>Edit
                         </button>
                     </div>
                     <div class="text-sm text-primary mt-1">Jane, Darkwood Forest</div>
+                </div>
+
+                <!-- Context Selection Panel -->
+                <div class="flex-shrink-0 bg-primaryLight/20 p-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium text-secondary">Story Context</span>
+                        <button id="toggleContextBtn" class="text-xs text-primary hover:text-primary/80">
+                            <i class="fas fa-chevron-down mr-1"></i>Show/Hide
+                        </button>
+                    </div>
+                    
+                    <!-- Selected context items summary -->
+                    <div id="contextSummary" class="text-sm text-primary mt-1">
+                        No context items selected
+                    </div>
+                    
+                    <!-- Context selection panel (collapsed by default) -->
+                    <div id="contextSelectionPanel" class="hidden mt-3 border-t border-gray-200 pt-3">
+                        <!-- Characters section -->
+                        <div class="mb-3">
+                            <h3 class="text-xs font-medium text-secondary mb-1">Characters</h3>
+                            <div id="characterContextItems" class="space-y-1 max-h-24 overflow-y-auto">
+                                <div class="text-xs text-gray-500 italic">Loading characters...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Locations section -->
+                        <div class="mb-3">
+                            <h3 class="text-xs font-medium text-secondary mb-1">Locations</h3>
+                            <div id="locationContextItems" class="space-y-1 max-h-24 overflow-y-auto">
+                                <div class="text-xs text-gray-500 italic">Loading locations...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timeline events section -->
+                        <div>
+                            <h3 class="text-xs font-medium text-secondary mb-1">Timeline Events</h3>
+                            <div id="timelineContextItems" class="space-y-1 max-h-24 overflow-y-auto">
+                                <div class="text-xs text-gray-500 italic">Loading events...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Chat View -->
@@ -3140,6 +3220,14 @@
                 aiAssistPanel.classList.toggle('translate-x-full');
                 aiMobileOverlay.classList.toggle('hidden');
                 
+                // Initialize the context panel when AI panel is opened
+                if (!isOpen) {
+                    if (!aiAssistPanel.__contextInitialized) {
+                        initContextPanel();
+                        aiAssistPanel.__contextInitialized = true;
+                    }
+                }
+                
                 // Remove the auto-focus
                 /* if (!isOpen) {
                     if (currentMode === 'generate') {
@@ -3198,11 +3286,219 @@
             
             // Get the active context items
             function getActiveContext() {
-                // In a real implementation, this would get the actual context from the sidebar
-                // For now, we'll return a mock context
-                return ['Jane', 'Darkwood Forest'];
+                const selectedContext = [];
+                
+                // Get all checked context items
+                document.querySelectorAll('.context-item-checkbox:checked').forEach(checkbox => {
+                    selectedContext.push({
+                        id: checkbox.getAttribute('data-id'),
+                        name: checkbox.getAttribute('data-name'),
+                        type: checkbox.getAttribute('data-type')
+                    });
+                });
+                
+                // Return just the names for sending to the API
+                return selectedContext.map(item => item.name);
             }
             
+            // Update the context summary based on selected items
+            function updateContextSummary() {
+                const selectedItems = document.querySelectorAll('.context-item-checkbox:checked');
+                const contextSummary = document.getElementById('contextSummary');
+                
+                if (selectedItems.length === 0) {
+                    contextSummary.textContent = 'No context items selected';
+                } else {
+                    const itemNames = Array.from(selectedItems).map(item => 
+                        item.getAttribute('data-name')
+                    );
+                    contextSummary.textContent = itemNames.join(', ');
+                }
+            }
+            
+            // Load context items from the app state
+            async function loadContextItems() {
+                // Characters
+                const charactersList = document.getElementById('characterContextItems');
+                charactersList.innerHTML = ''; // Clear loading message
+                
+                // Locations
+                const locationsList = document.getElementById('locationContextItems');
+                locationsList.innerHTML = '';
+                
+                // Timeline events
+                const timelineList = document.getElementById('timelineContextItems');
+                timelineList.innerHTML = '';
+                
+                try {
+                    if (!window.appState?.currentProject) {
+                        throw new Error('No current project');
+                    }
+                    
+                    // Load characters
+                    const { data: projectCharacters, error: charError } = await window.supabaseServices.characters.getByProject(
+                        window.appState.currentProject.id
+                    );
+                    
+                    if (charError) throw charError;
+                    
+                    // Load locations
+                    const { data: projectLocations, error: locError } = await window.supabaseServices.locations.getByProject(
+                        window.appState.currentProject.id
+                    );
+                    
+                    if (locError) throw locError;
+                    
+                    // Load timeline events
+                    const { data: projectEvents, error: eventsError } = await window.supabaseServices.timelineEvents.getByProject(
+                        window.appState.currentProject.id
+                    );
+                    
+                    if (eventsError) throw eventsError;
+                    
+                    // Add characters to the list
+                    if (projectCharacters && projectCharacters.length > 0) {
+                        projectCharacters.forEach(character => {
+                            const item = createContextItem(character.id, character.name, 'character');
+                            charactersList.appendChild(item);
+                        });
+                    } else {
+                        charactersList.innerHTML = '<div class="text-xs text-gray-500 italic">No characters found</div>';
+                    }
+                    
+                    // Add locations to the list
+                    if (projectLocations && projectLocations.length > 0) {
+                        projectLocations.forEach(location => {
+                            const item = createContextItem(location.id, location.name, 'location');
+                            locationsList.appendChild(item);
+                        });
+                    } else {
+                        locationsList.innerHTML = '<div class="text-xs text-gray-500 italic">No locations found</div>';
+                    }
+                    
+                    // Add timeline events to the list
+                    if (projectEvents && projectEvents.length > 0) {
+                        projectEvents.forEach(event => {
+                            const item = createContextItem(event.id, event.name, 'event');
+                            timelineList.appendChild(item);
+                        });
+                    } else {
+                        timelineList.innerHTML = '<div class="text-xs text-gray-500 italic">No timeline events found</div>';
+                    }
+                } catch (error) {
+                    console.error('Error loading context items:', error);
+                    
+                    // Fallback to some demo data if we have errors
+                    charactersList.innerHTML = '';
+                    [
+                        { id: 'char1', name: 'John Doe', type: 'character' },
+                        { id: 'char2', name: 'Mystery Figure', type: 'character' },
+                        { id: 'char3', name: 'Sarah', type: 'character' }
+                    ].forEach(char => {
+                        const item = createContextItem(char.id, char.name, char.type);
+                        charactersList.appendChild(item);
+                    });
+                    
+                    locationsList.innerHTML = '';
+                    [
+                        { id: 'loc1', name: 'New York City', type: 'location' },
+                        { id: 'loc2', name: 'Darkwood Forest', type: 'location' }
+                    ].forEach(loc => {
+                        const item = createContextItem(loc.id, loc.name, loc.type);
+                        locationsList.appendChild(item);
+                    });
+                    
+                    timelineList.innerHTML = '';
+                    [
+                        { id: 'evt1', name: 'The Accident', type: 'event' },
+                        { id: 'evt2', name: 'Full Moon Encounter', type: 'event' }
+                    ].forEach(evt => {
+                        const item = createContextItem(evt.id, evt.name, evt.type);
+                        timelineList.appendChild(item);
+                    });
+                }
+                
+                // Update the context summary based on default selected items
+                setTimeout(updateContextSummary, 100);
+            }
+            
+            // Create a context item for the selection list
+            function createContextItem(id, name, type) {
+                const item = document.createElement('div');
+                item.className = 'flex items-center space-x-2 mb-1 p-1 hover:bg-gray-50 rounded';
+                
+                // Create a unique ID for the checkbox
+                const checkboxId = `context-item-${type}-${id}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.className = 'context-item-checkbox rounded text-primary focus:ring-primary';
+                checkbox.setAttribute('data-id', id);
+                checkbox.setAttribute('data-name', name);
+                checkbox.setAttribute('data-type', type);
+                
+                // Add change event listener to update the summary when selection changes
+                checkbox.addEventListener('change', updateContextSummary);
+                
+                // Set some default selections
+                if ((type === 'character' && name === 'John Doe') || 
+                    (type === 'location' && name === 'Darkwood Forest')) {
+                    checkbox.checked = true;
+                }
+                
+                const label = document.createElement('label');
+                label.className = 'text-xs cursor-pointer select-none flex-grow';
+                label.textContent = name;
+                label.setAttribute('for', checkboxId); // Associate label with checkbox
+                
+                // Add click event to the whole item to toggle checkbox
+                item.addEventListener('click', (e) => {
+                    // Prevent double-toggling when clicking directly on checkbox or label
+                    if (e.target !== checkbox && e.target !== label) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+                
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                
+                return item;
+            }
+            
+            // Initialize context selection panel
+            function initContextPanel() {
+                const toggleContextBtn = document.getElementById('toggleContextBtn');
+                const contextSelectionPanel = document.getElementById('contextSelectionPanel');
+                
+                // Toggle the context selection panel
+                toggleContextBtn.addEventListener('click', () => {
+                    const isHidden = contextSelectionPanel.classList.contains('hidden');
+                    
+                    // Toggle the panel
+                    contextSelectionPanel.classList.toggle('hidden', !isHidden);
+                    
+                    // Update the icon
+                    const icon = toggleContextBtn.querySelector('i');
+                    if (isHidden) {
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-up');
+                    } else {
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-chevron-down');
+                    }
+                    
+                    // Load context items if opening the panel
+                    if (isHidden) {
+                        loadContextItems();
+                    }
+                });
+                
+                // Initialize with some selected items (when the panel opens for the first time)
+                loadContextItems();
+            }
+
             // Handle input validation and submit button state
             function validateInput(input) {
                 const isValid = input.value.trim().length > 0;
