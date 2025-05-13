@@ -45,8 +45,14 @@
     <!-- Shadcn/UI Component Initialization -->
     <script type="module">
         import { initializeShadcnUI } from './lib/initialize.js';
+        import { setupDarkModeToggle } from './lib/utils.js';
+        
         // Initialize Shadcn/UI components after DOM content is loaded
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, initializing Shadcn/UI components...');
+            // Setup dark mode toggle first
+            setupDarkModeToggle();
+            // Then initialize UI components
             initializeShadcnUI();
         });
     </script>
@@ -1848,6 +1854,11 @@
             <button id="newProjectBtn" class="btn btn-success" data-shadcn="button" data-variant="success">
                 <i class="fas fa-plus"></i>
                 <span class="ml-1">New Project</span>
+            </button>
+            <button id="darkModeToggle" class="btn btn-ghost" data-shadcn="button" data-variant="ghost" data-size="icon">
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:inline-block"></i>
+                <span class="sr-only">Toggle dark mode</span>
             </button>
             <div class="relative group">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
@@ -4010,8 +4021,19 @@
         // Add click handler to mobile menu button
         document.getElementById('mobileMenuBtn').addEventListener('click', toggleSidebar);
         
-        // Ensure AI output containers can scroll properly when content changes
+        // Add dark mode toggle handler
         document.addEventListener('DOMContentLoaded', function() {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            if (darkModeToggle) {
+                darkModeToggle.addEventListener('click', function() {
+                    // This calls the toggleDarkMode function from utils.js
+                    if (window.toggleDarkMode) {
+                        window.toggleDarkMode();
+                    }
+                });
+            }
+            
+            // Ensure AI output containers can scroll properly when content changes
             const aiOutput = document.getElementById('aiOutput');
             const chatHistory = document.getElementById('chatHistory');
             

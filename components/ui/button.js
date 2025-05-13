@@ -1,5 +1,40 @@
-import { cva } from 'class-variance-authority';
 import { cn } from '../../lib/utils.js';
+
+/**
+ * Simple class variance authority implementation
+ * This is a minimal version that doesn't rely on the npm package
+ */
+function cva(base, config) {
+  return (props = {}) => {
+    const { variant, size, className } = props;
+    const variants = config.variants || {};
+    const defaultVariants = config.defaultVariants || {};
+    
+    // Start with the base classes
+    let classes = [base];
+    
+    // Add variant classes if specified
+    if (variant && variants.variant && variants.variant[variant]) {
+      classes.push(variants.variant[variant]);
+    } else if (defaultVariants.variant && variants.variant && variants.variant[defaultVariants.variant]) {
+      classes.push(variants.variant[defaultVariants.variant]);
+    }
+    
+    // Add size classes if specified
+    if (size && variants.size && variants.size[size]) {
+      classes.push(variants.size[size]);
+    } else if (defaultVariants.size && variants.size && variants.size[defaultVariants.size]) {
+      classes.push(variants.size[defaultVariants.size]);
+    }
+    
+    // Add any additional className
+    if (className) {
+      classes.push(className);
+    }
+    
+    return classes.join(' ');
+  };
+}
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background",
@@ -59,7 +94,7 @@ function Button(params) {
   } = params;
 
   const button = document.createElement('button');
-  button.className = cn(buttonVariants({ variant, size }), className);
+  button.className = cn(buttonVariants({ variant, size, className }));
   button.disabled = isDisabled || isLoading;
   button.type = type;
   if (id) button.id = id;
