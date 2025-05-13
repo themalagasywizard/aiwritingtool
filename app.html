@@ -3696,39 +3696,103 @@
                     
                     const data = await response.json();
                     
-                    if (data.error && !data.text) {
-                        throw new Error(data.error);
+                    if (data.success) {
+                        // Show success output with insert button
+                        aiOutput.innerHTML = `
+                            <div class="space-y-4">
+                                <div class="prose max-w-none">
+                                    ${data.text.split('\n').map(line => 
+                                        line.trim() ? `<p>${line}</p>` : ''
+                                    ).join('')}
+                                </div>
+                                <div class="flex justify-end space-x-3 mt-4">
+                                    <button class="px-3 py-1.5 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition-colors flex items-center space-x-2" 
+                                            onclick="insertIntoChapter('${data.text.replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-paste"></i>
+                                        <span>Insert into Chapter</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Track successful generation
+                        if (window.gtag) {
+                            window.gtag('event', 'ai_generation_success', {
+                                'event_category': 'engagement',
+                                'event_label': currentMode
+                            });
+                        }
+                    } else {
+                        throw new Error(data.error || 'Failed to generate text');
                     }
-                    
-                    // Format the response text
-                    let responseText = data.text || '';
-                    // Remove the input prompt if it's repeated in the output
-                    if (responseText.includes(prompt)) {
-                        responseText = responseText.replace(prompt, '');
-                    }
-                    
-                    // Format the response with proper line breaks and paragraphs
-                    const formattedResponse = responseText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
-                    
-                    // Update the response text with model information
-                    const modelInfo = data.model ? `<div class="text-xs text-gray-500 mb-2">Generated with: ${data.model}</div>` : '';
-                    
-                    // Add a warning if this is a fallback response
-                    const fallbackWarning = data.isFallback ? 
-                        `<div class="text-xs text-orange-500 mb-2">Note: This is an offline fallback response. ${data.error || ''}</div>` : '';
-                    
-                    aiOutput.innerHTML = `${modelInfo}${fallbackWarning}<p class="text-gray-700">${formattedResponse}</p>`;
-                    
-                    // Scroll to see the new content
-                    aiOutput.scrollTop = aiOutput.scrollHeight;
-                    
-                    showToast(data.isFallback ? 'Fallback response provided' : 'Text generated successfully!');
                 } catch (error) {
-                    console.error('Error:', error);
-                    aiOutput.innerHTML = `<p class="text-error">Error: ${error.message || 'Could not connect to AI. Please try again later.'}</p>`;
-                    showToast('Error connecting to AI', 'error');
+                    console.error('Error generating text:', error);
+                    aiOutput.innerHTML = `
+                        <div class="text-error">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            ${error.message || 'An error occurred while generating text'}
+                        </div>
+                    `;
                 }
             });
+
+            // Function to insert AI output into the current chapter
+            window.insertIntoChapter = function(text) {
+                const currentChapter = document.querySelector('.chapter.active');
+                if (!currentChapter) {
+                    showToast('Please select a chapter first', 'error');
+                    return;
+                }
+
+                const editor = currentChapter.querySelector('.chapter-content');
+                if (!editor) {
+                    showToast('Could not find chapter editor', 'error');
+                    return;
+                }
+
+                // Get current cursor position or append to end
+                let selection = window.getSelection();
+                let range;
+                
+                try {
+                    range = selection.getRangeAt(0);
+                } catch (e) {
+                    // If no range exists, create one at the end of the editor
+                    range = document.createRange();
+                    range.selectNodeContents(editor);
+                    range.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+                
+                // Create a new div with the text content
+                const textNode = document.createElement('div');
+                textNode.innerHTML = text.split('\n').map(line => 
+                    line.trim() ? `<p>${line}</p>` : ''
+                ).join('');
+
+                // Insert at cursor position or append to end
+                if (selection.rangeCount > 0 && editor.contains(range.commonAncestorContainer)) {
+                    range.deleteContents();
+                    range.insertNode(textNode);
+                } else {
+                    editor.appendChild(textNode);
+                }
+
+                // Save the chapter content
+                saveChapterContent(currentChapter);
+                
+                // Show success message
+                showToast('Text inserted successfully', 'success');
+                
+                // Track insertion
+                if (window.gtag) {
+                    window.gtag('event', 'ai_text_inserted', {
+                        'event_category': 'engagement',
+                        'event_label': 'chapter_content'
+                    });
+                }
+            };
             
             // Handle Enter key in chat input (Shift+Enter for new line)
             chatInput.addEventListener('keydown', (e) => {
