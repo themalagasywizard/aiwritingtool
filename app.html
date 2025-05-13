@@ -19,21 +19,26 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tailwind CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/@tailwindcss/typography@0.5.10/dist/typography.min.css" rel="stylesheet">
-    <link href="https://unpkg.com/tailwindcss@3.4.1/src/css/preflight.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/utilities.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // Define Tailwind theme for custom properties
-        document.documentElement.style.setProperty('--primary', '#4B5EAA');
-        document.documentElement.style.setProperty('--primary-light', '#E6E9F0');
-        document.documentElement.style.setProperty('--secondary', '#6B7280');
-        document.documentElement.style.setProperty('--accent', '#F472B6');
-        document.documentElement.style.setProperty('--background', '#F9FAFB');
-        document.documentElement.style.setProperty('--text-primary', '#1F2937');
-        document.documentElement.style.setProperty('--text-secondary', '#9CA3AF');
-        document.documentElement.style.setProperty('--success', '#34D399');
-        document.documentElement.style.setProperty('--error', '#EF4444');
-        document.documentElement.style.setProperty('--warning', '#FBBF24');
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4B5EAA',
+                        primaryLight: '#E6E9F0',
+                        secondary: '#6B7280',
+                        accent: '#F472B6',
+                        background: '#F9FAFB',
+                        textPrimary: '#1F2937',
+                        textSecondary: '#9CA3AF',
+                        success: '#34D399',
+                        error: '#EF4444',
+                        warning: '#FBBF24',
+                    }
+                }
+            }
+        }
     </script>
     <!-- Custom Styles -->
     <style>
@@ -415,63 +420,39 @@
             scrollbar-color: var(--secondary) transparent;
             word-wrap: break-word;
             white-space: pre-wrap;
-            padding: 1px 1rem 1rem 1rem; /* Ensure top padding is exactly 1px */
+        }
+
+        #aiOutput > div,
+        #aiOutput > p {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
         }
 
         #aiOutput .prose {
             font-family: 'Inter', sans-serif;
-            margin-top: 0;
-            padding-top: 0;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         #aiOutput p {
-            margin-bottom: 0.75rem;
-            margin-top: 0; /* Ensure no top margin on paragraphs */
-        }
-
-        #aiOutput p:first-child {
-            margin-top: 0;
+            margin: 0 0 0.75rem 0 !important;
         }
 
         #aiOutput p:last-child {
-            margin-bottom: 0;
+            margin-bottom: 0 !important;
         }
 
         #aiOutput:empty::before {
             content: 'AI output will appear here...';
             color: var(--text-secondary);
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
-        /* Target the div that wraps the content in the AI output */
-        #aiOutput > div {
-            margin-top: 0;
-            padding-top: 0;
-        }
-
-        /* Specifically target the .space-y-2 inside aiOutput */
-        #aiOutput .space-y-2 {
-            margin-top: 0;
-            padding-top: 0;
-        }
-
-        #aiOutput::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        #aiOutput::-webkit-scrollbar-track {
-            background: transparent;
-            border-radius: 3px;
-        }
-
-        #aiOutput::-webkit-scrollbar-thumb {
-            background-color: var(--secondary);
-            border-radius: 3px;
-            border: 2px solid transparent;
-            background-clip: content-box;
-        }
-
-        #aiOutput::-webkit-scrollbar-thumb:hover {
-            background-color: var(--primary);
+        #aiOutput .flex.justify-end {
+            margin-top: 0.75rem !important;
+            padding-top: 0.75rem !important;
+            border-top: 1px solid #e5e7eb;
         }
 
         /* Mobile Styles */
@@ -2113,9 +2094,9 @@
 
                 <!-- Generate/Edit View -->
                 <div id="generateEditView" class="flex-1 flex flex-col overflow-hidden">
-                    <!-- Output Area (now at top) -->
-                    <div id="aiOutput" class="flex-1 bg-gray-50 rounded-lg m-4 py-1 px-6 overflow-y-auto">
-                        <p class="text-gray-400 text-sm italic m-0">AI output will appear here...</p>
+                    <!-- Output Area -->
+                    <div id="aiOutput" class="flex-1 bg-gray-50 rounded-lg m-4 overflow-y-auto" style="padding: 1px 1.5rem">
+                        <p class="text-gray-400 text-sm m-0">AI output will appear here...</p>
                     </div>
 
                     <!-- Controls (in middle) -->
@@ -2129,27 +2110,54 @@
                                 <option>Reflective</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="text-sm font-medium block mb-2">Length</label>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs text-gray-500">Short</span>
-                                <input type="range" id="aiLength" min="50" max="500" value="200" class="flex-grow">
-                                <span class="text-xs text-gray-500">Long</span>
                     </div>
-                        </div>
                 </div>
 
-                    <!-- Input Area (now at bottom) -->
-                    <div class="flex-shrink-0 p-4 border-t border-gray-200">
-                        <div class="relative">
-                            <textarea id="aiInput" class="w-full min-h-[100px] max-h-[200px] border border-gray-200 rounded-lg p-3 pr-10 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none" placeholder="Write a scene with Jane..."></textarea>
-                            <button id="aiSubmit" class="absolute right-3 top-3 text-primary hover:text-primary/80 disabled:opacity-50">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                </div>
+                <style>
+                    /* AI Output styles */
+                    #aiOutput {
+                        overflow-y: auto;
+                        min-height: 200px;
+                        max-height: none;
+                        scrollbar-width: thin;
+                        scrollbar-color: var(--secondary) transparent;
+                        word-wrap: break-word;
+                        white-space: pre-wrap;
+                    }
+
+                    #aiOutput > div,
+                    #aiOutput > p {
+                        margin-top: 0 !important;
+                        padding-top: 0 !important;
+                    }
+
+                    #aiOutput .prose {
+                        font-family: 'Inter', sans-serif;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+
+                    #aiOutput p {
+                        margin: 0 0 0.75rem 0 !important;
+                    }
+
+                    #aiOutput p:last-child {
+                        margin-bottom: 0 !important;
+                    }
+
+                    #aiOutput:empty::before {
+                        content: 'AI output will appear here...';
+                        color: var(--text-secondary);
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+
+                    #aiOutput .flex.justify-end {
+                        margin-top: 0.75rem !important;
+                        padding-top: 0.75rem !important;
+                        border-top: 1px solid #e5e7eb;
+                    }
+                </style>
 
             <!-- Mobile Overlay (shown on small screens) -->
             <div id="aiMobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-40"></div>
@@ -3736,13 +3744,11 @@
                     if (data.success) {
                         // Show success output with insert button
                         aiOutput.innerHTML = `
-                            <div class="space-y-2 m-0 p-0">
-                                <div class="prose max-w-none text-gray-800 m-0 p-0">
+                            <div style="margin:0; padding:0;">
+                                <div class="prose max-w-none text-gray-800" style="margin:0; padding:0;">
                                     ${data.text.split('\n')
                                         .filter(line => line.trim())
-                                        .map((line, index) => 
-                                            `<p class="mb-2 mt-0">${line}</p>`
-                                        )
+                                        .map(line => `<p style="margin:0 0 0.75rem 0;">${line}</p>`)
                                         .join('')}
                                 </div>
                                 <div class="flex justify-end mt-3 border-t pt-3">
