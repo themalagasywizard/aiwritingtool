@@ -3707,13 +3707,18 @@
                                 </div>
                                 <div class="flex justify-end space-x-3 mt-4">
                                     <button class="px-3 py-1.5 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition-colors flex items-center space-x-2" 
-                                            onclick="insertIntoChapter('${data.text.replace(/'/g, "\\'")}')">
+                                            id="insertIntoChapterBtn">
                                         <i class="fas fa-paste"></i>
                                         <span>Insert into Chapter</span>
                                     </button>
                                 </div>
                             </div>
                         `;
+                        
+                        // Add event listener to the insert button
+                        document.getElementById('insertIntoChapterBtn').addEventListener('click', function() {
+                            insertIntoChapter(data.text);
+                        });
                         
                         // Track successful generation
                         if (window.gtag) {
@@ -3737,15 +3742,14 @@
             });
 
             // Function to insert AI output into the current chapter
-            window.insertIntoChapter = function(text) {
-                const currentChapter = document.querySelector('.chapter.active');
-                if (!currentChapter) {
+            function insertIntoChapter(text) {
+                if (!appState.currentChapter) {
                     showToast('Please select a chapter first', 'error');
                     return;
                 }
 
-                const editor = currentChapter.querySelector('.chapter-content');
-                if (!editor) {
+                const editorContent = document.getElementById('editorContent');
+                if (!editorContent) {
                     showToast('Could not find chapter editor', 'error');
                     return;
                 }
@@ -3759,28 +3763,39 @@
                 } catch (e) {
                     // If no range exists, create one at the end of the editor
                     range = document.createRange();
-                    range.selectNodeContents(editor);
+                    range.selectNodeContents(editorContent);
                     range.collapse(false);
                     selection.removeAllRanges();
                     selection.addRange(range);
                 }
                 
-                // Create a new div with the text content
-                const textNode = document.createElement('div');
-                textNode.innerHTML = text.split('\n').map(line => 
-                    line.trim() ? `<p>${line}</p>` : ''
-                ).join('');
+                // Format the text into paragraphs
+                const formattedText = text.split('\n')
+                    .filter(line => line.trim())
+                    .map(line => `<p>${line}</p>`)
+                    .join('');
+                
+                // Create a temporary container for the HTML content
+                const tempContainer = document.createElement('div');
+                tempContainer.innerHTML = formattedText;
 
                 // Insert at cursor position or append to end
-                if (selection.rangeCount > 0 && editor.contains(range.commonAncestorContainer)) {
+                if (selection.rangeCount > 0 && editorContent.contains(range.commonAncestorContainer)) {
                     range.deleteContents();
-                    range.insertNode(textNode);
+                    
+                    // Insert each child node individually to maintain proper DOM structure
+                    Array.from(tempContainer.childNodes).forEach(node => {
+                        range.insertNode(node);
+                        range.setStartAfter(node);
+                        range.collapse(true);
+                    });
                 } else {
-                    editor.appendChild(textNode);
+                    editorContent.appendChild(tempContainer);
                 }
 
-                // Save the chapter content
-                saveChapterContent(currentChapter);
+                // Mark content as needing to be saved
+                appState.isDirty = true;
+                updateSaveStatus(true);
                 
                 // Show success message
                 showToast('Text inserted successfully', 'success');
@@ -3792,7 +3807,7 @@
                         'event_label': 'chapter_content'
                     });
                 }
-            };
+            }
             
             // Handle Enter key in chat input (Shift+Enter for new line)
             chatInput.addEventListener('keydown', (e) => {
