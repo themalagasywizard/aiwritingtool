@@ -166,29 +166,31 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-        // Initialize Supabase client
-        const supabaseUrl = document.querySelector('meta[name="supabase-url"]').content;
-        const supabaseAnonKey = document.querySelector('meta[name="supabase-anon-key"]').content;
-        
-        let supabase;
-        try {
-            if (!supabaseUrl || !supabaseAnonKey) {
-                throw new Error('Supabase configuration is missing');
-            }
-            supabase = createClient(supabaseUrl, supabaseAnonKey);
-        } catch (error) {
-            console.error('Failed to initialize Supabase client:', error);
-            showError('Unable to connect to the service. Please try again later.');
-            return;
-        }
-
         // Form elements
         const form = document.getElementById('waitlistForm');
         const emailInput = document.getElementById('email');
         const emailError = document.getElementById('emailError');
-        const submitButton = form.querySelector('button[type="submit"]');
+        const submitButton = form?.querySelector('button[type="submit"]');
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
+
+        // Initialize Supabase client
+        let supabase;
+        
+        async function initSupabase() {
+            const supabaseUrl = document.querySelector('meta[name="supabase-url"]').content;
+            const supabaseAnonKey = document.querySelector('meta[name="supabase-anon-key"]').content;
+            
+            try {
+                if (!supabaseUrl || !supabaseAnonKey) {
+                    throw new Error('Supabase configuration is missing');
+                }
+                supabase = createClient(supabaseUrl, supabaseAnonKey);
+            } catch (error) {
+                console.error('Failed to initialize Supabase client:', error);
+                showError('Unable to connect to the service. Please try again later.');
+            }
+        }
 
         // Validate email format
         function isValidEmail(email) {
@@ -253,75 +255,93 @@
         }
 
         // Form submission handler
-        if (form) {
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                hideError();
+        async function handleSubmit(e) {
+            e.preventDefault();
+            hideError();
 
-                const email = emailInput.value.trim();
-                const interests = document.getElementById('interests')?.value || '';
+            if (!supabase) {
+                showError('Service not initialized. Please try again later.');
+                return;
+            }
 
-                // Validate email
-                if (!isValidEmail(email)) {
+            const email = emailInput?.value?.trim();
+            const interests = document.getElementById('interests')?.value || '';
+
+            // Validate email
+            if (!email || !isValidEmail(email)) {
+                if (emailError) {
                     emailError.textContent = 'Please enter a valid email address';
                     emailError.classList.remove('hidden');
+                }
+                return;
+            }
+
+            if (emailError) {
+                emailError.classList.add('hidden');
+            }
+
+            setLoading(true);
+
+            try {
+                // Insert into waitlist table
+                const { data, error } = await supabase
+                    .from('waitlist')
+                    .insert([
+                        { 
+                            email: email,
+                            interests: interests,
+                            signup_date: new Date().toISOString()
+                        }
+                    ]);
+
+                if (error) {
+                    if (error.code === '23505') {
+                        showError('This email is already on the waitlist!');
+                    } else {
+                        console.error('Supabase error:', error);
+                        showError('Something went wrong. Please try again.');
+                    }
                     return;
-                } else {
-                    emailError.classList.add('hidden');
                 }
 
-                setLoading(true);
+                // Show success message
+                showSuccess();
 
+                // Track signup (you can add analytics here)
                 try {
-                    // Insert into waitlist table
-                    const { data, error } = await supabase
-                        .from('waitlist')
-                        .insert([
-                            { 
-                                email: email,
-                                interests: interests,
-                                signup_date: new Date().toISOString()
-                            }
-                        ]);
-
-                    if (error) {
-                        if (error.code === '23505') {
-                            showError('This email is already on the waitlist!');
-                        } else {
-                            console.error('Supabase error:', error);
-                            showError('Something went wrong. Please try again.');
-                        }
-                        return;
+                    if (window.gtag) {
+                        window.gtag('event', 'waitlist_signup', {
+                            'event_category': 'engagement',
+                            'event_label': interests || 'no_interest_selected'
+                        });
                     }
-
-                    // Show success message
-                    showSuccess();
-
-                    // Track signup (you can add analytics here)
-                    try {
-                        if (window.gtag) {
-                            window.gtag('event', 'waitlist_signup', {
-                                'event_category': 'engagement',
-                                'event_label': interests || 'no_interest_selected'
-                            });
-                        }
-                    } catch (analyticsError) {
-                        console.error('Analytics error:', analyticsError);
-                    }
-
-                } catch (error) {
-                    console.error('Submission error:', error);
-                    showError('Unable to join waitlist. Please try again later.');
-                } finally {
-                    setLoading(false);
+                } catch (analyticsError) {
+                    console.error('Analytics error:', analyticsError);
                 }
-            });
+
+            } catch (error) {
+                console.error('Submission error:', error);
+                showError('Unable to join waitlist. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
         }
 
-        // Initialize form
-        if (emailInput) {
-            emailInput.focus();
-        }
+        // Initialize everything when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize Supabase
+            await initSupabase();
+
+            // Add form submit handler
+            if (form) {
+                form.addEventListener('submit', handleSubmit);
+            }
+
+            // Focus email input
+            if (emailInput) {
+                emailInput.focus();
+            }
+        });
     </script>
 </body>
 </html> 
