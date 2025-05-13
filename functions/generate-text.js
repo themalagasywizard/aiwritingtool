@@ -70,80 +70,114 @@ const summarizeText = (text) => {
 };
 
 // Helper function to fetch project context from Supabase
-const fetchProjectContext = async (projectId, userId) => {
+const fetchProjectContext = async (projectId, userId, selectedContext = null) => {
   try {
     // Ensure Supabase connection is working
     await ensureSupabaseConnection();
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
+    console.log('Selected context:', selectedContext);
     
-    // Skip table discovery since we know the table names
-    console.log('Using known table schema from configuration');
+    let characters = [], locations = [], events = [];
     
-    // Fetch locations - we know the exact table name is "locations"
-    console.log('Querying "locations" table with project_id:', projectId);
-    const { data: locations, error: locationsError } = await supabase
-      .from('locations')
-      .select('*')
-      .eq('project_id', projectId);
-    
-    if (locationsError) {
-      console.error('Locations query error:', locationsError);
-    } else {
-      console.log('Locations query results:', {
-        count: locations?.length || 0,
-        sample: locations?.slice(0, 2) || []
-      });
-    }
-    
-    // Fetch characters - we know the exact table name is "characters"
-    console.log('Querying "characters" table with project_id:', projectId);
-    const { data: characters, error: charactersError } = await supabase
-      .from('characters')
-      .select('*')
-      .eq('project_id', projectId);
-    
-    if (charactersError) {
-      console.error('Characters query error:', charactersError);
-    } else {
-      console.log('Characters query results:', {
-        count: characters?.length || 0,
-        sample: characters?.slice(0, 2) || []
-      });
-    }
-    
-    // Fetch timeline events - we know the exact table name is "timeline_events"
-    console.log('Querying "timeline_events" table with project_id:', projectId);
-    const { data: events, error: eventsError } = await supabase
-      .from('timeline_events')
-      .select('*')
-      .eq('project_id', projectId);
-    
-    if (eventsError) {
-      console.error('Events query error:', eventsError);
-    } else {
-      console.log('Events query results:', {
-        count: events?.length || 0,
-        sample: events?.slice(0, 2) || []
-      });
-    }
-    
-    // Try to fetch all timeline_event_characters links if they exist
-    console.log('Querying "timeline_event_characters" table...');
-    let eventCharacterLinks = [];
-    try {
-      const { data: links, error: linksError } = await supabase
-        .from('timeline_event_characters')
-        .select('*');
-      
-      if (!linksError) {
-        eventCharacterLinks = links || [];
-        console.log(`Found ${eventCharacterLinks.length} timeline_event_characters links`);
-      } else {
-        console.log('No timeline_event_characters table found or error:', linksError.message);
+    // If selectedContext is provided, fetch only selected items
+    if (selectedContext) {
+      // Fetch selected characters
+      if (selectedContext.characters.length > 0) {
+        const { data: selectedCharacters, error: charError } = await supabase
+          .from('characters')
+          .select('*')
+          .eq('project_id', projectId)
+          .in('id', selectedContext.characters.map(c => c.id));
+        
+        if (charError) {
+          console.error('Characters query error:', charError);
+        } else {
+          characters = selectedCharacters || [];
+        }
       }
-    } catch (e) {
-      console.log('Error checking for timeline_event_characters:', e.message);
+      
+      // Fetch selected locations
+      if (selectedContext.locations.length > 0) {
+        const { data: selectedLocations, error: locError } = await supabase
+          .from('locations')
+          .select('*')
+          .eq('project_id', projectId)
+          .in('id', selectedContext.locations.map(l => l.id));
+        
+        if (locError) {
+          console.error('Locations query error:', locError);
+        } else {
+          locations = selectedLocations || [];
+        }
+      }
+      
+      // Fetch selected events
+      if (selectedContext.events.length > 0) {
+        const { data: selectedEvents, error: eventsError } = await supabase
+          .from('timeline_events')
+          .select('*')
+          .eq('project_id', projectId)
+          .in('id', selectedContext.events.map(e => e.id));
+        
+        if (eventsError) {
+          console.error('Events query error:', eventsError);
+        } else {
+          events = selectedEvents || [];
+        }
+      }
+    } else {
+      // If no selection provided, fetch all context items
+      const { data: allCharacters, error: charError } = await supabase
+        .from('characters')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (charError) {
+        console.error('Characters query error:', charError);
+      } else {
+        characters = allCharacters || [];
+      }
+      
+      const { data: allLocations, error: locError } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (locError) {
+        console.error('Locations query error:', locError);
+      } else {
+        locations = allLocations || [];
+      }
+      
+      const { data: allEvents, error: eventsError } = await supabase
+        .from('timeline_events')
+        .select('*')
+        .eq('project_id', projectId);
+      
+      if (eventsError) {
+        console.error('Events query error:', eventsError);
+      } else {
+        events = allEvents || [];
+      }
+    }
+    
+    // Try to fetch all timeline_event_characters links if we have events
+    let eventCharacterLinks = [];
+    if (events.length > 0) {
+      try {
+        const { data: links, error: linksError } = await supabase
+          .from('timeline_event_characters')
+          .select('*')
+          .in('event_id', events.map(e => e.id));
+        
+        if (!linksError) {
+          eventCharacterLinks = links || [];
+          console.log(`Found ${eventCharacterLinks.length} timeline_event_characters links`);
+        }
+      } catch (e) {
+        console.log('Error checking for timeline_event_characters:', e.message);
+      }
     }
     
     // Format the context string with more detailed information
@@ -151,22 +185,22 @@ const fetchProjectContext = async (projectId, userId) => {
     
     // Add characters section with detailed information
     contextString += 'Characters:\n';
-    if (characters && characters.length > 0) {
+    if (characters.length > 0) {
       characters.forEach(char => {
         contextString += `Character: ${char.name}\n`;
         contextString += `  Role: ${char.role || 'Unspecified'}\n`;
         if (char.traits) contextString += `  Traits: ${truncateText(char.traits, 200)}\n`;
         if (char.backstory) contextString += `  Backstory: ${truncateText(char.backstory, 300)}\n`;
         
-        // Try to add event connections if we have the links table data
+        // Add event connections if we have them
         if (eventCharacterLinks.length > 0) {
-          const characterEvents = events?.filter(event => 
+          const characterEvents = events.filter(event => 
             eventCharacterLinks.some(link => 
               link.character_id === char.id && link.event_id === event.id
             )
           );
           
-          if (characterEvents?.length > 0) {
+          if (characterEvents.length > 0) {
             contextString += `  Appears in events:\n`;
             characterEvents.forEach(event => {
               contextString += `    - ${event.name} (${event.date_time || 'unknown time'})\n`;
@@ -177,12 +211,12 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += '\n';
       });
     } else {
-      contextString += 'No characters found.\n\n';
+      contextString += 'No characters selected.\n\n';
     }
     
     // Add locations section with detailed information
     contextString += 'Locations:\n';
-    if (locations && locations.length > 0) {
+    if (locations.length > 0) {
       locations.forEach(loc => {
         contextString += `Location: ${loc.name}\n`;
         contextString += `  Type: ${loc.type || 'Unspecified'}\n`;
@@ -190,8 +224,8 @@ const fetchProjectContext = async (projectId, userId) => {
         if (loc.key_features) contextString += `  Key Features: ${truncateText(loc.key_features, 200)}\n`;
         
         // Add events that occur at this location
-        const locationEvents = events?.filter(event => event.location_id === loc.id);
-        if (locationEvents?.length > 0) {
+        const locationEvents = events.filter(event => event.location_id === loc.id);
+        if (locationEvents.length > 0) {
           contextString += `  Events at this location:\n`;
           locationEvents.forEach(event => {
             contextString += `    - ${event.name} (${event.date_time || 'unknown time'})\n`;
@@ -201,57 +235,43 @@ const fetchProjectContext = async (projectId, userId) => {
         contextString += '\n';
       });
     } else {
-      contextString += 'No locations found.\n\n';
+      contextString += 'No locations selected.\n\n';
     }
     
-    // Add timeline events section with detailed information
-    contextString += 'Timeline Events (in chronological order):\n';
-    if (events && events.length > 0) {
-      // Sort events by date_time if it exists
-      const eventsWithTime = events.filter(e => e.date_time);
-      if (eventsWithTime.length > 0) {
-        eventsWithTime.sort((a, b) => new Date(a.date_time) - new Date(b.date_time));
-        
-        eventsWithTime.forEach(event => {
-          const location = locations?.find(loc => loc.id === event.location_id);
-          
-          contextString += `Event: ${event.name || 'Unnamed Event'}\n`;
-          contextString += `  Time: ${event.date_time}\n`;
-          if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
-          if (location) contextString += `  Location: ${location.name}\n`;
-          
-          // Try to add character connections
-          if (eventCharacterLinks.length > 0) {
-            const eventCharacters = characters?.filter(char => 
-              eventCharacterLinks.some(link => 
-                link.event_id === event.id && link.character_id === char.id
-              )
-            );
-            
-            if (eventCharacters?.length > 0) {
-              contextString += `  Characters involved: ${eventCharacters.map(c => c.name).join(', ')}\n`;
-            }
-          }
-          
-          contextString += '\n';
-        });
-      }
+    // Add timeline events section
+    contextString += 'Timeline Events:\n';
+    if (events.length > 0) {
+      // Sort events by date_time if available
+      const sortedEvents = [...events].sort((a, b) => {
+        if (!a.date_time) return 1;
+        if (!b.date_time) return -1;
+        return new Date(a.date_time) - new Date(b.date_time);
+      });
       
-      // Add events without timestamps at the end
-      const eventsWithoutTime = events.filter(e => !e.date_time);
-      if (eventsWithoutTime.length > 0) {
-        contextString += 'Events without specific timing:\n';
-        eventsWithoutTime.forEach(event => {
-          const location = locations?.find(loc => loc.id === event.location_id);
-          
-          contextString += `Event: ${event.name || 'Unnamed Event'}\n`;
-          if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
-          if (location) contextString += `  Location: ${location.name}\n`;
-          contextString += '\n';
-        });
-      }
+      sortedEvents.forEach(event => {
+        contextString += `Event: ${event.name}\n`;
+        if (event.date_time) contextString += `  Time: ${event.date_time}\n`;
+        if (event.description) contextString += `  Description: ${truncateText(event.description, 200)}\n`;
+        
+        // Add location if available
+        const location = locations.find(loc => loc.id === event.location_id);
+        if (location) contextString += `  Location: ${location.name}\n`;
+        
+        // Add involved characters
+        const involvedCharacters = characters.filter(char =>
+          eventCharacterLinks.some(link =>
+            link.event_id === event.id && link.character_id === char.id
+          )
+        );
+        
+        if (involvedCharacters.length > 0) {
+          contextString += `  Characters involved: ${involvedCharacters.map(c => c.name).join(', ')}\n`;
+        }
+        
+        contextString += '\n';
+      });
     } else {
-      contextString += 'No timeline events found.\n';
+      contextString += 'No timeline events selected.\n';
     }
     
     return contextString;
@@ -263,8 +283,7 @@ const fetchProjectContext = async (projectId, userId) => {
       details: error.details,
       hint: error.hint
     });
-    // Return a simplified context string even in case of error
-    return 'Project Context:\n\nError fetching project context: ' + error.message;
+    return 'Error fetching project context: ' + error.message;
   }
 };
 
@@ -375,14 +394,27 @@ const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
 // Helper function to validate API keys
 const validateApiKeys = (modelName) => {
     const isDeepSeekModel = modelName.includes('deepseek');
+    const isQwen3Model = modelName.includes('qwen3');
     
     if (isDeepSeekModel && (!process.env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY === '')) {
         throw new Error('DEEPSEEK_API_KEY is not configured. Please set this environment variable.');
     }
     
-    if (!isDeepSeekModel && (!process.env.HF_API_KEY || process.env.HF_API_KEY === '')) {
-        throw new Error('HF_API_KEY is not configured. Please set this environment variable.');
+    if (isQwen3Model && (!process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY === '')) {
+        throw new Error('OPENROUTER_API_KEY is not configured. Please set this environment variable.');
     }
+};
+
+// Helper function to get the OpenRouter model name
+const getOpenRouterModelName = (modelName) => {
+    const modelMap = {
+        // Premium Models via OpenRouter
+        'claude-opus': 'anthropic/claude-3-opus',
+        'claude-sonnet': 'anthropic/claude-3-sonnet',
+        // Free Models via OpenRouter
+        'qwen3-235b': 'qwen/qwen3-235b-a22b'
+    };
+    return modelMap[modelName] || modelName;
 };
 
 // Helper function to convert words to tokens (approximate)
@@ -423,42 +455,80 @@ const timeoutPromise = (ms, message) => new Promise((_, reject) =>
 
 // Helper function to calculate dynamic timeout based on tokens and mode
 const calculateTimeout = (maxTokens, mode, isDeepSeekModel) => {
-    const BASE_TIMEOUT = mode === 'chat' ? 20000 : 30000;   // Lower base timeout for chat mode
-    const MAX_TIMEOUT = 110000;   // 110 seconds maximum
-    const MIN_TIMEOUT = mode === 'chat' ? 10000 : 15000;    // Lower minimum timeout for chat mode
-    const MS_PER_TOKEN = mode === 'chat' ? 50 : 100;     // Faster per-token scaling for chat mode
+    // Increased base timeouts for all requests
+    const BASE_TIMEOUT = mode === 'chat' ? 30000 : 45000;   // Increased base timeout
+    const MAX_TIMEOUT = 90000;   // 90 seconds maximum to stay within Netlify 120s limit
+    const MIN_TIMEOUT = mode === 'chat' ? 20000 : 30000;    // Increased minimum timeout
+    const MS_PER_TOKEN = mode === 'chat' ? 30 : 60;     // More efficient per-token scaling
 
+    // Give DeepSeek more time as it tends to require longer processing
     if (isDeepSeekModel) {
-        const scaledTimeout = BASE_TIMEOUT + (maxTokens * MS_PER_TOKEN);
+        // Add system message complexity factor - our template is large
+        const systemMessageComplexityFactor = 15000; // Add 15 seconds for the complex system message
+        const scaledTimeout = BASE_TIMEOUT + (maxTokens * MS_PER_TOKEN) + systemMessageComplexityFactor;
         return Math.min(MAX_TIMEOUT, Math.max(MIN_TIMEOUT, scaledTimeout));
     } else {
-        return mode === 'chat' ? 30000 : 60000;
+        // Also increase non-DeepSeek timeouts
+        return mode === 'chat' ? 40000 : 70000;
     }
 };
 
-// Helper function to fetch with timeout
+// Helper function to fetch with timeout and retry mechanism
 const fetchWithTimeout = async (url, options, timeout) => {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
-        const response = await Promise.race([
-            fetch(url, { ...options, signal: controller.signal }),
-            timeoutPromise(timeout)
-        ]);
-        
-        clearTimeout(timeoutId);
-        return response;
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            throw new Error('Request timed out');
+    const MAX_RETRIES = 2;
+    let lastError = null;
+    
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), timeout);
+            
+            // If this is a retry, log it and add a small delay to avoid rate limiting
+            if (attempt > 0) {
+                console.log(`Retry attempt ${attempt}/${MAX_RETRIES} for API request`);
+                // Add a small delay before retrying (increasing with each attempt)
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+            
+            const response = await Promise.race([
+                fetch(url, { ...options, signal: controller.signal }),
+                timeoutPromise(timeout, `Request timed out after ${timeout}ms`)
+            ]);
+            
+            clearTimeout(timeoutId);
+            
+            // If the response is not ok but it's a 429 (rate limit) or a 5xx error,
+            // these are retryable errors
+            if (!response.ok && (response.status === 429 || response.status >= 500)) {
+                throw new Error(`Server responded with status ${response.status}`);
+            }
+            
+            return response;
+        } catch (error) {
+            lastError = error;
+            const isRetryableError = 
+                error.name === 'AbortError' || 
+                error.message.includes('timed out') ||
+                error.message.includes('status 429') ||
+                error.message.includes('status 5');
+                
+            // If this is the last attempt or the error is not retryable, throw it
+            if (attempt === MAX_RETRIES || !isRetryableError) {
+                // Add context to the error message
+                if (error.name === 'AbortError' || error.message.includes('timed out')) {
+                    throw new Error(`Request to ${url.split('?')[0]} timed out after ${timeout}ms. Try reducing the length parameter or simplifying the prompt.`);
+                }
+                throw error;
+            }
+            
+            // Otherwise, continue to the next retry attempt
+            console.warn(`Request failed (${error.message}). Retrying...`);
         }
-        throw error;
     }
 };
 
 // Create system message based on desired length, tone, and context data
-const createSystemMessage = (mode, userName, desiredWords, tone, contextString, previousChapters) => {
+const createSystemMessage = (mode, userName, desiredWords, tone, contextString, previousChapters, isDeepSeekModel = false) => {
     // Common intro for both modes
     let baseIntro = `You are an AI writing assistant helping ${userName} with a creative writing project.`;
     
@@ -485,27 +555,77 @@ ${previousChapters ? `${previousChapters}` : ''}
 
 Remember, you are helping brainstorm and plan, not writing the actual content. Keep responses under ${Math.min(desiredWords, 300)} words${tone ? ` in a ${tone} tone` : ''}.`;
     } else {
-        // Default 'generate' mode - focused on producing actual content
+        // For DeepSeek models, use a more concise system message to prevent timeouts
+        if (isDeepSeekModel) {
+            return `${baseIntro} You are in WRITING MODE.
+
+Write a creative story continuation of ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
+Your writing must:
+1. Flow naturally from previous text
+2. Advance the plot and develop characters consistent with context
+3. Show, don't tell
+4. Maintain continuity with previous chapters
+5. Follow user's specific instructions
+6. Use vivid language and well-structured paragraphs
+
+${contextString ? `BACKGROUND: ${contextString.substring(0, Math.min(contextString.length, 4000))}` : ''}
+${previousChapters ? `PREVIOUS CONTENT: ${previousChapters.substring(0, Math.min(previousChapters.length, 5000))}` : ''}
+
+MAINTAIN PERFECT CONTINUITY WITH PREVIOUS CONTENT.`;
+        }
+        
+        // Standard generate mode with enhanced writing instructions
         return `${baseIntro} You are in WRITING MODE.
 
-Generate a detailed response of approximately ${desiredWords} words${tone ? ` in a ${tone} tone` : ''}.
-Ensure the response is well-structured and complete, with proper paragraph breaks and complete sentences.
+Your Task:
+Write an engaging and creative continuation of the story, approximately ${desiredWords} words long${tone ? `, in a ${tone} tone` : ''}.
+The narrative must flow seamlessly from the previous chapter, maintaining perfect continuity while advancing the plot and developing characters.
 
-IMPORTANT INSTRUCTIONS - YOU MUST FOLLOW THESE EXACTLY:
-1. You can use ALL characters, locations, and events from the project context to inspire your response. Maintain narrative consistency and interest. You do not have to reference an event if unrelated to current chapter.
-2. When continuing a specific chapter, you MUST start EXACTLY where that chapter left off, maintaining perfect continuity.
-3. Your writing MUST follow the user's specific instructions (e.g., "kill protagonist," "end with a cliffhanger") while maintaining narrative consistency.
-4. You MUST explicitly use character names, locations, timeline events, and plot points from the context.
-5. You MUST resolve any cliffhangers or open questions from the previous chapter unless specifically instructed not to.
-6. You MUST maintain consistent character voices, relationships, and plot threads established in previous chapters.
-7. Avoid contradicting established facts in previous chapters or project context.
+Core Principles for Your Writing:
 
+1. **PERFECT CONTINUITY (Top Priority):**
+   * If PREVIOUS CHAPTERS are provided, your writing MUST start EXACTLY where the most recent chapter ends.
+   * Preserve ALL details from the end of the last chapter, including:
+     - Scene: Location, time of day, weather, and atmosphere.
+     - Characters: Their positions, emotions, ongoing actions, and dialogue context.
+     - Plot: Immediate cliffhangers, unresolved questions, or ongoing events.
+   * Example: If the last chapter ends with "Jane stood at the edge of Darkwood Forest, her sword drawn as the enemy approached," your chapter MUST begin with Jane in Darkwood Forest, sword drawn, facing the enemy.
+   * Do NOT introduce new characters, locations, or major plot elements unless explicitly requested in the prompt or logically inferred from the context.
 
+2. **NARRATIVE PROGRESSION:**
+   * Advance the story in a meaningful way by continuing the immediate plot thread.
+   * Resolve or build upon cliffhangers and ongoing events from the last chapter.
+   * Develop characters through their reactions, decisions, and interactions, consistent with their established traits and backstories.
+   * Use vivid, evocative language to engage the reader, but prioritize continuity over descriptive embellishment.
 
-${contextString ? `PROJECT CONTEXT (USE ALL ELEMENTS BELOW):
+3. **USING BACKGROUND LORE (Secondary Goal):**
+   * Use the BACKGROUND LORE to ensure consistency and inspire creativity.
+   * Characters, locations, and events from the lore should influence the narrative naturally (e.g., a character's backstory affects their decisions, a location's features shape the scene).
+   * Only explicitly mention lore elements when relevant to the current scene or plot progression.
+
+4. **EXECUTING THE USER'S PROMPT:**
+   * Follow the user's specific instructions (e.g., "end with a cliffhanger") while ensuring they align with the established narrative.
+   * If the prompt conflicts with continuity (e.g., "add a new character" when the scene is isolated), prioritize continuity and weave the instruction in logically.
+
+5. **WRITING QUALITY:**
+   * Produce well-structured prose with clear paragraphs and complete sentences.
+   * Avoid stopping mid-sentence; find a natural ending point if approaching the token limit.
+   * Ensure the narrative feels complete and satisfying within the word limit.
+
+What to AVOID:
+* Contradicting the previous chapter's details (e.g., changing location, time, or character states).
+* Introducing unprompted elements that break immersion (e.g., sudden new characters in an isolated scene).
+* Overusing lore elements at the expense of the immediate plot thread.
+
+${contextString ? `
+BACKGROUND LORE (Use for consistency and inspiration):
 ${contextString}
 ` : ''}
-${previousChapters ? `${previousChapters}` : ''}
+${previousChapters ? `
+PREVIOUS CHAPTERS (Start EXACTLY where the most recent chapter ends):
+${previousChapters}
+` : ''}
+
 FAILURE TO MAINTAIN PERFECT CONTINUITY WITH THE PREVIOUS CHAPTERS IS NOT ALLOWED.`;
     }
 };
@@ -647,7 +767,7 @@ exports.handler = async (event) => {
                 }
                 
                 // Fetch project context
-                contextString = await fetchProjectContext(project_id, user_id);
+                contextString = await fetchProjectContext(project_id, user_id, context);
                 
                 // Fetch all previous chapters
                 previousChapters = await fetchPreviousChapters(project_id, user_id, prompt);
@@ -670,9 +790,7 @@ exports.handler = async (event) => {
         }
 
         const isDeepSeekModel = modelName.includes('deepseek');
-        const apiUrl = isDeepSeekModel 
-            ? 'https://api.deepseek.com/v1/chat/completions'
-            : `https://api-inference.huggingface.co/models/${modelName}`;
+        const isQwen3Model = modelName.includes('qwen3');
 
         // Convert desired word length to tokens and ensure minimum/maximum bounds based on mode
         const maxDesiredWords = mode === 'chat' ? 500 : 5000; // Limit chat responses to 500 words max
@@ -693,7 +811,7 @@ exports.handler = async (event) => {
         };
 
         // Create system message based on desired length, tone, and context data
-        const systemMessage = createSystemMessage(mode, userName, desiredWords, tone, contextString, previousChapters);
+        const systemMessage = createSystemMessage(mode, userName, desiredWords, tone, contextString, previousChapters, isDeepSeekModel);
 
         // Adjust parameters based on mode
         const temperature = mode === 'chat' ? 0.9 : 0.8; // Higher temperature for chat mode to encourage more varied responses
@@ -721,29 +839,47 @@ exports.handler = async (event) => {
             frequency_penalty: frequencyPenalty,
             stop: ["###"]  // Add a stop sequence to prevent mid-sentence cutoff
         } : {
-            inputs: `${systemMessage}\n\n${prompt}\n\nResponse:`,
-            parameters: {
-                temperature: temperature,
-                top_p: 0.95,
-                max_new_tokens: maxTokens,
-                do_sample: true,
-                num_return_sequences: 1,
-                length_penalty: mode === 'chat' ? 1.0 : 1.5,  // Lower length penalty for chat
-                repetition_penalty: mode === 'chat' ? 1.5 : 1.3,  // Higher repetition penalty for chat
-                early_stopping: true,
-                stop: ["###"]
-            }
+            model: getOpenRouterModelName(modelName),
+            messages: [
+                {
+                    role: "system",
+                    content: systemMessage
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
+            temperature: temperature,
+            top_p: 0.95,
+            max_tokens: maxTokens,
+            stop: ["###"]
         };
 
         // Make API request
+        const apiUrl = isDeepSeekModel 
+            ? 'https://api.deepseek.com/v1/chat/completions'
+            : 'https://openrouter.ai/api/v1/chat/completions';
+
+        // Prepare headers based on the API being used
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        if (isDeepSeekModel) {
+            headers['Authorization'] = `Bearer ${process.env.DEEPSEEK_API_KEY}`;
+        } else {
+            headers['Authorization'] = `Bearer ${process.env.OPENROUTER_API_KEY}`;
+            // Required OpenRouter headers
+            headers['HTTP-Referer'] = process.env.SITE_URL || 'https://github.com/themalagasywizard/aiwritingtool';
+            headers['X-Title'] = 'AIStoryCraft';
+        }
+
         const response = await fetchWithTimeout(
             apiUrl,
             {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${isDeepSeekModel ? process.env.DEEPSEEK_API_KEY : process.env.HF_API_KEY}`
-                },
+                headers: headers,
                 body: JSON.stringify(requestBody)
             },
             timeout
@@ -752,20 +888,12 @@ exports.handler = async (event) => {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('API Error:', response.status, errorText);
-            
-            return {
-                statusCode: response.status,
-                headers,
-                body: JSON.stringify({
-                    error: `API request failed with status ${response.status}`,
-                    details: errorText,
-                    success: false
-                })
-            };
+            throw new Error(`API request failed with status ${response.status}: ${errorText}`);
         }
 
         const result = await response.json();
-        
+        console.log('API Response:', result); // Debug log
+
         // Extract text and usage info
         let generatedText = '';
         let usage = null;
@@ -773,16 +901,26 @@ exports.handler = async (event) => {
         if (isDeepSeekModel && result.choices?.[0]?.message?.content) {
             generatedText = result.choices[0].message.content;
             usage = result.usage;
-        } else if (Array.isArray(result) && result[0]?.generated_text) {
-            generatedText = result[0].generated_text;
-        } else if (result.generated_text) {
-            generatedText = result.generated_text;
+        } else if (!isDeepSeekModel) { // OpenRouter response handling
+            if (!result.choices?.[0]?.message?.content) {
+                console.error('Unexpected OpenRouter response format:', result);
+                throw new Error('Invalid response format from OpenRouter API');
+            }
+            generatedText = result.choices[0].message.content;
+            usage = {
+                prompt_tokens: result.usage?.prompt_tokens || 0,
+                completion_tokens: result.usage?.completion_tokens || 0,
+                total_tokens: result.usage?.total_tokens || 0
+            };
         } else {
+            console.error('Unexpected API response:', result);
             throw new Error('Invalid response format from API');
         }
 
+        // Ensure we have generated text
         if (!generatedText) {
-            throw new Error('No text was generated');
+            console.error('No text generated from API response:', result);
+            throw new Error('No text was generated from the API response');
         }
 
         // Ensure the text ends with a complete sentence
@@ -807,30 +945,53 @@ exports.handler = async (event) => {
                 mode: mode,
                 contextProvided: !!contextString,
                 previousChaptersProvided: !!previousChapters,
-                usage: usage || null,
+                usage: usage,
                 requestedWords: desiredWords,
                 actualWords: actualWords,
                 actualTokens: usage?.total_tokens || null,
-                debug: debugInfo
+                debug: {
+                    contextString,
+                    previousChapters,
+                    modelName,
+                    mode,
+                    requestedWords: desiredWords,
+                    actualWords: actualWords,
+                    tokensUsed: usage?.total_tokens || null,
+                    rawResponse: process.env.NODE_ENV === 'development' ? result : null
+                }
             })
         };
 
     } catch (error) {
         console.error('Error in generate-text:', error);
         
-        const statusCode = error.message.includes('timed out') ? 408 
-            : error.message.includes('API key') ? 401 
-            : 500;
+        // Provide more helpful error messages based on error type
+        let errorMessage = error.message;
+        let statusCode = 500;
+        
+        if (error.message.includes('timed out') || error.name === 'AbortError') {
+            statusCode = 408; // Request Timeout
+            errorMessage = 'Your request timed out. This might be due to high server load or a complex prompt. Try the following:\n1. Reduce the word count (length) parameter\n2. Use a simpler prompt\n3. Try again in a few minutes';
+        } else if (error.message.includes('API key')) {
+            statusCode = 401; // Unauthorized
+            errorMessage = 'API key error: ' + error.message;
+        } else if (error.message.includes('status 429')) {
+            statusCode = 429; // Too Many Requests
+            errorMessage = 'Rate limit exceeded. Please try again in a few minutes.';
+        } else if (error.message.includes('status 5')) {
+            statusCode = 503; // Service Unavailable
+            errorMessage = 'The AI service is currently unavailable. Please try again later.';
+        }
 
         return {
             statusCode,
             headers,
             body: JSON.stringify({
-                error: error.message,
+                error: errorMessage,
                 success: false,
                 debug: {
                     error: error.message,
-                    stack: error.stack
+                    stack: process.env.NODE_ENV === 'development' ? error.stack : null
                 }
             })
         };

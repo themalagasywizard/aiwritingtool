@@ -606,9 +606,54 @@
                 }
             }
         }
+
+        /* Context selection styles */
+        .context-item-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .context-item-checkbox:checked {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .context-item-checkbox:checked::after {
+            content: '✓';
+            color: white;
+            font-size: 12px;
+            line-height: 1;
+        }
+        
+        .context-item-checkbox:focus {
+            outline: none;
+            ring: 2px var(--primary);
+        }
+        
+        #contextSelectionPanel {
+            transition: max-height 0.3s ease-in-out;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
+    <!-- Import Supabase client and make it available globally -->
+    <script type="module">
+        import { projects, chapters, characters, auth, locations, timelineEvents } from './lib/supabase.js';
+        // Make services available to non-module scripts
+        window.supabaseServices = { auth, projects, chapters, characters, locations, timelineEvents };
+    </script>
+    
     <script type="module">
         import { projects, chapters, characters, auth } from './lib/supabase.js';
         
@@ -618,7 +663,8 @@
             currentChapter: null,
             currentUser: null,
             isDirty: false, // Track if editor has unsaved changes
-            wordTarget: 1000, // Default target word count
+            wordTarget: 1000, // Default target word count,
+            chapterCache: new Map() // Cache for chapter content
         };
         
         // Expose appState to window object for access from other scripts
@@ -804,6 +850,13 @@
                 
                 // Sort chapters by order_index
                 projectChapters.sort((a, b) => a.order_index - b.order_index);
+
+                // Initialize or update chapter cache
+                projectChapters.forEach(chapter => {
+                    if (!appState.chapterCache.has(chapter.id)) {
+                        appState.chapterCache.set(chapter.id, chapter);
+                    }
+                });
                 
                 // Add chapters to the list
                 projectChapters.forEach((chapter, index) => {
@@ -816,11 +869,11 @@
                         <div class="flex items-center justify-between">
                             <span class="chapter-title">${chapter.title}</span>
                             <i class="fas fa-grip-lines text-gray-300 cursor-move handle"></i>
-                </div>
+                        </div>
                     `;
                     
                     // Add click handler
-                    chapterElement.addEventListener('click', () => selectChapter(chapter));
+                    chapterElement.addEventListener('click', () => selectChapter(chapter.id));
                     
                     // Add double-click handler for renaming
                     chapterElement.addEventListener('dblclick', (e) => {
@@ -972,9 +1025,9 @@
                     elements.chaptersList.appendChild(chapterElement);
                 });
                 
-                // Select the first chapter by default
-                if (projectChapters.length > 0) {
-                    selectChapter(projectChapters[0]);
+                // Select the first chapter by default if no chapter is selected
+                if (projectChapters.length > 0 && !appState.currentChapter) {
+                    selectChapter(projectChapters[0].id);
                 }
             } catch (error) {
                 console.error('Error loading chapters:', error);
@@ -982,12 +1035,17 @@
             }
         }
 
-        function selectChapter(chapter) {
-            if (!chapter) return;
-            
+        function selectChapter(chapterId) {
             // Save current chapter if it exists and has changes
             if (appState.currentChapter && appState.isDirty) {
                 saveCurrentChapter();
+            }
+            
+            // Get chapter from cache
+            const chapter = appState.chapterCache.get(chapterId);
+            if (!chapter) {
+                console.error('Chapter not found in cache:', chapterId);
+                return;
             }
             
             // Set as current chapter
@@ -997,7 +1055,7 @@
             const chapterItems = document.querySelectorAll('.chapter-item');
             chapterItems.forEach(item => {
                 item.classList.remove('active');
-                if (item.getAttribute('data-chapter-id') === chapter.id) {
+                if (item.getAttribute('data-chapter-id') === chapterId) {
                     item.classList.add('active');
                 }
             });
@@ -1071,8 +1129,9 @@
                 
                 if (error) throw error;
                 
-                // Update current chapter
+                // Update both current chapter and cache
                 appState.currentChapter = updatedChapter[0];
+                appState.chapterCache.set(updatedChapter[0].id, updatedChapter[0]);
                 
                 // Reset dirty state
                 appState.isDirty = false;
@@ -1936,34 +1995,60 @@
                     
                     <!-- Model Selector -->
                     <select id="aiModel" class="w-full bg-primaryLight text-primary rounded-lg p-2 text-sm">
-                        <!-- DeepSeek Models (Direct API) -->
+                        <!-- DeepSeek Model -->
                         <option value="deepseek-chat">DeepSeek Chat (V3) - Featured</option>
-                        <option value="deepseek-reasoner">DeepSeek Reasoner (R1) - Featured</option>
                         
-                        <option disabled>──────── Hugging Face Models ────────</option>
-                        <option value="distilgpt2">DistilGPT-2 (Fast)</option>
-                        <option value="gpt2-medium">GPT-2 Medium (Balanced)</option>
-                        <!-- New models -->
-                        <option value="Qwen/Qwen3-0.6B">Qwen3-0.6B (Small but Improved)</option>
-                        <option value="google/gemma-2b">Gemma-2B (Google's Lightweight)</option>
-                        <option value="meta-llama/Llama-3-8B-Instruct">Llama-3-8B (High Quality)</option>
-                        <option value="tiiuae/falcon-7b-instruct">Falcon-7B (Creative)</option>
-                        <option value="mistralai/Mixtral-8x7B-Instruct-v0.1">Mixtral-8x7B (Most Powerful)</option>
-                        <!-- Temporarily disabled due to timeouts -->
-                        <!-- <option value="EleutherAI/gpt-neo-125M">GPT-Neo 125M (Advanced)</option> -->
-                        <!-- <option value="facebook/opt-350m">OPT 350M (Creative)</option> -->
+                        <option disabled>──────── Claude 3 Models ────────</option>
+                        <!-- Claude 3 Models via OpenRouter -->
+                        <option value="claude-opus">Claude 3 Opus - Most Powerful</option>
+                        <option value="claude-sonnet">Claude 3 Sonnet - Ultra Balanced</option>
+                        
+                        <option disabled>──────── Free Models ────────</option>
+                        <!-- Free Models via OpenRouter -->
+                        <option value="qwen3-235b">QWEN3 235B - Powerful & Free</option>
                     </select>
                 </div>
 
-                <!-- Context Preview -->
+                <!-- Context Selection Panel -->
                 <div class="flex-shrink-0 bg-primaryLight/20 p-3 border-b border-gray-200">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs text-secondary">Using context:</span>
-                        <button class="text-xs text-primary hover:text-primary/80">
-                            <i class="fas fa-edit mr-1"></i>Edit
+                        <span class="text-xs font-medium text-secondary">Story Context</span>
+                        <button id="toggleContextBtn" class="text-xs text-primary hover:text-primary/80">
+                            <i class="fas fa-chevron-down mr-1"></i>Show/Hide
                         </button>
                     </div>
-                    <div class="text-sm text-primary mt-1">Jane, Darkwood Forest</div>
+                    
+                    <!-- Selected context items summary -->
+                    <div id="contextSummary" class="text-sm text-primary mt-1">
+                        No context items selected
+                    </div>
+                    
+                    <!-- Context selection panel (collapsed by default) -->
+                    <div id="contextSelectionPanel" class="hidden mt-3 border-t border-gray-200 pt-3">
+                        <!-- Characters section -->
+                        <div class="mb-3">
+                            <h3 class="text-xs font-medium text-secondary mb-1">Characters</h3>
+                            <div id="characterContextItems" class="space-y-1 max-h-24 overflow-y-auto">
+                                <div class="text-xs text-gray-500 italic">Loading characters...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Locations section -->
+                        <div class="mb-3">
+                            <h3 class="text-xs font-medium text-secondary mb-1">Locations</h3>
+                            <div id="locationContextItems" class="space-y-1 max-h-24 overflow-y-auto">
+                                <div class="text-xs text-gray-500 italic">Loading locations...</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timeline events section -->
+                        <div>
+                            <h3 class="text-xs font-medium text-secondary mb-1">Timeline Events</h3>
+                            <div id="timelineContextItems" class="space-y-1 max-h-24 overflow-y-auto">
+                                <div class="text-xs text-gray-500 italic">Loading events...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Chat View -->
@@ -3140,6 +3225,14 @@
                 aiAssistPanel.classList.toggle('translate-x-full');
                 aiMobileOverlay.classList.toggle('hidden');
                 
+                // Initialize the context panel when AI panel is opened
+                if (!isOpen) {
+                    if (!aiAssistPanel.__contextInitialized) {
+                        initContextPanel();
+                        aiAssistPanel.__contextInitialized = true;
+                    }
+                }
+                
                 // Remove the auto-focus
                 /* if (!isOpen) {
                     if (currentMode === 'generate') {
@@ -3198,9 +3291,239 @@
             
             // Get the active context items
             function getActiveContext() {
-                // In a real implementation, this would get the actual context from the sidebar
-                // For now, we'll return a mock context
-                return ['Jane', 'Darkwood Forest'];
+                const selectedContext = {
+                    characters: [],
+                    locations: [],
+                    events: []
+                };
+                
+                // Get all checked context items
+                document.querySelectorAll('.context-item-checkbox:checked').forEach(checkbox => {
+                    const type = checkbox.getAttribute('data-type');
+                    const item = {
+                        id: checkbox.getAttribute('data-id'),
+                        name: checkbox.getAttribute('data-name')
+                    };
+                    
+                    // Add to appropriate category
+                    switch(type) {
+                        case 'character':
+                            selectedContext.characters.push(item);
+                            break;
+                        case 'location':
+                            selectedContext.locations.push(item);
+                            break;
+                        case 'event':
+                            selectedContext.events.push(item);
+                            break;
+                    }
+                });
+                
+                return selectedContext;
+            }
+            
+            // Update the context summary based on selected items
+            function updateContextSummary() {
+                const selectedItems = document.querySelectorAll('.context-item-checkbox:checked');
+                const contextSummary = document.getElementById('contextSummary');
+                
+                if (selectedItems.length === 0) {
+                    contextSummary.textContent = 'No context items selected';
+                } else {
+                    const itemNames = Array.from(selectedItems).map(item => 
+                        item.getAttribute('data-name')
+                    );
+                    contextSummary.textContent = itemNames.join(', ');
+                }
+            }
+            
+            // Load context items from the app state
+            async function loadContextItems() {
+                // Characters
+                const charactersList = document.getElementById('characterContextItems');
+                charactersList.innerHTML = ''; // Clear loading message
+                
+                // Locations
+                const locationsList = document.getElementById('locationContextItems');
+                locationsList.innerHTML = '';
+                
+                // Timeline events
+                const timelineList = document.getElementById('timelineContextItems');
+                timelineList.innerHTML = '';
+                
+                try {
+                    // Check if supabase services are available
+                    if (!window.supabaseServices || !window.supabaseServices.characters) {
+                        console.warn('Supabase services not available, using fallback data');
+                        throw new Error('Supabase services not initialized');
+                    }
+                    
+                    if (!window.appState?.currentProject) {
+                        throw new Error('No current project');
+                    }
+                    
+                    // Load characters
+                    const { data: projectCharacters, error: charError } = await window.supabaseServices.characters.getByProject(
+                        window.appState.currentProject.id
+                    );
+                    
+                    if (charError) throw charError;
+                    
+                    // Load locations
+                    const { data: projectLocations, error: locError } = await window.supabaseServices.locations.getByProject(
+                        window.appState.currentProject.id
+                    );
+                    
+                    if (locError) throw locError;
+                    
+                    // Load timeline events
+                    const { data: projectEvents, error: eventsError } = await window.supabaseServices.timelineEvents.getByProject(
+                        window.appState.currentProject.id
+                    );
+                    
+                    if (eventsError) throw eventsError;
+                    
+                    // Add characters to the list
+                    if (projectCharacters && projectCharacters.length > 0) {
+                        projectCharacters.forEach(character => {
+                            const item = createContextItem(character.id, character.name, 'character');
+                            charactersList.appendChild(item);
+                        });
+                    } else {
+                        charactersList.innerHTML = '<div class="text-xs text-gray-500 italic">No characters found</div>';
+                    }
+                    
+                    // Add locations to the list
+                    if (projectLocations && projectLocations.length > 0) {
+                        projectLocations.forEach(location => {
+                            const item = createContextItem(location.id, location.name, 'location');
+                            locationsList.appendChild(item);
+                        });
+                    } else {
+                        locationsList.innerHTML = '<div class="text-xs text-gray-500 italic">No locations found</div>';
+                    }
+                    
+                    // Add timeline events to the list
+                    if (projectEvents && projectEvents.length > 0) {
+                        projectEvents.forEach(event => {
+                            const item = createContextItem(event.id, event.name, 'event');
+                            timelineList.appendChild(item);
+                        });
+                    } else {
+                        timelineList.innerHTML = '<div class="text-xs text-gray-500 italic">No timeline events found</div>';
+                    }
+                } catch (error) {
+                    console.error('Error loading context items:', error);
+                    
+                    // Fallback to some demo data if we have errors
+                    charactersList.innerHTML = '';
+                    [
+                        { id: 'char1', name: 'John Doe', type: 'character' },
+                        { id: 'char2', name: 'Mystery Figure', type: 'character' },
+                        { id: 'char3', name: 'Sarah', type: 'character' }
+                    ].forEach(char => {
+                        const item = createContextItem(char.id, char.name, char.type);
+                        charactersList.appendChild(item);
+                    });
+                    
+                    locationsList.innerHTML = '';
+                    [
+                        { id: 'loc1', name: 'New York City', type: 'location' },
+                        { id: 'loc2', name: 'Darkwood Forest', type: 'location' }
+                    ].forEach(loc => {
+                        const item = createContextItem(loc.id, loc.name, loc.type);
+                        locationsList.appendChild(item);
+                    });
+                    
+                    timelineList.innerHTML = '';
+                    [
+                        { id: 'evt1', name: 'The Accident', type: 'event' },
+                        { id: 'evt2', name: 'Full Moon Encounter', type: 'event' }
+                    ].forEach(evt => {
+                        const item = createContextItem(evt.id, evt.name, evt.type);
+                        timelineList.appendChild(item);
+                    });
+                }
+                
+                // Update the context summary based on default selected items
+                setTimeout(updateContextSummary, 100);
+            }
+            
+            // Create a context item for the selection list
+            function createContextItem(id, name, type) {
+                const item = document.createElement('div');
+                item.className = 'flex items-center space-x-2 mb-1 p-1 hover:bg-gray-50 rounded';
+                
+                // Create a unique ID for the checkbox
+                const checkboxId = `context-item-${type}-${id}`;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = checkboxId;
+                checkbox.className = 'context-item-checkbox rounded text-primary focus:ring-primary';
+                checkbox.setAttribute('data-id', id);
+                checkbox.setAttribute('data-name', name);
+                checkbox.setAttribute('data-type', type);
+                
+                // Add change event listener to update the summary when selection changes
+                checkbox.addEventListener('change', updateContextSummary);
+                
+                // Set some default selections
+                if ((type === 'character' && name === 'John Doe') || 
+                    (type === 'location' && name === 'Darkwood Forest')) {
+                    checkbox.checked = true;
+                }
+                
+                const label = document.createElement('label');
+                label.className = 'text-xs cursor-pointer select-none flex-grow';
+                label.textContent = name;
+                label.setAttribute('for', checkboxId); // Associate label with checkbox
+                
+                // Add click event to the whole item to toggle checkbox
+                item.addEventListener('click', (e) => {
+                    // Prevent double-toggling when clicking directly on checkbox or label
+                    if (e.target !== checkbox && e.target !== label) {
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+                
+                item.appendChild(checkbox);
+                item.appendChild(label);
+                
+                return item;
+            }
+            
+            // Initialize context selection panel
+            function initContextPanel() {
+                const toggleContextBtn = document.getElementById('toggleContextBtn');
+                const contextSelectionPanel = document.getElementById('contextSelectionPanel');
+                
+                // Toggle the context selection panel
+                toggleContextBtn.addEventListener('click', () => {
+                    const isHidden = contextSelectionPanel.classList.contains('hidden');
+                    
+                    // Toggle the panel
+                    contextSelectionPanel.classList.toggle('hidden', !isHidden);
+                    
+                    // Update the icon
+                    const icon = toggleContextBtn.querySelector('i');
+                    if (isHidden) {
+                        icon.classList.remove('fa-chevron-down');
+                        icon.classList.add('fa-chevron-up');
+                    } else {
+                        icon.classList.remove('fa-chevron-up');
+                        icon.classList.add('fa-chevron-down');
+                    }
+                    
+                    // Load context items if opening the panel
+                    if (isHidden) {
+                        loadContextItems();
+                    }
+                });
+                
+                // Initialize with some selected items (when the panel opens for the first time)
+                loadContextItems();
             }
             
             // Handle input validation and submit button state
@@ -3353,12 +3676,16 @@
                     const user_id = window.appState?.currentUser?.id || '';
                     const project_id = window.appState?.currentProject?.id || '';
                     
+                    // Get selected context items
+                    const selectedContext = getActiveContext();
+                    console.log('Selected context for AI:', selectedContext);
+                    
                     const response = await fetch(`/.netlify/functions/generate-text?model=${model}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             prompt: prompt,
-                            context: getActiveContext(),
+                            context: selectedContext,
                             mode: currentMode,
                             tone: tone,
                             length: length,
@@ -3369,39 +3696,131 @@
                     
                     const data = await response.json();
                     
-                    if (data.error && !data.text) {
-                        throw new Error(data.error);
+                    if (data.success) {
+                        // Show success output with insert button
+                        aiOutput.innerHTML = `
+                            <div class="space-y-4">
+                                <div class="prose max-w-none">
+                                    ${data.text.split('\n').map(line => 
+                                        line.trim() ? `<p>${line}</p>` : ''
+                                    ).join('')}
+                                </div>
+                                <div class="flex justify-end space-x-3 mt-4">
+                                    <button class="px-3 py-1.5 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition-colors flex items-center space-x-2" 
+                                            id="insertIntoChapterBtn">
+                                        <i class="fas fa-paste"></i>
+                                        <span>Insert into Chapter</span>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Add event listener to the insert button
+                        document.getElementById('insertIntoChapterBtn').addEventListener('click', function() {
+                            insertIntoChapter(data.text);
+                        });
+                        
+                        // Track successful generation
+                        if (window.gtag) {
+                            window.gtag('event', 'ai_generation_success', {
+                                'event_category': 'engagement',
+                                'event_label': currentMode
+                            });
+                        }
+                    } else {
+                        throw new Error(data.error || 'Failed to generate text');
                     }
-                    
-                    // Format the response text
-                    let responseText = data.text || '';
-                    // Remove the input prompt if it's repeated in the output
-                    if (responseText.includes(prompt)) {
-                        responseText = responseText.replace(prompt, '');
-                    }
-                    
-                    // Format the response with proper line breaks and paragraphs
-                    const formattedResponse = responseText.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
-                    
-                    // Update the response text with model information
-                    const modelInfo = data.model ? `<div class="text-xs text-gray-500 mb-2">Generated with: ${data.model}</div>` : '';
-                    
-                    // Add a warning if this is a fallback response
-                    const fallbackWarning = data.isFallback ? 
-                        `<div class="text-xs text-orange-500 mb-2">Note: This is an offline fallback response. ${data.error || ''}</div>` : '';
-                    
-                    aiOutput.innerHTML = `${modelInfo}${fallbackWarning}<p class="text-gray-700">${formattedResponse}</p>`;
-                    
-                    // Scroll to see the new content
-                    aiOutput.scrollTop = aiOutput.scrollHeight;
-                    
-                    showToast(data.isFallback ? 'Fallback response provided' : 'Text generated successfully!');
                 } catch (error) {
-                    console.error('Error:', error);
-                    aiOutput.innerHTML = `<p class="text-error">Error: ${error.message || 'Could not connect to AI. Please try again later.'}</p>`;
-                    showToast('Error connecting to AI', 'error');
+                    console.error('Error generating text:', error);
+                    aiOutput.innerHTML = `
+                        <div class="text-error">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            ${error.message || 'An error occurred while generating text'}
+                        </div>
+                    `;
                 }
             });
+
+            // Function to insert AI output into the current chapter
+            function insertIntoChapter(text) {
+                if (!appState.currentChapter) {
+                    showToast('Please select a chapter first', 'error');
+                    return;
+                }
+
+                const editorContent = document.getElementById('editorContent');
+                if (!editorContent) {
+                    showToast('Could not find chapter editor', 'error');
+                    return;
+                }
+
+                // Get current cursor position or append to end
+                let selection = window.getSelection();
+                let range;
+                
+                try {
+                    range = selection.getRangeAt(0);
+                } catch (e) {
+                    // If no range exists, create one at the end of the editor
+                    range = document.createRange();
+                    range.selectNodeContents(editorContent);
+                    range.collapse(false);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+                
+                // Format the text into paragraphs
+                const formattedText = text.split('\n')
+                    .filter(line => line.trim())
+                    .map(line => `<p>${line}</p>`)
+                    .join('');
+                
+                // Create a temporary container for the HTML content
+                const tempContainer = document.createElement('div');
+                tempContainer.innerHTML = formattedText;
+
+                // Insert at cursor position or append to end
+                if (selection.rangeCount > 0 && editorContent.contains(range.commonAncestorContainer)) {
+                    range.deleteContents();
+                    
+                    // Insert each child node individually to maintain proper DOM structure
+                    Array.from(tempContainer.childNodes).forEach(node => {
+                        range.insertNode(node);
+                        range.setStartAfter(node);
+                        range.collapse(true);
+                    });
+                } else {
+                    editorContent.appendChild(tempContainer);
+                }
+
+                // Mark content as needing to be saved
+                appState.isDirty = true;
+                
+                // Update save button to indicate unsaved changes
+                const saveBtn = document.getElementById('saveBtn');
+                if (saveBtn) {
+                    saveBtn.classList.remove('btn-primary');
+                    saveBtn.classList.add('btn-error');
+                }
+                
+                // Show success message
+                showToast('Text inserted successfully', 'success');
+                
+                // Trigger auto-save after a short delay
+                setTimeout(() => {
+                    if (appState.isDirty && appState.currentChapter) {
+                        saveCurrentChapter();
+                    }
+                }, 1000);
+                
+                // Track insertion
+                if (window.gtag) {
+                    window.gtag('event', 'ai_text_inserted', {
+                        'event_category': 'engagement',
+                        'event_label': 'chapter_content'
+                    });
+                }
+            }
             
             // Handle Enter key in chat input (Shift+Enter for new line)
             chatInput.addEventListener('keydown', (e) => {
