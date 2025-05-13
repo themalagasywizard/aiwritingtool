@@ -420,7 +420,7 @@
             scrollbar-color: var(--secondary) transparent;
             word-wrap: break-word;
             white-space: pre-wrap;
-            padding: 1px 1rem 1rem 1rem; /* Adding padding with just 1px at top */
+            padding: 1px 1rem 1rem 1rem; /* Ensure top padding is exactly 1px */
         }
 
         #aiOutput .prose {
@@ -431,6 +431,7 @@
 
         #aiOutput p {
             margin-bottom: 0.75rem;
+            margin-top: 0; /* Ensure no top margin on paragraphs */
         }
 
         #aiOutput p:first-child {
@@ -444,6 +445,18 @@
         #aiOutput:empty::before {
             content: 'AI output will appear here...';
             color: var(--text-secondary);
+        }
+
+        /* Target the div that wraps the content in the AI output */
+        #aiOutput > div {
+            margin-top: 0;
+            padding-top: 0;
+        }
+
+        /* Specifically target the .space-y-2 inside aiOutput */
+        #aiOutput .space-y-2 {
+            margin-top: 0;
+            padding-top: 0;
         }
 
         #aiOutput::-webkit-scrollbar {
@@ -2107,7 +2120,7 @@
                 <div id="generateEditView" class="flex-1 flex flex-col overflow-hidden">
                     <!-- Output Area (now at top) -->
                     <div id="aiOutput" class="flex-1 bg-gray-50 rounded-lg m-4 py-1 px-6 overflow-y-auto">
-                        <p class="text-gray-400 text-sm italic">AI output will appear here...</p>
+                        <p class="text-gray-400 text-sm italic m-0">AI output will appear here...</p>
                     </div>
 
                     <!-- Controls (in middle) -->
@@ -3689,7 +3702,7 @@
                 if (!prompt) return;
                 
                 // Show loading state
-                aiOutput.innerHTML = '<p class="text-gray-400 text-sm"><i class="fas fa-spinner fa-spin mr-2"></i>Generating...</p>';
+                aiOutput.innerHTML = '<p class="text-gray-400 text-sm m-0 p-0"><i class="fas fa-spinner fa-spin mr-2"></i>Generating...</p>';
                 aiInput.value = '';
                 validateInput(aiInput);
                 
@@ -3728,14 +3741,12 @@
                     if (data.success) {
                         // Show success output with insert button
                         aiOutput.innerHTML = `
-                            <div class="space-y-2">
-                                <div class="prose max-w-none text-gray-800 mt-0">
+                            <div class="space-y-2 m-0 p-0">
+                                <div class="prose max-w-none text-gray-800 m-0 p-0">
                                     ${data.text.split('\n')
                                         .filter(line => line.trim())
                                         .map((line, index) => 
-                                            index === 0 
-                                                ? `<p class="mb-2 mt-0">${line}</p>` 
-                                                : `<p class="mb-2">${line}</p>`
+                                            `<p class="mb-2 mt-0">${line}</p>`
                                         )
                                         .join('')}
                                 </div>
@@ -3767,7 +3778,7 @@
                 } catch (error) {
                     console.error('Error generating text:', error);
                     aiOutput.innerHTML = `
-                        <div class="text-error">
+                        <div class="text-error m-0 p-0">
                             <i class="fas fa-exclamation-circle mr-2"></i>
                             ${error.message || 'An error occurred while generating text'}
                         </div>
