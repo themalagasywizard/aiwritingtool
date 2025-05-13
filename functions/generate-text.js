@@ -410,7 +410,10 @@ const getOpenRouterModelName = (modelName) => {
     const modelMap = {
         // Premium Models via OpenRouter
         'claude-opus': 'anthropic/claude-3-opus',
-        'claude-sonnet': 'anthropic/claude-3-sonnet'
+        'claude-sonnet': 'anthropic/claude-3-sonnet',
+        // Free Models via OpenRouter
+        'gemini-flash': 'google/gemini-2.0-flash-exp',
+        'qwen3-235b': 'qwen/qwen3-235b-a22b'
     };
     return modelMap[modelName] || modelName;
 };
