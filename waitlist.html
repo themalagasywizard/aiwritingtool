@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join Kalligram Waitlist</title>
     <!-- Supabase Configuration -->
-    <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
-    <meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
+    <meta name="supabase-url" content="https://tadqfmqlqlahoknivhds.supabase.co">
+    <meta name="supabase-anon-key" content="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhZHFmbXFscWxhaG9rbml2aGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTY0MTAsImV4cCI6MjA2MTg5MjQxMH0.6afLHxoHlX3U3JzsqX6d61mpmiu3bICkbHgb1XDY7V0">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
@@ -169,7 +169,18 @@
         // Initialize Supabase client
         const supabaseUrl = document.querySelector('meta[name="supabase-url"]').content;
         const supabaseAnonKey = document.querySelector('meta[name="supabase-anon-key"]').content;
-        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        
+        let supabase;
+        try {
+            if (!supabaseUrl || !supabaseAnonKey) {
+                throw new Error('Supabase configuration is missing');
+            }
+            supabase = createClient(supabaseUrl, supabaseAnonKey);
+        } catch (error) {
+            console.error('Failed to initialize Supabase client:', error);
+            showError('Unable to connect to the service. Please try again later.');
+            return;
+        }
 
         // Form elements
         const form = document.getElementById('waitlistForm');
@@ -187,6 +198,7 @@
 
         // Show loading state
         function setLoading(isLoading) {
+            if (!submitButton) return;
             submitButton.disabled = isLoading;
             submitButton.innerHTML = isLoading 
                 ? '<i class="fas fa-spinner animate-spin mr-2"></i><span>Joining...</span>'
@@ -195,7 +207,11 @@
 
         // Show error message
         function showError(message) {
-            errorMessage.querySelector('p').textContent = message;
+            if (!errorMessage) return;
+            const errorText = errorMessage.querySelector('p');
+            if (errorText) {
+                errorText.textContent = message;
+            }
             errorMessage.classList.remove('hidden');
             setTimeout(() => {
                 errorMessage.classList.add('animate-fadeIn');
@@ -204,12 +220,14 @@
 
         // Hide error message
         window.hideError = function() {
+            if (!errorMessage) return;
             errorMessage.classList.add('hidden');
             errorMessage.classList.remove('animate-fadeIn');
         }
 
         // Show success state
         function showSuccess() {
+            if (!form || !successMessage) return;
             form.classList.add('hidden');
             successMessage.classList.remove('hidden');
             setTimeout(() => {
@@ -222,80 +240,88 @@
             const link = window.location.href;
             navigator.clipboard.writeText(link).then(() => {
                 const button = document.querySelector('button[onclick="copyReferralLink()"]');
+                if (!button) return;
                 const originalText = button.innerHTML;
                 button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
                 setTimeout(() => {
                     button.innerHTML = originalText;
                 }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy link:', err);
+                showError('Failed to copy link. Please try again.');
             });
         }
 
         // Form submission handler
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            hideError();
+        if (form) {
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideError();
 
-            const email = emailInput.value.trim();
-            const interests = document.getElementById('interests').value;
+                const email = emailInput.value.trim();
+                const interests = document.getElementById('interests')?.value || '';
 
-            // Validate email
-            if (!isValidEmail(email)) {
-                emailError.textContent = 'Please enter a valid email address';
-                emailError.classList.remove('hidden');
-                return;
-            } else {
-                emailError.classList.add('hidden');
-            }
-
-            setLoading(true);
-
-            try {
-                // Insert into waitlist table
-                const { data, error } = await supabase
-                    .from('waitlist')
-                    .insert([
-                        { 
-                            email: email,
-                            interests: interests,
-                            signup_date: new Date().toISOString()
-                        }
-                    ]);
-
-                if (error) {
-                    if (error.code === '23505') {
-                        showError('This email is already on the waitlist!');
-                    } else {
-                        console.error('Supabase error:', error);
-                        showError('Something went wrong. Please try again.');
-                    }
+                // Validate email
+                if (!isValidEmail(email)) {
+                    emailError.textContent = 'Please enter a valid email address';
+                    emailError.classList.remove('hidden');
                     return;
+                } else {
+                    emailError.classList.add('hidden');
                 }
 
-                // Show success message
-                showSuccess();
+                setLoading(true);
 
-                // Track signup (you can add analytics here)
                 try {
-                    if (window.gtag) {
-                        window.gtag('event', 'waitlist_signup', {
-                            'event_category': 'engagement',
-                            'event_label': interests || 'no_interest_selected'
-                        });
-                    }
-                } catch (analyticsError) {
-                    console.error('Analytics error:', analyticsError);
-                }
+                    // Insert into waitlist table
+                    const { data, error } = await supabase
+                        .from('waitlist')
+                        .insert([
+                            { 
+                                email: email,
+                                interests: interests,
+                                signup_date: new Date().toISOString()
+                            }
+                        ]);
 
-            } catch (error) {
-                console.error('Submission error:', error);
-                showError('Unable to join waitlist. Please try again later.');
-            } finally {
-                setLoading(false);
-            }
-        });
+                    if (error) {
+                        if (error.code === '23505') {
+                            showError('This email is already on the waitlist!');
+                        } else {
+                            console.error('Supabase error:', error);
+                            showError('Something went wrong. Please try again.');
+                        }
+                        return;
+                    }
+
+                    // Show success message
+                    showSuccess();
+
+                    // Track signup (you can add analytics here)
+                    try {
+                        if (window.gtag) {
+                            window.gtag('event', 'waitlist_signup', {
+                                'event_category': 'engagement',
+                                'event_label': interests || 'no_interest_selected'
+                            });
+                        }
+                    } catch (analyticsError) {
+                        console.error('Analytics error:', analyticsError);
+                    }
+
+                } catch (error) {
+                    console.error('Submission error:', error);
+                    showError('Unable to join waitlist. Please try again later.');
+                } finally {
+                    setLoading(false);
+                }
+            });
+        }
 
         // Initialize form
-        emailInput.focus();
+        if (emailInput) {
+            emailInput.focus();
+        }
     </script>
 </body>
 </html> 
