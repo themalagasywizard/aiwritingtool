@@ -663,7 +663,8 @@
             currentChapter: null,
             currentUser: null,
             isDirty: false, // Track if editor has unsaved changes
-            wordTarget: 1000, // Default target word count
+            wordTarget: 1000, // Default target word count,
+            chapterCache: new Map() // Cache for chapter content
         };
         
         // Expose appState to window object for access from other scripts
@@ -849,6 +850,13 @@
                 
                 // Sort chapters by order_index
                 projectChapters.sort((a, b) => a.order_index - b.order_index);
+
+                // Initialize or update chapter cache
+                projectChapters.forEach(chapter => {
+                    if (!appState.chapterCache.has(chapter.id)) {
+                        appState.chapterCache.set(chapter.id, chapter);
+                    }
+                });
                 
                 // Add chapters to the list
                 projectChapters.forEach((chapter, index) => {
@@ -861,11 +869,11 @@
                         <div class="flex items-center justify-between">
                             <span class="chapter-title">${chapter.title}</span>
                             <i class="fas fa-grip-lines text-gray-300 cursor-move handle"></i>
-                </div>
+                        </div>
                     `;
                     
                     // Add click handler
-                    chapterElement.addEventListener('click', () => selectChapter(chapter));
+                    chapterElement.addEventListener('click', () => selectChapter(chapter.id));
                     
                     // Add double-click handler for renaming
                     chapterElement.addEventListener('dblclick', (e) => {
@@ -1017,9 +1025,9 @@
                     elements.chaptersList.appendChild(chapterElement);
                 });
                 
-                // Select the first chapter by default
-                if (projectChapters.length > 0) {
-                    selectChapter(projectChapters[0]);
+                // Select the first chapter by default if no chapter is selected
+                if (projectChapters.length > 0 && !appState.currentChapter) {
+                    selectChapter(projectChapters[0].id);
                 }
             } catch (error) {
                 console.error('Error loading chapters:', error);
@@ -1027,12 +1035,17 @@
             }
         }
 
-        function selectChapter(chapter) {
-            if (!chapter) return;
-            
+        function selectChapter(chapterId) {
             // Save current chapter if it exists and has changes
             if (appState.currentChapter && appState.isDirty) {
                 saveCurrentChapter();
+            }
+            
+            // Get chapter from cache
+            const chapter = appState.chapterCache.get(chapterId);
+            if (!chapter) {
+                console.error('Chapter not found in cache:', chapterId);
+                return;
             }
             
             // Set as current chapter
@@ -1042,7 +1055,7 @@
             const chapterItems = document.querySelectorAll('.chapter-item');
             chapterItems.forEach(item => {
                 item.classList.remove('active');
-                if (item.getAttribute('data-chapter-id') === chapter.id) {
+                if (item.getAttribute('data-chapter-id') === chapterId) {
                     item.classList.add('active');
                 }
             });
@@ -1116,8 +1129,9 @@
                 
                 if (error) throw error;
                 
-                // Update current chapter
+                // Update both current chapter and cache
                 appState.currentChapter = updatedChapter[0];
+                appState.chapterCache.set(updatedChapter[0].id, updatedChapter[0]);
                 
                 // Reset dirty state
                 appState.isDirty = false;
