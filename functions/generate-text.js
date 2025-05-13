@@ -412,7 +412,6 @@ const getOpenRouterModelName = (modelName) => {
         'claude-opus': 'anthropic/claude-3-opus',
         'claude-sonnet': 'anthropic/claude-3-sonnet',
         // Free Models via OpenRouter
-        'gemini-flash': 'google/gemini-2.0-flash-exp',
         'qwen3-235b': 'qwen/qwen3-235b-a22b'
     };
     return modelMap[modelName] || modelName;
@@ -893,7 +892,8 @@ exports.handler = async (event) => {
         }
 
         const result = await response.json();
-        
+        console.log('API Response:', result); // Debug log
+
         // Extract text and usage info
         let generatedText = '';
         let usage = null;
@@ -901,16 +901,26 @@ exports.handler = async (event) => {
         if (isDeepSeekModel && result.choices?.[0]?.message?.content) {
             generatedText = result.choices[0].message.content;
             usage = result.usage;
-        } else if (isQwen3Model && result.choices?.[0]?.message?.content) {
+        } else if (!isDeepSeekModel) { // OpenRouter response handling
+            if (!result.choices?.[0]?.message?.content) {
+                console.error('Unexpected OpenRouter response format:', result);
+                throw new Error('Invalid response format from OpenRouter API');
+            }
             generatedText = result.choices[0].message.content;
-            usage = result.usage;
+            usage = {
+                prompt_tokens: result.usage?.prompt_tokens || 0,
+                completion_tokens: result.usage?.completion_tokens || 0,
+                total_tokens: result.usage?.total_tokens || 0
+            };
         } else {
             console.error('Unexpected API response:', result);
             throw new Error('Invalid response format from API');
         }
 
+        // Ensure we have generated text
         if (!generatedText) {
-            throw new Error('No text was generated');
+            console.error('No text generated from API response:', result);
+            throw new Error('No text was generated from the API response');
         }
 
         // Ensure the text ends with a complete sentence
@@ -935,11 +945,20 @@ exports.handler = async (event) => {
                 mode: mode,
                 contextProvided: !!contextString,
                 previousChaptersProvided: !!previousChapters,
-                usage: usage || null,
+                usage: usage,
                 requestedWords: desiredWords,
                 actualWords: actualWords,
                 actualTokens: usage?.total_tokens || null,
-                debug: debugInfo
+                debug: {
+                    contextString,
+                    previousChapters,
+                    modelName,
+                    mode,
+                    requestedWords: desiredWords,
+                    actualWords: actualWords,
+                    tokensUsed: usage?.total_tokens || null,
+                    rawResponse: process.env.NODE_ENV === 'development' ? result : null
+                }
             })
         };
 

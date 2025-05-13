@@ -23,7 +23,6 @@ module.exports = {
     'distilgpt2',
     'gpt2-medium',
     'Qwen/Qwen3-0.6B',
-    'google/gemma-2b',
     'meta-llama/Llama-3-8B-Instruct',
     'tiiuae/falcon-7b-instruct',
     'mistralai/Mixtral-8x7B-Instruct-v0.1'
