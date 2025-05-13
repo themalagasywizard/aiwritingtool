@@ -3795,10 +3795,23 @@
 
                 // Mark content as needing to be saved
                 appState.isDirty = true;
-                updateSaveStatus(true);
+                
+                // Update save button to indicate unsaved changes
+                const saveBtn = document.getElementById('saveBtn');
+                if (saveBtn) {
+                    saveBtn.classList.remove('btn-primary');
+                    saveBtn.classList.add('btn-error');
+                }
                 
                 // Show success message
                 showToast('Text inserted successfully', 'success');
+                
+                // Trigger auto-save after a short delay
+                setTimeout(() => {
+                    if (appState.isDirty && appState.currentChapter) {
+                        saveCurrentChapter();
+                    }
+                }, 1000);
                 
                 // Track insertion
                 if (window.gtag) {
