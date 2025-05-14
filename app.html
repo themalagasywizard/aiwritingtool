@@ -764,8 +764,13 @@
                 loadProjectBtn: document.getElementById('loadProjectBtn'),
             };
             
-            // Setup event listeners only after elements are initialized
-            setupEventListeners();
+            // Setup event listeners only after elements are initialized and DOM is fully ready
+            // Use a small timeout to ensure all elements are properly rendered and available
+            setTimeout(() => {
+                if (elements) {
+                    setupEventListeners();
+                }
+            }, 0);
         });
 
         // Helper Functions
@@ -1460,72 +1465,86 @@
         // Event Listeners
         function setupEventListeners() {
             // New Project Button
-            elements.newProjectBtn.addEventListener('click', () => {
-                elements.newProjectModal.classList.remove('hidden');
-                elements.newProjectModal.classList.add('flex');
-                elements.newProjectTitle.focus();
-            });
+            if (elements.newProjectBtn) {
+                elements.newProjectBtn.addEventListener('click', () => {
+                    elements.newProjectModal.classList.remove('hidden');
+                    elements.newProjectModal.classList.add('flex');
+                    elements.newProjectTitle.focus();
+                });
+            }
             
             // Close New Project Modal
-            elements.closeNewProjectModal.addEventListener('click', () => {
-                elements.newProjectModal.classList.add('hidden');
-                elements.newProjectModal.classList.remove('flex');
-            });
+            if (elements.closeNewProjectModal) {
+                elements.closeNewProjectModal.addEventListener('click', () => {
+                    elements.newProjectModal.classList.add('hidden');
+                    elements.newProjectModal.classList.remove('flex');
+                });
+            }
             
             // Cancel New Project
-            elements.cancelNewProject.addEventListener('click', () => {
-                elements.newProjectModal.classList.add('hidden');
-                elements.newProjectModal.classList.remove('flex');
-            });
+            if (elements.cancelNewProject) {
+                elements.cancelNewProject.addEventListener('click', () => {
+                    elements.newProjectModal.classList.add('hidden');
+                    elements.newProjectModal.classList.remove('flex');
+                });
+            }
             
             // Create New Project
-            elements.createNewProject.addEventListener('click', async () => {
-                const title = elements.newProjectTitle.value.trim();
-                const description = elements.newProjectDescription.value.trim();
-                
-                if (!title) {
-                    alert('Please enter a project title');
-                    return;
-                }
-                
-                elements.newProjectModal.classList.add('hidden');
-                elements.newProjectModal.classList.remove('flex');
-                
-                const newProject = await createProject(title, description);
-                
-                if (newProject) {
-                    // Successfully created project
-                    elements.newProjectTitle.value = '';
-                    elements.newProjectDescription.value = '';
-                }
-            });
+            if (elements.createNewProject) {
+                elements.createNewProject.addEventListener('click', async () => {
+                    const title = elements.newProjectTitle.value.trim();
+                    const description = elements.newProjectDescription.value.trim();
+                    
+                    if (!title) {
+                        alert('Please enter a project title');
+                        return;
+                    }
+                    
+                    elements.newProjectModal.classList.add('hidden');
+                    elements.newProjectModal.classList.remove('flex');
+                    
+                    const newProject = await createProject(title, description);
+                    
+                    if (newProject) {
+                        // Successfully created project
+                        elements.newProjectTitle.value = '';
+                        elements.newProjectDescription.value = '';
+                    }
+                });
+            }
             
             // Add Chapter Button
-            elements.addChapterBtn.addEventListener('click', async () => {
-                if (!appState.currentProject) {
-                    alert('Please create a project first');
-                    return;
-                }
-                
-                // Get the number of existing chapters
-                const chapterCount = elements.chaptersList.querySelectorAll('.chapter-item').length;
-                const newChapterTitle = `Chapter ${chapterCount + 1}`;
-                
-                await createChapter(newChapterTitle, '', chapterCount);
-            });
+            if (elements.addChapterBtn) {
+                elements.addChapterBtn.addEventListener('click', async () => {
+                    if (!appState.currentProject) {
+                        alert('Please create a project first');
+                        return;
+                    }
+                    
+                    // Get the number of existing chapters
+                    const chapterCount = elements.chaptersList.querySelectorAll('.chapter-item').length;
+                    const newChapterTitle = `Chapter ${chapterCount + 1}`;
+                    
+                    await createChapter(newChapterTitle, '', chapterCount);
+                });
+            }
             
             // Save Button
-            elements.saveBtn.addEventListener('click', () => {
-                if (appState.currentChapter) {
-                    saveCurrentChapter();
-                }
-            });
+            if (elements.saveBtn) {
+                elements.saveBtn.addEventListener('click', () => {
+                    if (appState.currentChapter) {
+                        saveCurrentChapter();
+                    }
+                });
+            }
             
             // Editor Content Change
-            elements.editorContent.addEventListener('input', () => {
-                updateSaveStatus(true);
-                updateWordCount();
-            });
+            if (elements.editorContent) {
+                elements.editorContent.addEventListener('input', () => {
+                    updateSaveStatus(true);
+                    updateWordCount();
+                });
+            }
             
             // Auto-save timer
             setInterval(() => {
@@ -1533,22 +1552,35 @@
                     saveCurrentChapter();
                 }
             }, 60000); // Auto-save every minute if there are changes
-
+            
             // Load Project Button
-            elements.loadProjectBtn.addEventListener('click', () => {
-                toggleLoadProjectPanel();
-                loadUserProjects();
-            });
+            if (elements.loadProjectBtn) {
+                elements.loadProjectBtn.addEventListener('click', () => {
+                    toggleLoadProjectPanel();
+                    loadUserProjects();
+                });
+            }
 
             // Close Load Project Panel
-            document.getElementById('closeLoadProjectPanel').addEventListener('click', toggleLoadProjectPanel);
-            document.getElementById('loadProjectOverlay').addEventListener('click', toggleLoadProjectPanel);
+            const closeLoadProjectPanel = document.getElementById('closeLoadProjectPanel');
+            const loadProjectOverlay = document.getElementById('loadProjectOverlay');
+            
+            if (closeLoadProjectPanel) {
+                closeLoadProjectPanel.addEventListener('click', toggleLoadProjectPanel);
+            }
+            
+            if (loadProjectOverlay) {
+                loadProjectOverlay.addEventListener('click', toggleLoadProjectPanel);
+            }
 
             // Project Search
-            document.getElementById('projectSearch').addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                filterProjects(searchTerm);
-            });
+            const projectSearch = document.getElementById('projectSearch');
+            if (projectSearch) {
+                projectSearch.addEventListener('input', (e) => {
+                    const searchTerm = e.target.value.toLowerCase();
+                    filterProjects(searchTerm);
+                });
+            }
 
             // Formatting buttons
             const boldButton = document.querySelector('button[title="Bold"]');
@@ -1572,6 +1604,8 @@
             if (headingButton) {
                 headingButton.addEventListener('click', () => {
                     const selection = window.getSelection();
+                    if (!selection || selection.rangeCount === 0) return;
+                    
                     const range = selection.getRangeAt(0);
                     const container = range.commonAncestorContainer.parentElement;
                     
@@ -1642,59 +1676,73 @@
             }
 
             // Keyboard shortcuts for formatting
-
-            // Keyboard shortcuts for formatting
-            elements.editorContent.addEventListener('keydown', (e) => {
-                if (e.ctrlKey || e.metaKey) {
-                    switch(e.key.toLowerCase()) {
-                        case 'b':
-                            e.preventDefault();
-                            document.execCommand('bold', false, null);
-                            updateSaveStatus(true);
-                            break;
-                        case 'i':
-                            e.preventDefault();
-                            document.execCommand('italic', false, null);
-                            updateSaveStatus(true);
-                            break;
+            if (elements && elements.editorContent) {
+                elements.editorContent.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key.toLowerCase()) {
+                            case 'b':
+                                e.preventDefault();
+                                document.execCommand('bold', false, null);
+                                updateSaveStatus(true);
+                                break;
+                            case 'i':
+                                e.preventDefault();
+                                document.execCommand('italic', false, null);
+                                updateSaveStatus(true);
+                                break;
+                        }
                     }
-                }
-            });
+                });
+            }
 
             // Update formatting buttons state based on current selection
             function updateFormatButtons() {
-                const isBold = document.queryCommandState('bold');
-                const isItalic = document.queryCommandState('italic');
-                const container = window.getSelection().getRangeAt(0).commonAncestorContainer;
-                const isHeading = container.nodeType === 1 ? 
-                    container.classList && container.classList.contains('text-center') : 
-                    container.parentElement.classList && container.parentElement.classList.contains('text-center');
+                try {
+                    const selection = window.getSelection();
+                    if (!selection || selection.rangeCount === 0) return;
+                    
+                    const isBold = document.queryCommandState('bold');
+                    const isItalic = document.queryCommandState('italic');
+                    const container = selection.getRangeAt(0).commonAncestorContainer;
+                    
+                    if (!container) return;
+                    
+                    const isHeading = container.nodeType === 1 ? 
+                        container.classList && container.classList.contains('text-center') : 
+                        container.parentElement && container.parentElement.classList && 
+                        container.parentElement.classList.contains('text-center');
 
-                const boldButton = document.querySelector('button[title="Bold"]');
-                const italicButton = document.querySelector('button[title="Italic"]');
-                const headingButton = document.querySelector('button[title="Heading"]');
+                    const boldButton = document.querySelector('button[title="Bold"]');
+                    const italicButton = document.querySelector('button[title="Italic"]');
+                    const headingButton = document.querySelector('button[title="Heading"]');
 
-                if (boldButton) {
-                    boldButton.classList.toggle('bg-primaryLight', isBold);
-                }
-                if (italicButton) {
-                    italicButton.classList.toggle('bg-primaryLight', isItalic);
-                }
-                if (headingButton) {
-                    headingButton.classList.toggle('bg-primaryLight', isHeading);
+                    if (boldButton) {
+                        boldButton.classList.toggle('bg-primaryLight', isBold);
+                    }
+                    if (italicButton) {
+                        italicButton.classList.toggle('bg-primaryLight', isItalic);
+                    }
+                    if (headingButton) {
+                        headingButton.classList.toggle('bg-primaryLight', isHeading);
+                    }
+                } catch (error) {
+                    console.warn('Error updating format buttons:', error);
+                    // Silently fail without crashing the application
                 }
             }
 
             // Add selectionchange event listener to update formatting buttons
             document.addEventListener('selectionchange', () => {
-                if (document.activeElement === elements.editorContent) {
+                if (elements && elements.editorContent && document.activeElement === elements.editorContent) {
                     updateFormatButtons();
                 }
             });
 
             // Update format buttons when clicking in the editor
-            elements.editorContent.addEventListener('click', updateFormatButtons);
-            elements.editorContent.addEventListener('keyup', updateFormatButtons);
+            if (elements && elements.editorContent) {
+                elements.editorContent.addEventListener('click', updateFormatButtons);
+                elements.editorContent.addEventListener('keyup', updateFormatButtons);
+            }
 
             // Project title rename functionality
             function setupProjectTitleRename() {
