@@ -96,26 +96,37 @@
     @apply bg-card border-border;
   }
   
-  .dark header {
-    @apply bg-card border-border;
+  .dark header,
+  .dark .header {
+    @apply bg-card border-border text-foreground !important;
   }
   
-  .dark main, .dark .main-content {
-    @apply bg-background;
+  .dark main, 
+  .dark .main-content,
+  .dark .main {
+    @apply bg-background text-foreground !important;
   }
   
-  .dark .editor-content {
-    @apply bg-background text-foreground;
+  .dark .editor-content,
+  .dark #editorContent {
+    @apply bg-background text-foreground !important;
+  }
+  
+  /* Make sure toolbar has dark styling */
+  .dark .editor-toolbar,
+  .dark .toolbar,
+  .dark [class*="toolbar"] {
+    @apply bg-card text-foreground border-border !important;
   }
   
   .dark .card, 
   .dark .bg-white, 
   .dark [class*="bg-white"],
   .dark .modal-content,
-  .dark .editor-toolbar,
   .dark .dropdown-content,
-  .dark #editorContent {
-    @apply bg-card text-foreground;
+  .dark #editorContent,
+  .dark div[contenteditable="true"] {
+    @apply bg-card text-foreground !important;
   }
   
   /* Fix text colors in dark mode */

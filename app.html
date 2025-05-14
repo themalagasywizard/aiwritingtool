@@ -85,6 +85,38 @@
             --warning: #f59e0b;
         }
 
+        /* Additional dark mode overrides for specific elements */
+        .dark body,
+        .dark main,
+        .dark .main-content,
+        .dark #editorContent,
+        .dark [contenteditable="true"],
+        .dark .editor-content {
+            background-color: var(--background) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .dark header, 
+        .dark .editor-toolbar,
+        .dark .bg-white {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: var(--text-primary) !important;
+        }
+
+        .dark .sidebar {
+            background-color: var(--primary-light) !important;
+        }
+
+        .dark .toolbar-btn {
+            color: var(--text-primary) !important;
+        }
+
+        .dark .toolbar-btn:hover {
+            background-color: rgba(75, 94, 170, 0.2) !important;
+            color: var(--primary) !important;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background);
@@ -715,6 +747,27 @@
         /* AI Output container in the Generate/Edit view */
         #generateEditView #aiOutput {
             padding-top: 1px; /* Ensure consistent 1px top padding */
+        }
+
+        /* More aggressive dark mode overrides for Tailwind classes */
+        .dark .bg-white {
+            background-color: #1f2937 !important;
+        }
+        
+        .dark [class*="bg-white"] {
+            background-color: #1f2937 !important;
+        }
+        
+        /* Make sure the editor and its content are dark */
+        .dark .editor-content, 
+        .dark #editorContent,
+        .dark .flex-1.overflow-y-auto.p-8.bg-white {
+            background-color: var(--background) !important;
+        }
+        
+        /* Ensure all main areas properly get dark styling */
+        .dark .flex-1.overflow-hidden.flex.flex-col.bg-white {
+            background-color: var(--background) !important;
         }
     </style>
 </head>
