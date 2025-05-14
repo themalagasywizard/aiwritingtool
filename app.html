@@ -769,6 +769,93 @@
         .dark .flex-1.overflow-hidden.flex.flex-col.bg-white {
             background-color: var(--background) !important;
         }
+
+        /* Specific dark mode overrides for AI Assistant panel */
+        .dark #aiAssistPanel {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+
+        .dark #aiOutput,
+        .dark #chatHistory {
+            background-color: #111827 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+
+        .dark .flex-shrink-0.p-4.border-b.border-gray-200,
+        .dark .flex-shrink-0.bg-primaryLight\/20.p-3.border-b.border-gray-200,
+        .dark .flex-shrink-0.space-y-3.px-4,
+        .dark .flex-shrink-0.p-4.border-t.border-gray-200 {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+
+        .dark #chatInput,
+        .dark #aiInput,
+        .dark #aiTone,
+        .dark input[type="range"] {
+            background-color: #111827 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+
+        /* Make buttons white in dark mode - consistent styling */
+        .dark .btn,
+        .dark button[data-shadcn="button"],
+        .dark [data-variant="default"] {
+            background-color: #4B5EAA !important;
+            color: white !important;
+        }
+
+        /* Style for submit buttons */
+        .dark #chatSubmit,
+        .dark #aiSubmit {
+            color: #4B5EAA !important;
+        }
+
+        /* Mode toggle buttons in AI panel */
+        .dark .ai-mode-btn {
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+        }
+
+        .dark .ai-mode-btn.active {
+            background-color: #4B5EAA !important;
+            color: white !important;
+        }
+
+        /* Make AI output text visible */
+        .dark .prose,
+        .dark .prose p {
+            color: #f3f4f6 !important;
+        }
+
+        /* Fix placeholder text color */
+        .dark textarea::placeholder,
+        .dark input::placeholder {
+            color: #9CA3AF !important;
+        }
+
+        /* AI Panel Tab Styling for Dark Mode */
+        .dark .ai-mode-btn {
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+        }
+
+        .dark .ai-mode-btn.active {
+            background-color: #4B5EAA !important;
+            color: white !important;
+        }
+        
+        /* Dark mode for model selector and dropdown */
+        .dark select {
+            background-color: #1f2937 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23F3F4F6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">

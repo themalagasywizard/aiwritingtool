@@ -167,8 +167,66 @@
   .dark #aiAssistPanel,
   .dark #loadProjectPanel,
   .dark #aiOutput,
-  .dark #chatHistory {
-    @apply bg-card text-foreground;
+  .dark #chatHistory,
+  .dark #generateEditView,
+  .dark #chatView,
+  .dark .ai-mode-btn,
+  .dark select,
+  .dark textarea,
+  .dark input[type="text"],
+  .dark .prose {
+    @apply bg-card text-foreground border-border !important;
+  }
+  
+  /* Fix AI panel elements in dark mode */
+  .dark #aiOutput,
+  .dark textarea,
+  .dark .bg-gray-50 {
+    background-color: hsl(222.2 47.4% 15.2%) !important;
+    color: hsl(210 40% 98%) !important;
+    border-color: hsl(217.2 32.6% 25%) !important;
+  }
+  
+  /* Model selector and dropdown styling */
+  .dark select,
+  .dark #aiModel,
+  .dark .ai-mode-btn:not(.active) {
+    background-color: hsl(222.2 47.4% 20%) !important;
+    color: hsl(210 40% 98%) !important;
+    border-color: hsl(217.2 32.6% 25%) !important;
+  }
+  
+  /* Active/inactive states for AI mode buttons */
+  .dark .ai-mode-btn.active {
+    @apply bg-primary text-primary-foreground !important;
+  }
+  
+  .dark .ai-mode-btn:not(.active):hover {
+    background-color: hsl(222.2 47.4% 25%) !important;
+  }
+  
+  /* Consistent button styling in dark mode */
+  .dark .btn,
+  .dark button[data-shadcn="button"],
+  .dark [class*="btn-primary"],
+  .dark .shadcn-btn,
+  .dark [data-variant="default"] {
+    background-color: #4B5EAA !important;
+    color: white !important;
+    border-color: #4B5EAA !important;
+  }
+  
+  .dark .btn:hover,
+  .dark button[data-shadcn="button"]:hover,
+  .dark [data-variant="default"]:hover {
+    background-color: #3A4B99 !important;
+    color: white !important;
+  }
+  
+  /* Fix AI tabs display */
+  .dark #generateEditView,
+  .dark #chatView {
+    background-color: #111827 !important;
   }
   
   .dark .chat-message.user {
