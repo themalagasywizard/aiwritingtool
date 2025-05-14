@@ -2763,239 +2763,80 @@
 
         <!-- Characters Tab View -->
         <div class="tab-content hidden" id="charactersTab">
-            <!-- Character Tree View (for Characters tab) -->
-            <div id="characterTreeView" class="bg-white rounded-lg p-3 shadow-sm-custom">
-                <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold text-primary">Characters Network</h3>
-                    <div class="flex items-center space-x-2">
-                        <span class="text-xs text-textSecondary">3 characters</span>
-                        <button class="btn btn-primary text-xs py-1 px-2" id="newCharacterBtn">
-                            <i class="fas fa-plus text-xs mr-1"></i>
-                            New Character
-                        </button>
-                    </div>
+            <!-- Character Tree View -->
+            <div class="bg-white shadow-md border border-gray-100 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-primary">Characters Network</h2>
+                    <button class="btn btn-primary text-sm" id="newCharacterBtn">
+                        <i class="fas fa-plus text-sm mr-1"></i>
+                        New Character
+                    </button>
                 </div>
-                <div class="character-tree relative h-[600px] border border-gray-100 rounded-lg" id="characterTreeContainer">
-                    <!-- SVG Canvas for Character Network -->
-                    <svg id="characterNetwork" class="w-full h-full cursor-crosshair" style="user-select: none;">
-                        <!-- Gradient definitions -->
-                        <defs>
-                            <radialGradient id="protagonistGradient" cx="50%" cy="50%">
-                                <stop offset="0%" stop-color="#4B5EAA" />
-                                <stop offset="100%" stop-color="#3F50A0" />
-                            </radialGradient>
-                            <radialGradient id="antagonistGradient" cx="50%" cy="50%">
-                                <stop offset="0%" stop-color="#EF4444" />
-                                <stop offset="100%" stop-color="#dc2626" />
-                            </radialGradient>
-                            <radialGradient id="supportingGradient" cx="50%" cy="50%">
-                                <stop offset="0%" stop-color="#F472B6" />
-                                <stop offset="100%" stop-color="#db2777" />
-                            </radialGradient>
-                        </defs>
-                        
-                        <!-- Connection lines will be added here -->
-                        <g id="connectionLines"></g>
-                        
-                        <!-- Character nodes will be added here -->
-                        <g id="characterNodes"></g>
-                    </svg>
-
-                    <!-- Instructions overlay -->
-                    <div class="absolute top-4 right-4 bg-black/50 backdrop-blur-sm px-4 py-2 rounded-lg text-sm text-gray-600 max-w-xs">
-                        Click and drag characters to reposition. Click on a character to edit its details.
+                
+                <div class="character-tree relative p-8 min-h-[400px] border border-gray-100 rounded-lg mb-6" id="characterTreeContainer">
+                    <!-- Character nodes will be added dynamically -->
+                </div>
+                
+                <div class="flex justify-center space-x-6 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-primary mr-2"></div>
+                        <span>Protagonist</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-error mr-2"></div>
+                        <span>Antagonist</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-accent mr-2"></div>
+                        <span>Supporting</span>
                     </div>
                 </div>
             </div>
-
-            <script>
-                // Character Network State
-                let characterNodes = [];
-                let characterLinks = [];
-                let isDragging = false;
-                let selectedNode = null;
-                let draggedNode = null;
-                let dragOffset = { x: 0, y: 0 };
-
-                // Get SVG element and its dimensions
-                const svg = document.getElementById('characterNetwork');
-                const svgRect = svg.getBoundingClientRect();
-
-                // Initialize character network
-                function initializeCharacterNetwork() {
-                    // Convert characters from appState to nodes with positions
-                    characterNodes = appState.characters.map((character, index) => {
-                        // Calculate position in a circle
-                        const angle = (index * 2 * Math.PI) / appState.characters.length;
-                        const radius = Math.min(svgRect.width, svgRect.height) * 0.3;
-                        const centerX = svgRect.width / 2;
-                        const centerY = svgRect.height / 2;
-
-                        return {
-                            id: character.id,
-                            name: character.name,
-                            role: character.role,
-                            traits: character.traits || '',
-                            backstory: character.backstory || '',
-                            x: centerX + radius * Math.cos(angle),
-                            y: centerY + radius * Math.sin(angle),
-                            relationships: character.relationships || []
-                        };
-                    });
-
-                    // Create links based on relationships
-                    characterLinks = [];
-                    characterNodes.forEach(node => {
-                        if (node.relationships) {
-                            node.relationships.forEach(targetId => {
-                                characterLinks.push({
-                                    source: node.id,
-                                    target: targetId
-                                });
-                            });
-                        }
-                    });
-
-                    // Initial render
-                    renderCharacterNetwork();
-                }
-
-                // Render the character network
-                function renderCharacterNetwork() {
-                    const nodesContainer = document.getElementById('characterNodes');
-                    const linesContainer = document.getElementById('connectionLines');
-
-                    // Clear existing content
-                    nodesContainer.innerHTML = '';
-                    linesContainer.innerHTML = '';
-
-                    // Render connection lines
-                    characterLinks.forEach((link, index) => {
-                        const source = characterNodes.find(n => n.id === link.source);
-                        const target = characterNodes.find(n => n.id === link.target);
-                        if (!source || !target) return;
-
-                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line.setAttribute('x1', source.x);
-                        line.setAttribute('y1', source.y);
-                        line.setAttribute('x2', target.x);
-                        line.setAttribute('y2', target.y);
-                        line.setAttribute('stroke', '#4B5EAA');
-                        line.setAttribute('stroke-width', '2');
-                        line.setAttribute('class', 'transition-all duration-200 hover:stroke-primary');
-                        linesContainer.appendChild(line);
-                    });
-
-                    // Render character nodes
-                    characterNodes.forEach(node => {
-                        const nodeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                        nodeGroup.setAttribute('class', 'cursor-grab active:cursor-grabbing');
-                        nodeGroup.setAttribute('data-node-id', node.id);
-
-                        // Node circle
-                        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        circle.setAttribute('cx', node.x);
-                        circle.setAttribute('cy', node.y);
-                        circle.setAttribute('r', selectedNode?.id === node.id ? 30 : 25);
-                        circle.setAttribute('fill', `url(#${node.role.toLowerCase()}Gradient)`);
-                        circle.setAttribute('class', 'transition-all duration-200 hover:opacity-90');
-
-                        // Node name
-                        const nameText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        nameText.setAttribute('x', node.x);
-                        nameText.setAttribute('y', node.y - 2);
-                        nameText.setAttribute('text-anchor', 'middle');
-                        nameText.setAttribute('dominant-baseline', 'middle');
-                        nameText.setAttribute('fill', 'white');
-                        nameText.setAttribute('font-size', '12');
-                        nameText.setAttribute('font-weight', 'bold');
-                        nameText.textContent = node.name;
-
-                        // Node role
-                        const roleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                        roleText.setAttribute('x', node.x);
-                        roleText.setAttribute('y', node.y + 14);
-                        roleText.setAttribute('text-anchor', 'middle');
-                        roleText.setAttribute('dominant-baseline', 'middle');
-                        roleText.setAttribute('fill', 'rgba(255,255,255,0.8)');
-                        roleText.setAttribute('font-size', '10');
-                        roleText.textContent = node.role;
-
-                        // Add elements to group
-                        nodeGroup.appendChild(circle);
-                        nodeGroup.appendChild(nameText);
-                        nodeGroup.appendChild(roleText);
-
-                        // Add event listeners
-                        nodeGroup.addEventListener('mousedown', (e) => handleNodeMouseDown(e, node));
-                        nodeGroup.addEventListener('click', () => handleNodeClick(node));
-
-                        nodesContainer.appendChild(nodeGroup);
-                    });
-                }
-
-                // Mouse event handlers
-                function handleNodeMouseDown(e, node) {
-                    e.preventDefault();
-                    isDragging = true;
-                    draggedNode = node;
-
-                    const svgPoint = svg.createSVGPoint();
-                    svgPoint.x = e.clientX;
-                    svgPoint.y = e.clientY;
-                    const point = svgPoint.matrixTransform(svg.getScreenCTM().inverse());
-
-                    dragOffset = {
-                        x: point.x - node.x,
-                        y: point.y - node.y
-                    };
-
-                    // Add global mouse move and up listeners
-                    document.addEventListener('mousemove', handleMouseMove);
-                    document.addEventListener('mouseup', handleMouseUp);
-                }
-
-                function handleMouseMove(e) {
-                    if (!isDragging || !draggedNode) return;
-
-                    const svgPoint = svg.createSVGPoint();
-                    svgPoint.x = e.clientX;
-                    svgPoint.y = e.clientY;
-                    const point = svgPoint.matrixTransform(svg.getScreenCTM().inverse());
-
-                    // Update node position
-                    draggedNode.x = point.x - dragOffset.x;
-                    draggedNode.y = point.y - dragOffset.y;
-
-                    // Re-render the network
-                    renderCharacterNetwork();
-                }
-
-                function handleMouseUp() {
-                    isDragging = false;
-                    draggedNode = null;
-                    document.removeEventListener('mousemove', handleMouseMove);
-                    document.removeEventListener('mouseup', handleMouseUp);
-                }
-
-                function handleNodeClick(node) {
-                    selectedNode = selectedNode?.id === node.id ? null : node;
-                    renderCharacterNetwork();
-                    if (selectedNode) {
-                        openEditCharacterForm();
-                    }
-                }
-
-                // Initialize when characters tab is shown
-                document.querySelector('[data-tab="characters"]').addEventListener('click', () => {
-                    setTimeout(initializeCharacterNetwork, 100);
-                });
-
-                // Initialize if characters tab is active by default
-                if (!document.querySelector('[data-tab="characters"]').classList.contains('hidden')) {
-                    setTimeout(initializeCharacterNetwork, 100);
-                }
-            </script>
+            
+            <!-- Character Details Panel -->
+            <div id="characterDetailsPanel" class="fixed inset-y-0 right-0 w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+                <div class="h-full flex flex-col">
+                    <div class="p-6 border-b border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-primary" id="characterDetailName">Character Name</h2>
+                            <button class="text-gray-400 hover:text-gray-600" onclick="closeCharacterDetails()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm" id="characterDetailRole">
+                            Role
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-6">
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Traits</h3>
+                                <p class="text-gray-700" id="characterDetailTraits">Character traits will appear here</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Backstory</h3>
+                                <p class="text-gray-700" id="characterDetailBackstory">Character backstory will appear here</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Relationships</h3>
+                                <div class="space-y-2" id="characterDetailRelationships">
+                                    <!-- Relationships will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 border-t border-gray-100">
+                        <button class="btn btn-primary w-full" id="editCharacterBtn" onclick="openEditCharacterForm()">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit Character
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
