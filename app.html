@@ -933,6 +933,19 @@
             background-color: rgba(255, 255, 255, 0.1) !important;
             color: white !important;
         }
+
+        /* More specific and stronger dark mode button styling - overriding anything else */
+        .dark button#loadProjectBtn,
+        .dark button#newProjectBtn,
+        .dark button#addChapterBtn,
+        .dark button#aiAssistBtn,
+        .dark button#manageContextBtn,
+        .dark button[class*="btn-"],
+        .dark button[data-shadcn="button"]:not(#darkModeToggle):not([data-variant="ghost"]) {
+            background-color: white !important;
+            color: black !important;
+            border-color: white !important;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -4349,6 +4362,12 @@
                 if (moonIcon) moonIcon.classList.add('hidden');
                 
                 console.log('Dark mode is active - UI updated accordingly');
+                
+                // Apply dark mode button styles
+                if (window.applyDarkModeButtonStyles) {
+                    window.applyDarkModeButtonStyles();
+                    console.log('Dark mode button styles applied on page load');
+                }
             }
             
             const darkModeToggle = document.getElementById('darkModeToggle');
