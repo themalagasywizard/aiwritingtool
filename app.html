@@ -715,49 +715,58 @@
     <script type="module">
         import { projects, chapters, characters, auth } from './lib/supabase.js';
         
-        // Global state management
+        // App state
         const appState = {
             currentProject: null,
             currentChapter: null,
             currentUser: null,
-            isDirty: false, // Track if editor has unsaved changes
-            wordTarget: 1000, // Default target word count,
-            chapterCache: new Map() // Cache for chapter content
+            isDirty: false,
+            chapterCache: new Map(),
+            contextItems: [],
+            wordTarget: 2000
         };
-        
-        // Expose appState to window object for access from other scripts
+
+        // Expose appState to window for access from other scripts
         window.appState = appState;
 
-        // DOM Elements
-        const elements = {
-            projectTitle: document.getElementById('projectTitle'),
-            lastEdited: document.getElementById('lastEdited'),
-            chaptersList: document.getElementById('chaptersList'),
-            addChapterBtn: document.getElementById('addChapterBtn'),
-            saveBtn: document.getElementById('saveBtn'),
-            newProjectBtn: document.getElementById('newProjectBtn'),
-            editorContent: document.getElementById('editorContent'),
-            chapterTitle: document.getElementById('chapterTitle'),
-            wordCount: document.getElementById('wordCount'),
-            wordCountProgress: document.getElementById('wordCountProgress'),
-            wordCountPercent: document.getElementById('wordCountPercent'),
-            contextCount: document.getElementById('contextCount'),
-            contextList: document.getElementById('contextList'),
-            saveStatus: document.getElementById('saveStatus'),
+        // Initialize DOM elements after the document is loaded
+        let elements;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            elements = {
+                projectTitle: document.getElementById('projectTitle'),
+                lastEdited: document.getElementById('lastEdited'),
+                chaptersList: document.getElementById('chaptersList'),
+                addChapterBtn: document.getElementById('addChapterBtn'),
+                saveBtn: document.getElementById('saveBtn'),
+                newProjectBtn: document.getElementById('newProjectBtn'),
+                editorContent: document.getElementById('editorContent'),
+                chapterTitle: document.getElementById('chapterTitle'),
+                wordCount: document.getElementById('wordCount'),
+                wordCountProgress: document.getElementById('wordCountProgress'),
+                wordCountPercent: document.getElementById('wordCountPercent'),
+                contextCount: document.getElementById('contextCount'),
+                contextList: document.getElementById('contextList'),
+                saveStatus: document.getElementById('saveStatus'),
+                
+                // New Project Modal
+                newProjectModal: document.getElementById('newProjectModal'),
+                newProjectTitle: document.getElementById('newProjectTitle'),
+                newProjectDescription: document.getElementById('newProjectDescription'),
+                closeNewProjectModal: document.getElementById('closeNewProjectModal'),
+                cancelNewProject: document.getElementById('cancelNewProject'),
+                createNewProject: document.getElementById('createNewProject'),
+                
+                // Loading overlay
+                loadingOverlay: document.getElementById('loadingOverlay'),
+                loadingMessage: document.getElementById('loadingMessage'),
+                loadProjectBtn: document.getElementById('loadProjectBtn'),
+            };
             
-            // New Project Modal
-            newProjectModal: document.getElementById('newProjectModal'),
-            newProjectTitle: document.getElementById('newProjectTitle'),
-            newProjectDescription: document.getElementById('newProjectDescription'),
-            closeNewProjectModal: document.getElementById('closeNewProjectModal'),
-            cancelNewProject: document.getElementById('cancelNewProject'),
-            createNewProject: document.getElementById('createNewProject'),
-            
-            // Loading overlay
-            loadingOverlay: document.getElementById('loadingOverlay'),
-            loadingMessage: document.getElementById('loadingMessage'),
-            loadProjectBtn: document.getElementById('loadProjectBtn'),
-        };
+            // Setup event listeners only after elements are initialized
+            setupEventListeners();
+        });
 
         // Helper Functions
         function showLoading(message = 'Loading...') {
@@ -1752,8 +1761,8 @@
                 
                 appState.currentUser = user;
                 
-                // Setup UI event listeners
-                setupEventListeners();
+                // Elements and event listeners are already setup in the first DOMContentLoaded handler
+                // No need to call setupEventListeners() here
                 
                 // Load projects
                 await loadProjects();
@@ -4031,6 +4040,8 @@
                         window.toggleDarkMode();
                     }
                 });
+            } else {
+                console.warn('Dark mode toggle button not found in the DOM');
             }
             
             // Ensure AI output containers can scroll properly when content changes
