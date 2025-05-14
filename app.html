@@ -1551,80 +1551,97 @@
             });
 
             // Formatting buttons
-            document.querySelector('button[title="Bold"]').addEventListener('click', () => {
-                document.execCommand('bold', false, null);
-                updateSaveStatus(true);
-            });
+            const boldButton = document.querySelector('button[title="Bold"]');
+            const italicButton = document.querySelector('button[title="Italic"]');
+            const headingButton = document.querySelector('button[title="Heading"]');
 
-            document.querySelector('button[title="Italic"]').addEventListener('click', () => {
-                document.execCommand('italic', false, null);
-                updateSaveStatus(true);
-            });
+            if (boldButton) {
+                boldButton.addEventListener('click', () => {
+                    document.execCommand('bold', false, null);
+                    updateSaveStatus(true);
+                });
+            }
 
-            document.querySelector('button[title="Heading"]').addEventListener('click', () => {
-                const selection = window.getSelection();
-                const range = selection.getRangeAt(0);
-                const container = range.commonAncestorContainer.parentElement;
-                
-                // Create a new div for the heading
-                const headingDiv = document.createElement('div');
-                headingDiv.className = 'text-center text-2xl font-bold my-4';
-                
-                // If we're already in a centered heading, revert to normal
-                if (container.classList && container.classList.contains('text-center')) {
-                    // Remove the heading formatting
-                    const normalText = document.createElement('div');
-                    normalText.innerHTML = container.innerHTML;
-                    container.parentNode.replaceChild(normalText, container);
-                } else {
-                    // Apply heading formatting
-                    headingDiv.innerHTML = range.toString();
-                    range.deleteContents();
-                    range.insertNode(headingDiv);
-                }
-                
-                updateSaveStatus(true);
-            });
+            if (italicButton) {
+                italicButton.addEventListener('click', () => {
+                    document.execCommand('italic', false, null);
+                    updateSaveStatus(true);
+                });
+            }
+
+            if (headingButton) {
+                headingButton.addEventListener('click', () => {
+                    const selection = window.getSelection();
+                    const range = selection.getRangeAt(0);
+                    const container = range.commonAncestorContainer.parentElement;
+                    
+                    // Create a new div for the heading
+                    const headingDiv = document.createElement('div');
+                    headingDiv.className = 'text-center text-2xl font-bold my-4';
+                    
+                    // If we're already in a centered heading, revert to normal
+                    if (container.classList && container.classList.contains('text-center')) {
+                        // Remove the heading formatting
+                        const normalText = document.createElement('div');
+                        normalText.innerHTML = container.innerHTML;
+                        container.parentNode.replaceChild(normalText, container);
+                    } else {
+                        // Apply heading formatting
+                        headingDiv.innerHTML = range.toString();
+                        range.deleteContents();
+                        range.insertNode(headingDiv);
+                    }
+                    
+                    updateSaveStatus(true);
+                });
+            }
 
             // Font size button and dropdown
             const fontSizeBtn = document.querySelector('button[title="Font Size"]');
             const fontSizeDropdown = document.querySelector('.font-size-dropdown');
             
             // Toggle dropdown
-            fontSizeBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                fontSizeDropdown.classList.toggle('hidden');
-            });
-            
-            // Hide dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!fontSizeBtn.contains(e.target)) {
-                    fontSizeDropdown.classList.add('hidden');
-                }
-            });
-            
-            // Handle font size selection
-            document.querySelectorAll('.font-size-dropdown button').forEach(button => {
-                button.addEventListener('click', () => {
-                    const size = button.getAttribute('data-size');
-                    document.execCommand('fontSize', false, size);
-                    fontSizeDropdown.classList.add('hidden');
-                    updateSaveStatus(true);
+            if (fontSizeBtn && fontSizeDropdown) {
+                fontSizeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    fontSizeDropdown.classList.toggle('hidden');
                 });
-            });
+                
+                // Hide dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!fontSizeBtn.contains(e.target)) {
+                        fontSizeDropdown.classList.add('hidden');
+                    }
+                });
+                
+                // Handle font size selection
+                document.querySelectorAll('.font-size-dropdown button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const size = button.getAttribute('data-size');
+                        document.execCommand('fontSize', false, size);
+                        fontSizeDropdown.classList.add('hidden');
+                        updateSaveStatus(true);
+                    });
+                });
+            }
 
             // Full Screen button
-            document.querySelector('button[title="Full Screen"]').addEventListener('click', () => {
-                if (!document.fullscreenElement) {
-                    document.documentElement.requestFullscreen().catch(err => {
-                        showToast(`Error attempting to enable full-screen mode: ${err.message}`, 'error');
-                    });
-                } else {
-                    document.exitFullscreen().catch(err => {
-                        showToast(`Error attempting to exit full-screen mode: ${err.message}`, 'error');
-                    });
-                }
-            });
+            const fullScreenBtn = document.querySelector('button[title="Full Screen"]');
+            if (fullScreenBtn) {
+                fullScreenBtn.addEventListener('click', () => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(err => {
+                            showToast(`Error attempting to enable full-screen mode: ${err.message}`, 'error');
+                        });
+                    } else {
+                        document.exitFullscreen().catch(err => {
+                            showToast(`Error attempting to exit full-screen mode: ${err.message}`, 'error');
+                        });
+                    }
+                });
+            }
+
+            // Keyboard shortcuts for formatting
 
             // Keyboard shortcuts for formatting
             elements.editorContent.addEventListener('keydown', (e) => {
@@ -1653,9 +1670,19 @@
                     container.classList && container.classList.contains('text-center') : 
                     container.parentElement.classList && container.parentElement.classList.contains('text-center');
 
-                document.querySelector('button[title="Bold"]').classList.toggle('bg-primaryLight', isBold);
-                document.querySelector('button[title="Italic"]').classList.toggle('bg-primaryLight', isItalic);
-                document.querySelector('button[title="Heading"]').classList.toggle('bg-primaryLight', isHeading);
+                const boldButton = document.querySelector('button[title="Bold"]');
+                const italicButton = document.querySelector('button[title="Italic"]');
+                const headingButton = document.querySelector('button[title="Heading"]');
+
+                if (boldButton) {
+                    boldButton.classList.toggle('bg-primaryLight', isBold);
+                }
+                if (italicButton) {
+                    italicButton.classList.toggle('bg-primaryLight', isItalic);
+                }
+                if (headingButton) {
+                    headingButton.classList.toggle('bg-primaryLight', isHeading);
+                }
             }
 
             // Add selectionchange event listener to update formatting buttons
