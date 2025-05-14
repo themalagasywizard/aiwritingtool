@@ -266,4 +266,25 @@
       transform: translateY(0);
     }
   }
+
+  /* Monochrome button styles */
+  button[data-variant="monochrome"],
+  .btn-monochrome {
+    @apply bg-black text-white border border-black !important;
+  }
+  
+  .dark button[data-variant="monochrome"],
+  .dark .btn-monochrome {
+    @apply bg-white text-black border border-white !important;
+  }
+  
+  button[data-variant="monochrome"]:hover,
+  .btn-monochrome:hover {
+    @apply bg-black/90 text-white !important;
+  }
+  
+  .dark button[data-variant="monochrome"]:hover,
+  .dark .btn-monochrome:hover {
+    @apply bg-white/90 text-black !important;
+  }
 } 

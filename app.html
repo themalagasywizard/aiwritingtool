@@ -856,6 +856,40 @@
             border-color: #374151 !important;
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23F3F4F6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
         }
+
+        /* Monochrome button styles */
+        .btn-monochrome {
+            background-color: black !important;
+            color: white !important;
+            border: 1px solid black !important;
+        }
+
+        .btn-monochrome:hover {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+        }
+
+        .dark .btn-monochrome {
+            background-color: white !important;
+            color: black !important;
+            border: 1px solid white !important;
+        }
+
+        .dark .btn-monochrome:hover {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+        }
+        
+        /* Handle monochrome error states */
+        .btn-monochrome.btn-error {
+            background-color: black !important;
+            color: white !important;
+            border-color: #EF4444 !important;
+        }
+        
+        .dark .btn-monochrome.btn-error {
+            background-color: white !important;
+            color: black !important;
+            border-color: #EF4444 !important;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -1364,7 +1398,7 @@
                 
                 // Update save button to indicate saved
                 elements.saveBtn.classList.remove('btn-error');
-                elements.saveBtn.classList.add('btn-primary');
+                elements.saveBtn.classList.add('btn-monochrome');
                 elements.saveBtn.innerHTML = '<i class="fas fa-save"></i><span class="ml-1">Save</span>';
                 
                 // Update project last edited time (backend will handle this)
@@ -1378,7 +1412,7 @@
                 console.error('Error saving chapter:', error);
                 
                 // Update save button to indicate error
-                elements.saveBtn.classList.remove('btn-primary');
+                elements.saveBtn.classList.remove('btn-monochrome');
                 elements.saveBtn.classList.add('btn-error');
                 elements.saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i><span class="ml-1">Error</span>';
                 
@@ -1394,11 +1428,11 @@
             
             // Update save button appearance based on dirty state
             if (isDirty) {
-                elements.saveBtn.classList.remove('btn-primary');
+                elements.saveBtn.classList.remove('btn-monochrome');
                 elements.saveBtn.classList.add('btn-error');
             } else {
                 elements.saveBtn.classList.remove('btn-error');
-                elements.saveBtn.classList.add('btn-primary');
+                elements.saveBtn.classList.add('btn-monochrome');
             }
             
             // If message is provided, show it in a toast notification
@@ -2081,15 +2115,15 @@
             <h1 class="text-xl font-semibold text-primary hidden md:block">Kalligram</h1>
             </div>
         <div class="flex items-center space-x-4">
-            <button id="saveBtn" class="btn btn-primary" data-shadcn="button" data-variant="default">
+            <button id="saveBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-save"></i>
                 <span class="ml-1">Save</span>
             </button>
-            <button id="loadProjectBtn" class="btn btn-primary" data-shadcn="button" data-variant="outline">
+            <button id="loadProjectBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-folder-open"></i>
                 <span class="ml-1">Load Project</span>
             </button>
-            <button id="newProjectBtn" class="btn btn-success" data-shadcn="button" data-variant="success">
+            <button id="newProjectBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-plus"></i>
                 <span class="ml-1">New Project</span>
             </button>
@@ -2187,7 +2221,7 @@
                         <i class="fas fa-spinner fa-spin mr-2"></i>Loading chapters...
                 </div>
                     </div>
-                <button id="addChapterBtn" class="btn btn-primary w-full mt-3">
+                <button id="addChapterBtn" class="btn btn-monochrome w-full mt-3" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-plus"></i>
                     Add Chapter
                 </button>
@@ -2207,7 +2241,7 @@
                         </div>
                     </div>
                 </div>
-                <button class="btn btn-primary w-full" id="manageContextBtn">
+                <button class="btn btn-monochrome w-full" id="manageContextBtn" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-brain"></i>
                     Manage Context
                 </button>
@@ -2215,7 +2249,7 @@
 
             <!-- Export -->
             <div class="mb-6">
-                <button class="btn btn-success w-full">
+                <button class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-file-pdf"></i>
                     Export PDF
                 </button>
@@ -2266,7 +2300,7 @@
             </div>
                 
                 <!-- AI Assistant Button (right-aligned) -->
-                <button id="aiAssistBtn" class="btn btn-primary text-sm transform transition-transform hover:scale-105 active:scale-95 ml-auto">
+                <button id="aiAssistBtn" class="btn btn-monochrome text-sm transform transition-transform hover:scale-105 active:scale-95 ml-auto" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-robot mr-2"></i>
                     <span>AI Assist</span>
                 </button>
@@ -4010,8 +4044,8 @@
                                         .join('')}
                                 </div>
                                 <div class="flex justify-end mt-3 border-t pt-3">
-                                    <button class="px-3 py-1.5 text-sm font-medium text-white bg-primary rounded hover:bg-primary/90 transition-colors flex items-center space-x-2" 
-                                            id="insertIntoChapterBtn">
+                                    <button class="px-3 py-1.5 text-sm font-medium text-white dark:text-black bg-black dark:bg-white border border-black dark:border-white rounded hover:bg-black/80 dark:hover:bg-white/80 transition-colors flex items-center space-x-2" 
+                                            id="insertIntoChapterBtn" data-shadcn="button" data-variant="monochrome">
                                         <i class="fas fa-paste"></i>
                                         <span>Insert into Chapter</span>
                                     </button>

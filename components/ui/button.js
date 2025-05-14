@@ -49,6 +49,7 @@ const buttonVariants = cva(
         link: "underline-offset-4 hover:underline text-primary",
         success: "bg-success text-white hover:bg-success/90",
         error: "bg-error text-white hover:bg-error/90",
+        monochrome: "bg-black dark:bg-white text-white dark:text-black hover:bg-black/80 dark:hover:bg-white/80 border border-black dark:border-white",
       },
       size: {
         default: "h-10 py-2 px-4",
