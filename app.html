@@ -804,15 +804,37 @@
         /* Make buttons white in dark mode - consistent styling */
         .dark .btn,
         .dark button[data-shadcn="button"],
-        .dark [data-variant="default"] {
-            background-color: #4B5EAA !important;
-            color: white !important;
+        .dark [data-variant="default"],
+        .dark .btn-primary,
+        .dark .btn-secondary,
+        .dark .btn-success,
+        .dark .btn-error {
+            background-color: white !important;
+            color: black !important;
+            border: 1px solid white !important;
+        }
+        
+        .dark .btn:hover,
+        .dark button[data-shadcn="button"]:hover {
+            background-color: rgba(255, 255, 255, 0.8) !important;
+            color: black !important;
+        }
+
+        /* Override any buttons that might need specific handling */
+        .dark #cancelNewProject,
+        .dark #createNewProject,
+        .dark #aiSubmit,
+        .dark #chatSubmit,
+        .dark #insertIntoChapterBtn {
+            background-color: white !important;
+            color: black !important;
+            border: 1px solid white !important;
         }
 
         /* Style for submit buttons */
         .dark #chatSubmit,
         .dark #aiSubmit {
-            color: #4B5EAA !important;
+            color: black !important;
         }
 
         /* Mode toggle buttons in AI panel */
@@ -845,8 +867,13 @@
         }
 
         .dark .ai-mode-btn.active {
-            background-color: #4B5EAA !important;
-            color: white !important;
+            background-color: white !important;
+            color: black !important;
+            border: 1px solid white !important;
+        }
+        
+        .dark .ai-mode-btn:hover:not(.active) {
+            background-color: rgba(255, 255, 255, 0.2) !important;
         }
         
         /* Dark mode for model selector and dropdown */
@@ -889,6 +916,22 @@
             background-color: white !important;
             color: black !important;
             border-color: #EF4444 !important;
+        }
+
+        /* Special handling for the dark mode toggle button */
+        .dark #darkModeToggle,
+        .dark .btn-ghost,
+        .dark button[data-variant="ghost"] {
+            background-color: transparent !important;
+            border-color: transparent !important;
+            color: white !important;
+        }
+
+        .dark #darkModeToggle:hover,
+        .dark .btn-ghost:hover,
+        .dark button[data-variant="ghost"]:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
         }
     </style>
 </head>

@@ -287,4 +287,32 @@
   .dark .btn-monochrome:hover {
     @apply bg-white/90 text-black !important;
   }
+
+  /* Ensure all buttons in dark mode are white */
+  .dark button[data-shadcn="button"],
+  .dark .btn,
+  .dark [class*="btn-"],
+  .dark [data-variant] {
+    background-color: white !important;
+    color: black !important;
+    border-color: white !important;
+  }
+  
+  .dark button[data-shadcn="button"]:hover,
+  .dark .btn:hover,
+  .dark [class*="btn-"]:hover {
+    background-color: rgba(255, 255, 255, 0.8) !important;
+    color: black !important;
+  }
+  
+  /* Special handling for ghost buttons */
+  .dark button[data-variant="ghost"],
+  .dark .btn-ghost {
+    @apply bg-transparent text-white hover:bg-white/20 !important;
+  }
+  
+  .dark button[data-variant="ghost"]:hover,
+  .dark .btn-ghost:hover {
+    @apply bg-white/20 text-white !important;
+  }
 } 
