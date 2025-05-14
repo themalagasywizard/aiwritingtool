@@ -4,77 +4,72 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 229 50% 47%; /* Matches #4B5EAA */
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 220 9% 46%; /* Matches #6B7280 */
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 327 73% 70%; /* Matches #F472B6 */
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --success: 158 64% 52%;
-    --success-foreground: 210 40% 98%;
-    
-    --warning: 45 93% 47%;
-    --warning-foreground: 222.2 47.4% 11.2%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
     --radius: 0.5rem;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.141 0.005 285.823);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.141 0.005 285.823);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.141 0.005 285.823);
+    --primary: oklch(0.21 0.006 285.885);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.967 0.001 286.375);
+    --secondary-foreground: oklch(0.21 0.006 285.885);
+    --muted: oklch(0.967 0.001 286.375);
+    --muted-foreground: oklch(0.552 0.016 285.938);
+    --accent: oklch(0.967 0.001 286.375);
+    --accent-foreground: oklch(0.21 0.006 285.885);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.985 0 0);
+    --success: oklch(0.646 0.222 41.116);
+    --success-foreground: oklch(0.985 0 0);
+    --warning: oklch(0.828 0.189 84.429);
+    --warning-foreground: oklch(0.141 0.005 285.823);
+    --border: oklch(0.92 0.004 286.32);
+    --input: oklch(0.92 0.004 286.32);
+    --ring: oklch(0.705 0.015 286.067);
+    --sidebar: oklch(0.985 0 0);
+    --sidebar-foreground: oklch(0.141 0.005 285.823);
+    --sidebar-primary: oklch(0.21 0.006 285.885);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.967 0.001 286.375);
+    --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+    --sidebar-border: oklch(0.92 0.004 286.32);
+    --sidebar-ring: oklch(0.705 0.015 286.067);
   }
 
   .dark {
-    --background: 222.2 47.4% 11.2%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 47.4% 11.2%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 47.4% 11.2%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 229 50% 47%; /* Matches #4B5EAA */
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 327 73% 70%; /* Matches #F472B6 */
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
-    
-    --warning: 48 96% 39%;
-    --warning-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: oklch(0.141 0.005 285.823);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.21 0.006 285.885);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.21 0.006 285.885);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.92 0.004 286.32);
+    --primary-foreground: oklch(0.21 0.006 285.885);
+    --secondary: oklch(0.274 0.006 286.033);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.274 0.006 286.033);
+    --muted-foreground: oklch(0.705 0.015 286.067);
+    --accent: oklch(0.274 0.006 286.033);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --destructive-foreground: oklch(0.985 0 0);
+    --success: oklch(0.488 0.243 264.376);
+    --success-foreground: oklch(0.985 0 0);
+    --warning: oklch(0.769 0.188 70.08);
+    --warning-foreground: oklch(0.985 0 0);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.552 0.016 285.938);
+    --sidebar: oklch(0.21 0.006 285.885);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.274 0.006 286.033);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.552 0.016 285.938);
   }
 }
 
@@ -93,7 +88,7 @@
   
   /* Apply dark mode to all background elements */
   .dark .sidebar {
-    @apply bg-card border-border;
+    @apply bg-sidebar text-sidebar-foreground border-sidebar-border;
   }
   
   .dark header,
@@ -182,18 +177,18 @@
   .dark #aiOutput,
   .dark textarea,
   .dark .bg-gray-50 {
-    background-color: hsl(222.2 47.4% 15.2%) !important;
-    color: hsl(210 40% 98%) !important;
-    border-color: hsl(217.2 32.6% 25%) !important;
+    background-color: var(--card) !important;
+    color: var(--card-foreground) !important;
+    border-color: var(--border) !important;
   }
   
   /* Model selector and dropdown styling */
   .dark select,
   .dark #aiModel,
   .dark .ai-mode-btn:not(.active) {
-    background-color: hsl(222.2 47.4% 20%) !important;
-    color: hsl(210 40% 98%) !important;
-    border-color: hsl(217.2 32.6% 25%) !important;
+    background-color: var(--secondary) !important;
+    color: var(--secondary-foreground) !important;
+    border-color: var(--border) !important;
   }
   
   /* Active/inactive states for AI mode buttons */
@@ -211,16 +206,16 @@
   .dark [class*="btn-primary"],
   .dark .shadcn-btn,
   .dark [data-variant="default"] {
-    background-color: #4B5EAA !important;
-    color: white !important;
-    border-color: #4B5EAA !important;
+    background-color: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+    border-color: var(--primary) !important;
   }
   
   .dark .btn:hover,
   .dark button[data-shadcn="button"]:hover,
   .dark [data-variant="default"]:hover {
-    background-color: #3A4B99 !important;
-    color: white !important;
+    background-color: oklch(0.92 0.004 286.32 / 80%) !important;
+    color: var(--primary-foreground) !important;
   }
   
   /* Fix AI tabs display */
@@ -270,49 +265,49 @@
   /* Monochrome button styles */
   button[data-variant="monochrome"],
   .btn-monochrome {
-    @apply bg-black text-white border border-black !important;
+    @apply bg-foreground text-background border border-foreground !important;
   }
   
   .dark button[data-variant="monochrome"],
   .dark .btn-monochrome {
-    @apply bg-white text-black border border-white !important;
+    @apply bg-foreground text-background border border-foreground !important;
   }
   
   button[data-variant="monochrome"]:hover,
   .btn-monochrome:hover {
-    @apply bg-black/90 text-white !important;
+    @apply bg-foreground/90 text-background !important;
   }
   
   .dark button[data-variant="monochrome"]:hover,
   .dark .btn-monochrome:hover {
-    @apply bg-white/90 text-black !important;
+    @apply bg-foreground/90 text-background !important;
   }
 
-  /* Ensure all buttons in dark mode are white */
+  /* Ensure all buttons in dark mode use proper colors */
   .dark button[data-shadcn="button"],
   .dark .btn,
   .dark [class*="btn-"],
   .dark [data-variant] {
-    background-color: white !important;
-    color: black !important;
-    border-color: white !important;
+    background-color: var(--foreground) !important;
+    color: var(--background) !important;
+    border-color: var(--foreground) !important;
   }
   
   .dark button[data-shadcn="button"]:hover,
   .dark .btn:hover,
   .dark [class*="btn-"]:hover {
-    background-color: rgba(255, 255, 255, 0.8) !important;
-    color: black !important;
+    background-color: oklch(0.985 0 0 / 80%) !important;
+    color: var(--background) !important;
   }
   
   /* Special handling for ghost buttons */
   .dark button[data-variant="ghost"],
   .dark .btn-ghost {
-    @apply bg-transparent text-white hover:bg-white/20 !important;
+    @apply bg-transparent text-foreground hover:bg-foreground/20 !important;
   }
   
   .dark button[data-variant="ghost"]:hover,
   .dark .btn-ghost:hover {
-    @apply bg-white/20 text-white !important;
+    @apply bg-foreground/20 text-foreground !important;
   }
 } 
