@@ -91,6 +91,7 @@
     color-scheme: dark;
   }
   
+  /* Apply dark mode to all background elements */
   .dark .sidebar {
     @apply bg-card border-border;
   }
@@ -99,16 +100,86 @@
     @apply bg-card border-border;
   }
   
-  .dark .card, .dark .bg-white, .dark [class*="bg-white"] {
-    @apply bg-card;
+  .dark main, .dark .main-content {
+    @apply bg-background;
   }
   
-  .dark .text-gray-400, .dark .text-gray-500, .dark .text-gray-600 {
+  .dark .editor-content {
+    @apply bg-background text-foreground;
+  }
+  
+  .dark .card, 
+  .dark .bg-white, 
+  .dark [class*="bg-white"],
+  .dark .modal-content,
+  .dark .editor-toolbar,
+  .dark .dropdown-content,
+  .dark #editorContent {
+    @apply bg-card text-foreground;
+  }
+  
+  /* Fix text colors in dark mode */
+  .dark .text-gray-400, 
+  .dark .text-gray-500, 
+  .dark .text-gray-600,
+  .dark .text-textSecondary,
+  .dark .text-text-secondary {
     @apply text-muted-foreground;
   }
   
-  .dark .border-gray-100, .dark .border-gray-200 {
+  .dark .text-textPrimary,
+  .dark .text-text-primary,
+  .dark .text-gray-700,
+  .dark .text-gray-800,
+  .dark .text-gray-900 {
+    @apply text-foreground;
+  }
+  
+  /* Fix borders in dark mode */
+  .dark .border-gray-100, 
+  .dark .border-gray-200,
+  .dark .border-gray-300 {
     @apply border-border;
+  }
+  
+  /* Button styling in dark mode */
+  .dark .btn-secondary,
+  .dark .toolbar-btn {
+    @apply bg-secondary text-secondary-foreground;
+  }
+  
+  .dark .toolbar-btn:hover {
+    @apply bg-primary/20 text-primary;
+  }
+  
+  /* Dark mode for specific app elements */
+  .dark #aiAssistPanel,
+  .dark #loadProjectPanel,
+  .dark #aiOutput,
+  .dark #chatHistory {
+    @apply bg-card text-foreground;
+  }
+  
+  .dark .chat-message.user {
+    @apply bg-secondary/20 border-secondary;
+  }
+  
+  .dark .chat-message.ai {
+    @apply bg-primary/20;
+  }
+  
+  .dark #newProjectModal,
+  .dark #contextModal,
+  .dark #aiModal {
+    @apply bg-background/80;
+  }
+  
+  .dark .character-node {
+    filter: brightness(0.9);
+  }
+  
+  .dark .character-tooltip {
+    @apply bg-card;
   }
 
   /* Animation for transitions */
