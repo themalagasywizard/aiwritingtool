@@ -197,7 +197,8 @@
   }
   
   .dark .ai-mode-btn:not(.active):hover {
-    background-color: hsl(222.2 47.4% 25%) !important;
+    background-color: var(--accent) !important;
+    opacity: 0.8 !important;
   }
   
   /* Consistent button styling in dark mode */
@@ -221,15 +222,16 @@
   /* Fix AI tabs display */
   .dark #generateEditView,
   .dark #chatView {
-    background-color: #111827 !important;
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
   }
   
   .dark .chat-message.user {
-    @apply bg-secondary/20 border-secondary;
+    @apply bg-secondary text-secondary-foreground border-secondary;
   }
   
   .dark .chat-message.ai {
-    @apply bg-primary/20;
+    @apply bg-primary text-primary-foreground;
   }
   
   .dark #newProjectModal,
