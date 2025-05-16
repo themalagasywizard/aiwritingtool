@@ -47,6 +47,8 @@
     <script type="module">
         import { initializeShadcnUI } from './lib/initialize.js';
         import { setupDarkModeToggle } from './lib/utils.js';
+        import { Switch } from './components/ui/switch.js';
+        import { Label } from './components/ui/label.js';
         
         // Initialize Shadcn/UI components after DOM content is loaded
         document.addEventListener('DOMContentLoaded', () => {
@@ -55,7 +57,42 @@
             setupDarkModeToggle();
             // Then initialize UI components
             initializeShadcnUI();
+            // Initialize the dark mode switch in profile dropdown
+            initializeDarkModeSwitch();
         });
+        
+        // Initialize the dark mode switch in profile dropdown
+        function initializeDarkModeSwitch() {
+            // Create the container for the switch
+            const switchContainer = document.createElement('div');
+            switchContainer.className = 'p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between';
+            
+            // Create the left content with icon and text
+            const leftContent = document.createElement('div');
+            leftContent.className = 'flex items-center';
+            leftContent.innerHTML = '<i class="fas fa-moon text-primary mr-2"></i><span>Dark Mode</span>';
+            
+            // Create the switch
+            const darkModeSwitch = Switch({
+                id: 'darkModeSwitch',
+                checked: document.documentElement.classList.contains('dark'),
+                onChange: (e) => {
+                    if (window.toggleDarkMode) {
+                        window.toggleDarkMode();
+                    }
+                }
+            });
+            
+            // Assemble the switch container
+            switchContainer.appendChild(leftContent);
+            switchContainer.appendChild(darkModeSwitch);
+            
+            // Add to profile dropdown before sign out button
+            const signOutBtn = document.getElementById('signOutBtn');
+            if (signOutBtn) {
+                signOutBtn.parentNode.insertBefore(switchContainer, signOutBtn);
+            }
+        }
     </script>
     <!-- Custom Styles -->
     <style>
@@ -1224,6 +1261,53 @@
         .dark .logo-container i.fas,
         .dark .logo-container i.fa-feather-alt {
             color: black !important;
+        }
+
+        /* Dark mode switch styling */
+        .dark .peer:checked ~ div {
+            background-color: white !important;
+        }
+
+        .dark .peer-checked\:bg-primary {
+            background-color: white !important;
+        }
+
+        .dark .hover\:bg-gray-50:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .dark .profile-dropdown {
+            background-color: hsl(240, 3.7%, 15.9%) !important;
+            border-color: var(--border) !important;
+            color: white !important;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        .peer:checked ~ div::after {
+            transform: translateX(100%);
+        }
+
+        .peer {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
         }
     </style>
 </head>
@@ -2462,16 +2546,11 @@
                 <i class="fas fa-plus"></i>
                 <span class="ml-1">New Project</span>
             </button>
-            <button id="darkModeToggle" class="btn btn-ghost" data-shadcn="button" data-variant="ghost" data-size="icon">
-                <i class="fas fa-moon dark:hidden"></i>
-                <i class="fas fa-sun hidden dark:inline-block"></i>
-                <span class="sr-only">Toggle dark mode</span>
-            </button>
             <div class="relative group">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
                      alt="User Avatar" 
                      class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
-                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
+                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10 profile-dropdown">
                     <a href="/profile.html" class="block">
                         <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                             <i class="fas fa-user-circle text-primary mr-2"></i>
@@ -2484,6 +2563,7 @@
                             <span>Settings</span>
                         </div>
                     </a>
+                    <!-- Dark mode toggle switch will be inserted here by initializeDarkModeSwitch() -->
                     <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
                         <i class="fas fa-sign-out-alt mr-2"></i>
                         <span>Sign Out</span>
