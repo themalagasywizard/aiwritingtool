@@ -72,11 +72,34 @@
             leftContent.className = 'flex items-center';
             leftContent.innerHTML = '<i class="fas fa-moon text-primary mr-2"></i><span>Dark Mode</span>';
             
-            // Create the switch
+            // Create the switch with proper initial state
+            const isDarkMode = document.documentElement.classList.contains('dark');
             const darkModeSwitch = Switch({
                 id: 'darkModeSwitch',
-                checked: document.documentElement.classList.contains('dark'),
-                onChange: (e) => {
+                checked: isDarkMode,
+                onChange: function(e) {
+                    // Call the toggleDarkMode function directly
+                    if (window.toggleDarkMode) {
+                        window.toggleDarkMode();
+                    }
+                }
+            });
+            
+            // Add click handler to the entire container for better UX
+            switchContainer.addEventListener('click', function(e) {
+                // Only process if we didn't click directly on the checkbox
+                if (e.target.id !== 'darkModeSwitch') {
+                    // Get the checkbox and toggle it programmatically
+                    const checkbox = document.getElementById('darkModeSwitch');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        
+                        // Manually trigger the change event
+                        const changeEvent = new Event('change');
+                        checkbox.dispatchEvent(changeEvent);
+                    }
+                    
+                    // Call toggleDarkMode directly as fallback
                     if (window.toggleDarkMode) {
                         window.toggleDarkMode();
                     }
@@ -1308,6 +1331,20 @@
             clip: rect(0, 0, 0, 0);
             white-space: nowrap;
             border-width: 0;
+        }
+
+        /* Fixed dropdown styling in dark mode */
+        .dark .absolute.right-0.mt-2.w-48.bg-white {
+            background-color: hsl(240, 3.7%, 15.9%) !important;
+            color: white !important;
+        }
+
+        .dark .p-2.hover\:bg-gray-50 {
+            color: white !important;
+        }
+
+        .dark .p-2.hover\:bg-gray-50:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
         }
     </style>
 </head>

@@ -47,9 +47,24 @@ function Switch(params = {}) {
     "peer-focus-visible:outline-none peer-focus-visible:ring-2",
     "peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
     "peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
-    "relative flex-shrink-0",
+    "relative flex-shrink-0 cursor-pointer",
     className
   );
+  
+  // Add click handler on the visual part to toggle the hidden input
+  switchTrack.addEventListener('click', (e) => {
+    if (!disabled) {
+      // Toggle the checkbox
+      input.checked = !input.checked;
+      
+      // Dispatch a change event
+      const event = new Event('change', { bubbles: true });
+      input.dispatchEvent(event);
+      
+      // Prevent event from reaching container
+      e.stopPropagation();
+    }
+  });
   
   // Assemble the switch
   container.appendChild(input);
