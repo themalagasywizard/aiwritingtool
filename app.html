@@ -59,35 +59,82 @@
     </script>
     <!-- Custom Styles -->
     <style>
-        :root {
-            --primary: oklch(0.21 0.006 285.885);
-            --primary-light: oklch(0.967 0.001 286.375);
-            --secondary: oklch(0.552 0.016 285.938);
-            --accent: oklch(0.967 0.001 286.375);
+        @layer base {
+          :root {
+            --radius: 0.5rem;
             --background: oklch(1 0 0);
-            --text-primary: oklch(0.141 0.005 285.823);
-            --text-secondary: oklch(0.552 0.016 285.938);
+            --foreground: oklch(0.141 0.005 285.823);
+            --card: oklch(1 0 0);
+            --card-foreground: oklch(0.141 0.005 285.823);
+            --popover: oklch(1 0 0);
+            --popover-foreground: oklch(0.141 0.005 285.823);
+            --primary: oklch(0.21 0.006 285.885);
+            --primary-foreground: oklch(0.985 0 0);
+            --secondary: oklch(0.967 0.001 286.375);
+            --secondary-foreground: oklch(0.21 0.006 285.885);
+            --muted: oklch(0.967 0.001 286.375);
+            --muted-foreground: oklch(0.552 0.016 285.938);
+            --accent: oklch(0.967 0.001 286.375);
+            --accent-foreground: oklch(0.21 0.006 285.885);
+            --destructive: oklch(0.577 0.245 27.325);
+            --destructive-foreground: oklch(0.985 0 0);
             --success: oklch(0.646 0.222 41.116);
-            --error: oklch(0.577 0.245 27.325);
+            --success-foreground: oklch(0.985 0 0);
             --warning: oklch(0.828 0.189 84.429);
-        }
+            --warning-foreground: oklch(0.141 0.005 285.823);
+            --border: oklch(0.92 0.004 286.32);
+            --input: oklch(0.92 0.004 286.32);
+            --ring: oklch(0.705 0.015 286.067);
+            --sidebar: oklch(0.985 0 0);
+            --sidebar-foreground: oklch(0.141 0.005 285.823);
+            --sidebar-primary: oklch(0.21 0.006 285.885);
+            --sidebar-primary-foreground: oklch(0.985 0 0);
+            --sidebar-accent: oklch(0.967 0.001 286.375);
+            --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+            --sidebar-border: oklch(0.92 0.004 286.32);
+            --sidebar-ring: oklch(0.705 0.015 286.067);
+            --header-bg: oklch(1 0 0);
+          }
 
-        .dark {
-            --primary: oklch(0.92 0.004 286.32);
-            --primary-light: oklch(0.274 0.006 286.033);
-            --secondary: oklch(0.705 0.015 286.067);
-            --accent: oklch(0.274 0.006 286.033);
+          .dark {
             --background: oklch(0.141 0.005 285.823);
-            --text-primary: oklch(0.985 0 0);
-            --text-secondary: oklch(0.705 0.015 286.067);
+            --foreground: oklch(0.985 0 0);
+            --card: oklch(0.21 0.006 285.885);
+            --card-foreground: oklch(0.985 0 0);
+            --popover: oklch(0.21 0.006 285.885);
+            --popover-foreground: oklch(0.985 0 0);
+            --primary: oklch(0.92 0.004 286.32);
+            --primary-foreground: oklch(0.21 0.006 285.885);
+            --secondary: oklch(0.274 0.006 286.033);
+            --secondary-foreground: oklch(0.985 0 0);
+            --muted: oklch(0.274 0.006 286.033);
+            --muted-foreground: oklch(0.705 0.015 286.067);
+            --accent: oklch(0.274 0.006 286.033);
+            --accent-foreground: oklch(0.985 0 0);
+            --destructive: oklch(0.704 0.191 22.216);
+            --destructive-foreground: oklch(0.985 0 0);
             --success: oklch(0.488 0.243 264.376);
-            --error: oklch(0.704 0.191 22.216);
+            --success-foreground: oklch(0.985 0 0);
             --warning: oklch(0.769 0.188 70.08);
+            --warning-foreground: oklch(0.985 0 0);
+            --border: oklch(1 0 0 / 10%);
+            --input: oklch(1 0 0 / 15%);
+            --ring: oklch(0.552 0.016 285.938);
+            --sidebar: oklch(0.21 0.006 285.885);
+            --sidebar-foreground: oklch(0.985 0 0);
+            --sidebar-primary: oklch(0.488 0.243 264.376);
+            --sidebar-primary-foreground: oklch(0.985 0 0);
+            --sidebar-accent: oklch(0.274 0.006 286.033);
+            --sidebar-accent-foreground: oklch(0.985 0 0);
+            --sidebar-border: oklch(1 0 0 / 10%);
+            --sidebar-ring: oklch(0.552 0.016 285.938);
+            --header-bg: hsl(240 3.7% 15.9%);
+          }
         }
 
         /* Header styling */
         header, .header {
-            background-color: var(--card);
+            background-color: var(--header-bg);
             color: var(--card-foreground);
             border-color: var(--border);
         }
@@ -129,7 +176,7 @@
         .dark header, 
         .dark .editor-toolbar,
         .dark .bg-white {
-            background-color: var(--card) !important;
+            background-color: var(--header-bg) !important;
             border-color: var(--border) !important;
             color: var(--card-foreground) !important;
         }
@@ -967,6 +1014,7 @@
         .dark button#newProjectBtn,
         .dark button#addChapterBtn,
         .dark button#aiAssistBtn,
+        .dark button#exportPdfBtn,
         .dark button#manageContextBtn,
         .dark button[class*="btn-"],
         .dark button[data-shadcn="button"]:not(#darkModeToggle):not([data-variant="ghost"]) {
@@ -2432,7 +2480,7 @@
 
             <!-- Export -->
             <div class="mb-6">
-                <button class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">
+                <button id="exportPdfBtn" class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-file-pdf"></i>
                     Export PDF
                 </button>
@@ -4495,6 +4543,13 @@
                     window.applyDarkModeButtonStyles();
                     console.log('Dark mode button styles applied on page load');
                 }
+                
+                // Apply header and toolbar dark styles on initial load
+                const header = document.querySelector('header');
+                const toolbar = document.querySelector('.editor-toolbar');
+                
+                if (header) header.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+                if (toolbar) toolbar.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
             }
             
             const darkModeToggle = document.getElementById('darkModeToggle');

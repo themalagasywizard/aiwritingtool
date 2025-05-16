@@ -91,9 +91,12 @@
     @apply bg-sidebar text-sidebar-foreground border-sidebar-border;
   }
   
+  /* Apply the specific gray to header and toolbar */
   .dark header,
   .dark .header {
-    @apply bg-card border-border text-foreground !important;
+    background-color: hsl(240, 3.7%, 15.9%) !important;
+    border-color: var(--border) !important;
+    color: var(--foreground) !important;
   }
   
   .dark main, 
@@ -107,11 +110,13 @@
     @apply bg-background text-foreground !important;
   }
   
-  /* Make sure toolbar has dark styling */
+  /* Make sure toolbar has the same gray styling */
   .dark .editor-toolbar,
   .dark .toolbar,
   .dark [class*="toolbar"] {
-    @apply bg-card text-foreground border-border !important;
+    background-color: hsl(240, 3.7%, 15.9%) !important;
+    border-color: var(--border) !important;
+    color: var(--foreground) !important;
   }
   
   .dark .card, 
