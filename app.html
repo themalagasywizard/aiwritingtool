@@ -1151,6 +1151,20 @@
             color: var(--foreground) !important;
             border-color: var(--border) !important;
         }
+
+        /* Apply dark mode styling to main content area */
+        .dark main, 
+        .dark .main,
+        .dark .flex-1.overflow-hidden.flex.flex-col.bg-white {
+            background-color: hsl(240, 3.7%, 15.9%) !important;
+            color: var(--foreground) !important;
+        }
+
+        /* Full-width sidebar buttons */
+        .sidebar .btn,
+        .sidebar button[data-shadcn="button"] {
+            width: 100%;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -2370,11 +2384,11 @@
             <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary" data-shadcn="button" data-variant="ghost" data-size="icon">
                 <i class="fas fa-bars"></i>
             </button>
-            <div class="w-10 h-10 bg-background dark:bg-background rounded-full flex items-center justify-center text-black dark:text-white text-xl border border-gray-200 dark:border-gray-700">
-                <i class="fas fa-feather-alt"></i>
-                </div>
-            <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
+            <div class="w-10 h-10 bg-background dark:bg-white rounded-full flex items-center justify-center text-black text-xl border border-gray-200 dark:border-gray-700">
+                <i class="fas fa-feather-alt text-black"></i>
             </div>
+            <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
+        </div>
         <div class="flex items-center space-x-4">
             <button id="saveBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-save"></i>
@@ -2466,7 +2480,7 @@
                         <span id="lastEdited">Loading...</span>
                     </div>
                 </div>
-                </div>
+            </div>
 
             <!-- Chapters -->
             <div class="mb-6">
@@ -2475,25 +2489,25 @@
                     <button class="text-primary hover:text-opacity-80" title="Collapse All">
                         <i class="fas fa-compress-alt"></i>
                     </button>
-                    </div>
+                </div>
                 <div id="chaptersList" class="space-y-1">
                     <!-- Chapters will be loaded here dynamically -->
                     <div class="text-center p-2 text-textSecondary text-sm">
                         <i class="fas fa-spinner fa-spin mr-2"></i>Loading chapters...
                 </div>
-                    </div>
-                <button id="addChapterBtn" class="btn btn-monochrome w-full mt-4" data-shadcn="button" data-variant="monochrome">
+                </div>
+                <button id="addChapterBtn" class="btn btn-monochrome w-full mt-6" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-plus"></i>
                     Add Chapter
                 </button>
-                </div>
+            </div>
 
             <!-- Context Manager -->
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-3">
                     <h2 class="text-sm font-semibold uppercase tracking-wider text-secondary">Story Context</h2>
                     <span id="contextCount" class="text-xs text-textSecondary">0 items</span>
-                    </div>
+                </div>
                 <div class="bg-white rounded-lg p-2 shadow-sm-custom mb-3">
                     <div id="contextList" class="space-y-1">
                         <!-- Context items will be loaded here -->
@@ -2502,13 +2516,14 @@
                         </div>
                     </div>
                 </div>
-                <button class="btn btn-monochrome w-full" id="manageContextBtn" data-shadcn="button" data-variant="monochrome">
+                <!-- Context Manager Button -->
+                <button id="manageContextBtn" class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-brain"></i>
                     Manage Context
                 </button>
-                </div>
+            </div>
 
-            <!-- Export -->
+            <!-- Export Button -->
             <div class="mb-6">
                 <button id="exportPdfBtn" class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-file-pdf"></i>
@@ -2526,10 +2541,10 @@
                     <svg class="w-full h-full" viewBox="0 0 36 36">
                         <circle cx="18" cy="18" r="16" fill="none" stroke="#E6E9F0" stroke-width="2"></circle>
                         <circle id="wordCountProgress" cx="18" cy="18" r="16" fill="none" stroke="#4B5EAA" stroke-width="2" stroke-dasharray="0 100" stroke-dashoffset="0" transform="rotate(-90 18 18)"></circle>
-                        </svg>
+                    </svg>
                     <div id="wordCountPercent" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-xs font-medium text-primary">0%</div>
-                    </div>
                 </div>
+            </div>
         </aside>
 
         <!-- Editor Area -->
