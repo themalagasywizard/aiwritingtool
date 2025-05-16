@@ -1186,6 +1186,15 @@
         #exportPdfBtn {
             width: 100% !important;
         }
+
+        /* Add CSS to ensure logo has consistent styling */
+        .logo-container {
+            background-color: white !important;
+        }
+
+        .logo-container i {
+            color: black !important;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -2405,7 +2414,7 @@
             <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary" data-shadcn="button" data-variant="ghost" data-size="icon">
                 <i class="fas fa-bars"></i>
             </button>
-            <div class="w-10 h-10 bg-white dark:bg-white rounded-full flex items-center justify-center text-black text-xl border border-gray-200 dark:border-gray-700">
+            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl border border-gray-200 dark:border-gray-700 logo-container">
                 <i class="fas fa-feather-alt text-black"></i>
             </div>
             <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
