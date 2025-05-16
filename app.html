@@ -1121,6 +1121,36 @@
         }
 
         /* ... existing styles continue ... */
+
+        /* Apply specific dark mode styling to editor content */
+        .dark .editor-content, 
+        .dark #editorContent {
+            background-color: hsl(240, 3.7%, 15.9%) !important;
+            color: var(--foreground) !important;
+            border-color: var(--border) !important;
+        }
+
+        /* Apply specific dark mode styling to the project info box in sidebar */
+        .dark .sidebar .bg-white.rounded-lg {
+            background-color: hsl(240, 3.7%, 15.9%) !important;
+            color: var(--foreground) !important;
+            border-color: var(--border) !important;
+        }
+
+        /* Apply specific dark mode styling to the context box in sidebar */
+        .dark #contextList,
+        .dark .sidebar .bg-white {
+            background-color: hsl(240, 3.7%, 15.9%) !important;
+            color: var(--foreground) !important;
+            border-color: var(--border) !important;
+        }
+
+        /* Apply dark mode styling to word count container */
+        .dark .flex.items-center.justify-between.bg-white.p-3.rounded-lg.shadow-sm-custom.text-sm {
+            background-color: hsl(240, 3.7%, 15.9%) !important;
+            color: var(--foreground) !important;
+            border-color: var(--border) !important;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -4547,9 +4577,22 @@
                 // Apply header and toolbar dark styles on initial load
                 const header = document.querySelector('header');
                 const toolbar = document.querySelector('.editor-toolbar');
-                
+                const editorContent = document.querySelector('#editorContent');
+                const projectInfoBox = document.querySelector('.sidebar .bg-white.rounded-lg');
+                const contextBox = document.querySelector('#contextList');
+                const wordCountContainer = document.querySelector('.flex.items-center.justify-between.bg-white.p-3.rounded-lg.shadow-sm-custom.text-sm');
+
                 if (header) header.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
                 if (toolbar) toolbar.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+                if (editorContent) editorContent.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+                if (projectInfoBox) projectInfoBox.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+                if (contextBox) contextBox.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+                if (wordCountContainer) wordCountContainer.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+
+                // Apply to all sidebar white background elements
+                document.querySelectorAll('.sidebar .bg-white').forEach(el => {
+                    el.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+                });
             }
             
             const darkModeToggle = document.getElementById('darkModeToggle');

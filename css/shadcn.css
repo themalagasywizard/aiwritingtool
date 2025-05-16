@@ -317,4 +317,26 @@
   .dark .btn-ghost:hover {
     @apply bg-foreground/20 text-foreground !important;
   }
+
+  /* Apply specific dark mode styles for editor and sidebar boxes */
+  .dark #editorContent,
+  .dark .editor-content {
+    background-color: hsl(240, 3.7%, 15.9%) !important;
+    color: var(--foreground) !important;
+  }
+
+  .dark .sidebar .bg-white,
+  .dark .sidebar .bg-white.rounded-lg,
+  .dark #contextList,
+  .dark .flex.items-center.justify-between.bg-white.p-3.rounded-lg {
+    background-color: hsl(240, 3.7%, 15.9%) !important;
+    color: var(--foreground) !important; 
+    border-color: var(--border) !important;
+  }
+
+  .dark #generateEditView,
+  .dark #chatView {
+    background-color: var(--background) !important;
+    color: var(--foreground) !important;
+  }
 } 
