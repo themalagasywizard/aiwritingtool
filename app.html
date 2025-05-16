@@ -1195,6 +1195,36 @@
         .logo-container i {
             color: black !important;
         }
+
+        /* Logo with fixed styling */
+        .w-10.h-10.rounded-full.flex.items-center.justify-center.text-xl.border.border-gray-200.dark\:border-gray-700.logo-container {
+            background-color: white !important;
+        }
+
+        /* Logo styling with the strongest possible overrides */
+        .logo-container {
+            background-color: white !important;
+            background: white !important;
+            color: black !important;
+        }
+
+        .logo-container i,
+        .logo-container i.fas,
+        .logo-container i.fa-feather-alt {
+            color: black !important;
+        }
+
+        /* Override any other potential theme changes to logo */
+        .dark .logo-container {
+            background-color: white !important;
+            background: white !important;
+        }
+
+        .dark .logo-container i,
+        .dark .logo-container i.fas,
+        .dark .logo-container i.fa-feather-alt {
+            color: black !important;
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -2414,8 +2444,8 @@
             <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary" data-shadcn="button" data-variant="ghost" data-size="icon">
                 <i class="fas fa-bars"></i>
             </button>
-            <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-xl border border-gray-200 dark:border-gray-700 logo-container">
-                <i class="fas fa-feather-alt text-black"></i>
+            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl border border-gray-200 dark:border-gray-700 logo-container" style="background-color: white !important;">
+                <i class="fas fa-feather-alt text-black" style="color: black !important;"></i>
             </div>
             <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
         </div>
