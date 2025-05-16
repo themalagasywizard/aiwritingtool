@@ -72,35 +72,20 @@
             leftContent.className = 'flex items-center';
             leftContent.innerHTML = '<i class="fas fa-moon text-primary mr-2"></i><span>Dark Mode</span>';
             
-            // Create the switch container
-            const switchWrapper = document.createElement('div');
-            switchWrapper.className = 'relative';
-            
-            // Create the checkbox input
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.id = 'darkModeSwitch';
-            input.className = 'switch-input';
-            input.checked = document.documentElement.classList.contains('dark');
-            
-            // Create the switch track
-            const track = document.createElement('div');
-            track.className = 'switch-track';
-            
-            // Add event listener to the input
-            input.addEventListener('change', function() {
-                if (window.toggleDarkMode) {
-                    window.toggleDarkMode();
+            // Create the switch
+            const darkModeSwitch = Switch({
+                id: 'darkModeSwitch',
+                checked: document.documentElement.classList.contains('dark'),
+                onChange: (e) => {
+                    if (window.toggleDarkMode) {
+                        window.toggleDarkMode();
+                    }
                 }
             });
             
-            // Assemble the switch
-            switchWrapper.appendChild(input);
-            switchWrapper.appendChild(track);
-            
-            // Assemble the container
+            // Assemble the switch container
             switchContainer.appendChild(leftContent);
-            switchContainer.appendChild(switchWrapper);
+            switchContainer.appendChild(darkModeSwitch);
             
             // Add to profile dropdown before sign out button
             const signOutBtn = document.getElementById('signOutBtn');
@@ -1279,66 +1264,22 @@
         }
 
         /* Dark mode switch styling */
-        .dark .profile-dropdown {
-            background-color: hsl(240, 3.7%, 15.9%) !important;
-            border-color: var(--border) !important;
-            color: var(--foreground) !important;
+        .dark .peer:checked ~ div {
+            background-color: white !important;
         }
 
-        .dark .profile-dropdown .hover\:bg-gray-50:hover {
+        .dark .peer-checked\:bg-primary {
+            background-color: white !important;
+        }
+
+        .dark .hover\:bg-gray-50:hover {
             background-color: rgba(255, 255, 255, 0.1) !important;
         }
 
-        /* Switch styling */
-        .switch-track {
-            position: relative;
-            display: inline-block;
-            width: 36px;
-            height: 20px;
-            background-color: #e5e7eb;
-            border-radius: 9999px;
-            transition: background-color 0.2s;
-        }
-
-        .dark .switch-track {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        .switch-track::after {
-            content: "";
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 16px;
-            height: 16px;
-            background-color: white;
-            border-radius: 50%;
-            transition: transform 0.2s;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-
-        .switch-input:checked + .switch-track {
-            background-color: #4B5EAA;
-        }
-
-        .dark .switch-input:checked + .switch-track {
-            background-color: white;
-        }
-
-        .switch-input:checked + .switch-track::after {
-            transform: translateX(16px);
-        }
-
-        .switch-input {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
+        .dark .profile-dropdown {
+            background-color: hsl(240, 3.7%, 15.9%) !important;
+            border-color: var(--border) !important;
+            color: white !important;
         }
 
         .sr-only {
@@ -2609,21 +2550,21 @@
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
                      alt="User Avatar" 
                      class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
-                <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-[hsl(240,3.7%,15.9%)] rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10 profile-dropdown">
+                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10 profile-dropdown">
                     <a href="/profile.html" class="block">
-                        <div class="p-2 hover:bg-gray-50 dark:hover:bg-white/10 rounded cursor-pointer flex items-center">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                             <i class="fas fa-user-circle text-primary mr-2"></i>
                             <span id="userDisplayName">Guest User</span>
                         </div>
                     </a>
                     <a href="/profile.html#preferences" class="block">
-                        <div class="p-2 hover:bg-gray-50 dark:hover:bg-white/10 rounded cursor-pointer flex items-center">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                             <i class="fas fa-cog text-secondary mr-2"></i>
                             <span>Settings</span>
                         </div>
                     </a>
                     <!-- Dark mode toggle switch will be inserted here by initializeDarkModeSwitch() -->
-                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 dark:hover:bg-white/10 rounded cursor-pointer flex items-center text-error">
+                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
                         <i class="fas fa-sign-out-alt mr-2"></i>
                         <span>Sign Out</span>
                     </div>
@@ -4773,15 +4714,6 @@
             // Check if dark mode was enabled previously and ensure the UI reflects it
             const isDarkMode = document.documentElement.classList.contains('dark');
             if (isDarkMode) {
-                // Ensure dark mode icon is displayed correctly
-                const sunIcon = document.querySelector('#darkModeToggle .fa-sun');
-                const moonIcon = document.querySelector('#darkModeToggle .fa-moon');
-                
-                if (sunIcon) sunIcon.classList.remove('hidden');
-                if (moonIcon) moonIcon.classList.add('hidden');
-                
-                console.log('Dark mode is active - UI updated accordingly');
-                
                 // Apply dark mode button styles
                 if (window.applyDarkModeButtonStyles) {
                     window.applyDarkModeButtonStyles();
@@ -4809,18 +4741,7 @@
                 });
             }
             
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            if (darkModeToggle) {
-                darkModeToggle.addEventListener('click', function() {
-                    // This calls the toggleDarkMode function from utils.js
-                    if (window.toggleDarkMode) {
-                        const isDark = window.toggleDarkMode();
-                        console.log('Dark mode toggled to:', isDark ? 'dark' : 'light');
-                    }
-                });
-            } else {
-                console.warn('Dark mode toggle button not found in the DOM');
-            }
+            // The old dark mode toggle button is now removed, using switch in profile dropdown instead
             
             // Ensure AI output containers can scroll properly when content changes
             const aiOutput = document.getElementById('aiOutput');
