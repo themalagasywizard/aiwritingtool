@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test AI Buttons</title>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-button {
+            padding: 8px 15px;
+            background-color: #4B5EAA;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .console {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            height: 200px;
+            overflow-y: auto;
+        }
+        .log-item {
+            margin-bottom: 5px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Test AI Buttons</h1>
+    <p>This page tests if the fix-ai-buttons.js script correctly initializes event handlers.</p>
+    
+    <div>
+        <button id="createChatBtn" class="test-button">Create Chat Elements</button>
+        <button id="createGenerateBtn" class="test-button">Create Generate Elements</button>
+    </div>
+    
+    <div id="elementContainer" style="margin-top: 20px; border: 1px solid #ddd; padding: 15px; display: none;">
+    </div>
+    
+    <div class="console" id="testConsole">
+        <div class="log-item">Test console initialized.</div>
+    </div>
+    
+    <script>
+        // Simple logging function
+        function log(message) {
+            const console = document.getElementById('testConsole');
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item';
+            logItem.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            console.appendChild(logItem);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Create chat elements
+        document.getElementById('createChatBtn').addEventListener('click', function() {
+            const container = document.getElementById('elementContainer');
+            container.style.display = 'block';
+            
+            // Clear previous content
+            container.innerHTML = '';
+            
+            // Create chat panel elements
+            container.innerHTML = `
+                <div>
+                    <h3>Chat Panel Test</h3>
+                    <div id="chatHistory" style="height: 150px; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; overflow-y: auto;"></div>
+                    <div style="display: flex;">
+                        <textarea id="chatInput" style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px;" placeholder="Type a message..."></textarea>
+                        <button id="chatSubmit" style="margin-left: 10px; padding: 8px 15px; background-color: #4B5EAA; color: white; border: none; border-radius: 4px;" disabled>
+                            <span>Send</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="aiToast" style="position: fixed; bottom: 20px; right: 20px; background-color: #34D399; color: white; padding: 10px 15px; border-radius: 4px; display: none;">
+                    <p>Success message</p>
+                </div>
+            `;
+            
+            log('Chat elements created. The fix-ai-buttons.js script should attach handlers automatically.');
+        });
+        
+        // Create generate elements
+        document.getElementById('createGenerateBtn').addEventListener('click', function() {
+            const container = document.getElementById('elementContainer');
+            container.style.display = 'block';
+            
+            // Clear previous content
+            container.innerHTML = '';
+            
+            // Create generate panel elements
+            container.innerHTML = `
+                <div>
+                    <h3>Generate Panel Test</h3>
+                    <div>
+                        <select id="aiModel" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; width: 100%;">
+                            <option value="deepseek-chat">DeepSeek Chat (V3)</option>
+                            <option value="claude-sonnet">Claude 3 Sonnet</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="aiTone" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 10px; width: 100%;">
+                            <option>Suspenseful</option>
+                            <option>Humorous</option>
+                            <option>Dramatic</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <input type="range" id="aiLength" min="50" max="500" value="200" style="width: 100%;">
+                    </div>
+                    <div id="aiOutput" style="height: 150px; border: 1px solid #eee; padding: 10px; margin-bottom: 10px; overflow-y: auto;">
+                        <p class="text-gray-400 text-sm">AI output will appear here...</p>
+                    </div>
+                    <div style="display: flex;">
+                        <textarea id="aiInput" style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px;" placeholder="Enter a prompt..."></textarea>
+                        <button id="aiSubmit" style="margin-left: 10px; padding: 8px 15px; background-color: #4B5EAA; color: white; border: none; border-radius: 4px;" disabled>
+                            <span>Generate</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="aiToast" style="position: fixed; bottom: 20px; right: 20px; background-color: #34D399; color: white; padding: 10px 15px; border-radius: 4px; display: none;">
+                    <p>Success message</p>
+                </div>
+            `;
+            
+            // Create a fake editorContent for inserting text
+            if (!document.getElementById('editorContent')) {
+                const editorContent = document.createElement('div');
+                editorContent.id = 'editorContent';
+                editorContent.style.display = 'none';
+                document.body.appendChild(editorContent);
+            }
+            
+            log('Generate elements created. The fix-ai-buttons.js script should attach handlers automatically.');
+        });
+        
+        // Create a mock appState object
+        window.appState = {
+            currentUser: { id: 'test-user-id' },
+            currentProject: { id: 'test-project-id' },
+            isDirty: false
+        };
+        
+        log('Test page loaded. Click the buttons above to create test elements.');
+    </script>
+    
+    <!-- Include the fix-ai-buttons.js script -->
+    <script src="fix-ai-buttons.js"></script>
+</body>
+</html> 
