@@ -4932,14 +4932,34 @@
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="inline-flex items-center mb-3">
-                        <input type="radio" name="exportScope" value="current" class="form-radio text-primary" checked>
-                        <span class="ml-2">Export Current Chapter</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input type="radio" name="exportScope" value="project" class="form-radio text-primary">
-                        <span class="ml-2">Export Entire Project</span>
-                    </label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Export Content</label>
+                    <div class="space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="exportScope" value="current" class="form-radio text-primary" checked>
+                            <span class="ml-2">Current Chapter</span>
+                        </label>
+                        <br>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="exportScope" value="project" class="form-radio text-primary">
+                            <span class="ml-2">Entire Project</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Export Mode</label>
+                    <div class="space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="exportMode" value="visual" class="form-radio text-primary" checked>
+                            <span class="ml-2">Visual Mode (with formatting)</span>
+                        </label>
+                        <br>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="exportMode" value="text" class="form-radio text-primary">
+                            <span class="ml-2">Text Only (more compatible)</span>
+                        </label>
+                        <p class="text-xs text-gray-500 ml-5 mt-1">Use Text Only if Visual Mode doesn't work</p>
+                    </div>
                 </div>
                 
                 <div>
@@ -5023,6 +5043,7 @@
                     try {
                         // Get export options from form
                         const exportScope = document.querySelector('input[name="exportScope"]:checked')?.value || 'current';
+                        const exportMode = document.querySelector('input[name="exportMode"]:checked')?.value || 'visual';
                         const filename = document.getElementById('pdfFilename').value || 'story-export.pdf';
                         const includeChapterTitles = document.getElementById('includeChapterTitles')?.checked ?? true;
                         const includeMetadata = document.getElementById('includeMetadata')?.checked ?? true;
@@ -5037,7 +5058,8 @@
                             filename,
                             includeChapterTitles,
                             includeMetadata,
-                            pageSize
+                            pageSize,
+                            useFallbackMode: exportMode === 'text'
                         });
                     } catch (error) {
                         console.error('PDF export error:', error);
