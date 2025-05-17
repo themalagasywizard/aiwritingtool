@@ -4920,5 +4920,160 @@
     </style>
     <!-- AI Assistant Button Fix Script -->
     <script src="fix-ai-buttons.js"></script>
+    
+    <!-- PDF Export Modal -->
+    <div class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center modal" id="pdfExportModal">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-md-custom fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-primary">Export to PDF</h2>
+                <button class="text-gray-400 hover:text-gray-600" id="closePdfExportModal">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="inline-flex items-center mb-3">
+                        <input type="radio" name="exportScope" value="current" class="form-radio text-primary" checked>
+                        <span class="ml-2">Export Current Chapter</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" name="exportScope" value="project" class="form-radio text-primary">
+                        <span class="ml-2">Export Entire Project</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Filename</label>
+                    <input type="text" id="pdfFilename" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none" value="story-export.pdf">
+                </div>
+                
+                <div class="flex flex-col space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Options</label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="includeChapterTitles" class="form-checkbox text-primary" checked>
+                        <span class="ml-2">Include Chapter Titles</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="checkbox" id="includeMetadata" class="form-checkbox text-primary" checked>
+                        <span class="ml-2">Include Project Metadata</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Page Size</label>
+                    <select id="pageSize" class="w-full border border-gray-200 rounded-lg p-2 focus:border-primary focus:ring-1 focus:ring-primary outline-none">
+                        <option value="a4">A4</option>
+                        <option value="letter">Letter</option>
+                        <option value="legal">Legal</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button id="cancelExportBtn" class="btn btn-secondary">Cancel</button>
+                    <button id="confirmExportBtn" class="btn btn-primary">Generate PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PDF Export Script -->
+    <script type="module">
+        import { exportToPdf } from './lib/pdf-exporter.js';
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get elements
+            const exportPdfBtn = document.getElementById('exportPdfBtn');
+            const pdfExportModal = document.getElementById('pdfExportModal');
+            const closePdfExportModal = document.getElementById('closePdfExportModal');
+            const cancelExportBtn = document.getElementById('cancelExportBtn');
+            const confirmExportBtn = document.getElementById('confirmExportBtn');
+            
+            // Export PDF Button
+            if (exportPdfBtn) {
+                exportPdfBtn.addEventListener('click', () => {
+                    // Show the export modal
+                    pdfExportModal.classList.remove('hidden');
+                    pdfExportModal.classList.add('flex');
+                    
+                    // Set default filename based on project title
+                    const projectTitle = window.appState?.currentProject?.title || 'story';
+                    const sanitizedTitle = projectTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+                    document.getElementById('pdfFilename').value = `${sanitizedTitle}.pdf`;
+                });
+            }
+            
+            // Close Modal Buttons
+            if (closePdfExportModal) {
+                closePdfExportModal.addEventListener('click', closeModal);
+            }
+            
+            if (cancelExportBtn) {
+                cancelExportBtn.addEventListener('click', closeModal);
+            }
+            
+            // Close modal function
+            function closeModal() {
+                pdfExportModal.classList.add('hidden');
+                pdfExportModal.classList.remove('flex');
+            }
+            
+            // Confirm Export Button
+            if (confirmExportBtn) {
+                confirmExportBtn.addEventListener('click', async () => {
+                    try {
+                        // Get export options from form
+                        const exportScope = document.querySelector('input[name="exportScope"]:checked')?.value || 'current';
+                        const filename = document.getElementById('pdfFilename').value || 'story-export.pdf';
+                        const includeChapterTitles = document.getElementById('includeChapterTitles')?.checked ?? true;
+                        const includeMetadata = document.getElementById('includeMetadata')?.checked ?? true;
+                        const pageSize = document.getElementById('pageSize')?.value || 'a4';
+                        
+                        // Close modal before starting export (shows loading overlay)
+                        closeModal();
+                        
+                        // Export PDF with options
+                        await exportToPdf({
+                            exportEntireProject: exportScope === 'project',
+                            filename,
+                            includeChapterTitles,
+                            includeMetadata,
+                            pageSize
+                        });
+                    } catch (error) {
+                        console.error('PDF export error:', error);
+                        showToast('PDF export failed: ' + error.message, 'error');
+                    }
+                });
+            }
+            
+            // Helper function to show toast messages
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('aiToast');
+                if (!toast) return;
+                
+                const toastText = toast.querySelector('p');
+                if (toastText) toastText.textContent = message;
+                
+                toast.classList.remove('hidden');
+                toast.classList.add('transform', 'translate-y-0');
+                
+                if (type === 'success') {
+                    toast.classList.add('bg-success');
+                    toast.classList.remove('bg-error');
+                } else {
+                    toast.classList.add('bg-error');
+                    toast.classList.remove('bg-success');
+                }
+                
+                setTimeout(() => {
+                    toast.classList.add('translate-y-full');
+                    setTimeout(() => {
+                        toast.classList.add('hidden');
+                        toast.classList.remove('translate-y-full', 'bg-success', 'bg-error');
+                    }, 300);
+                }, 3000);
+            }
+        });
+    </script>
 </body>
 </html> 
