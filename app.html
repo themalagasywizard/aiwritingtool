@@ -336,13 +336,15 @@
         }
 
         .toolbar-btn {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
+            border-radius: 8px;
             transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: none;
         }
 
         .toolbar-btn:hover {
@@ -693,17 +695,19 @@
                 justify-content: space-between;
             }
 
-            /* Clean up header for mobile */
-            header .btn {
+            /* Mobile icon buttons */
+            .mobile-icon-btn {
                 min-width: unset;
-                width: 32px;
-                height: 32px;
-                border-radius: 4px;
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
                 padding: 0;
                 margin: 0 2px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                border: none;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
 
             /* Hide button text on mobile */
@@ -843,20 +847,49 @@
                 margin: 0 2px;
             }
             
-            /* Ensure proper icon visibility */
-            .btn i {
-                font-size: 1rem;
+            /* Mobile header buttons styling */
+            .mobile-icon-btn {
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
+            }
+            
+            /* Mobile icon sizing */
+            .mobile-icon-btn i,
+            #mobileMenuBtn i {
+                font-size: 1.1rem;
                 margin: 0;
             }
             
-            /* Extra insurance for hiding text in mobile */
+            /* AI Assist button mobile styling */
+            #aiAssistBtn {
+                height: 40px;
+                min-width: 110px;
+                padding: 0 10px;
+                border-radius: 8px;
+            }
+            
+            #aiAssistBtn i {
+                font-size: 1.1rem;
+            }
+            
+            #aiAssistBtn span {
+                display: inline-block !important;
+                width: auto !important;
+                height: auto !important;
+                overflow: visible !important;
+                position: static !important;
+                opacity: 1 !important;
+            }
+            
+            /* Extra insurance for hiding text in regular mobile buttons */
             .mobile-hidden {
                 display: none !important;
                 width: 0 !important;
                 height: 0 !important;
                 overflow: hidden !important;
                 visibility: hidden !important;
-                         }
+            }
         }
         
         /* Fix for iOS zoom issues */
@@ -2597,29 +2630,35 @@
     </script>
 
     <!-- Top Bar -->
-    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
-        <div class="flex items-center space-x-4">
+    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 shadow-sm-custom">
+        <div class="flex items-center space-x-2">
             <!-- Mobile Menu Button -->
-            <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary cursor-pointer" data-shadcn="button" data-variant="ghost" data-size="icon">                <i class="fas fa-bars"></i>            </button>
-            <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl border border-gray-200 dark:border-gray-700 logo-container" style="background-color: white !important;">
-                <i class="fas fa-feather-alt text-black" style="color: black !important;"></i>
+            <button id="mobileMenuBtn" class="mobile-icon-btn text-gray-500 hover:text-primary cursor-pointer" data-shadcn="button" data-variant="ghost" data-size="icon">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="mobile-icon-btn bg-primary text-white rounded-md flex items-center justify-center">
+                <i class="fas fa-feather-alt"></i>
             </div>
             <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
         </div>
-        <div class="flex items-center space-x-4">
-            <button id="saveBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
+        <div class="flex items-center space-x-2">
+            <button id="saveBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-save"></i>
                 <span class="ml-1 hidden md:inline mobile-hidden">Save</span>
             </button>
-            <button id="loadProjectBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
+            <button id="loadProjectBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-folder-open"></i>
                 <span class="ml-1 hidden md:inline mobile-hidden">Load Project</span>
             </button>
-            <button id="newProjectBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
+            <button id="newProjectBtn" class="mobile-icon-btn bg-success" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-plus"></i>
                 <span class="ml-1 hidden md:inline mobile-hidden">New Project</span>
             </button>
-            <div class="relative group">
+            <button id="userProfileBtn" class="mobile-icon-btn bg-primary">
+                <span class="text-lg font-bold text-white">R</span>
+                <span class="ml-1 hidden md:inline mobile-hidden">Profile</span>
+            </button>
+            <div class="relative group hidden">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
                      alt="User Avatar" 
                      class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
@@ -2765,18 +2804,18 @@
             <!-- Editor Toolbar -->
             <div class="bg-white border-b border-gray-100 p-2 flex items-center space-x-2 shadow-sm-custom editor-toolbar">
                 <!-- Formatting buttons grouped together -->
-                <div class="flex items-center space-x-1">
-                    <button class="toolbar-btn" title="Bold">
+                <div class="flex items-center space-x-2">
+                    <button class="mobile-icon-btn bg-gray-50" title="Bold">
                         <i class="fas fa-bold"></i>
                     </button>
-                    <button class="toolbar-btn" title="Italic">
+                    <button class="mobile-icon-btn bg-gray-50" title="Italic">
                         <i class="fas fa-italic"></i>
                     </button>
-                    <button class="toolbar-btn" title="Heading">
+                    <button class="mobile-icon-btn bg-gray-50" title="Heading">
                         <i class="fas fa-heading"></i>
                     </button>
                     <div class="relative">
-                        <button class="toolbar-btn" title="Font Size">
+                        <button class="mobile-icon-btn bg-gray-50" title="Font Size">
                             <i class="fas fa-text-height"></i>
                         </button>
                         <div class="font-size-dropdown hidden absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
@@ -2784,21 +2823,21 @@
                             <button class="block w-full px-4 py-1 text-left hover:bg-primaryLight" data-size="3">Normal</button>
                             <button class="block w-full px-4 py-1 text-left hover:bg-primaryLight" data-size="5">Large</button>
                             <button class="block w-full px-4 py-1 text-left hover:bg-primaryLight" data-size="7">Huge</button>
+                        </div>
                     </div>
                 </div>
-            </div>
                 
                 <!-- AI Assistant Button (right-aligned) -->
-                <button id="aiAssistBtn" class="btn btn-monochrome text-sm transform transition-transform hover:scale-105 active:scale-95 ml-auto" data-shadcn="button" data-variant="monochrome">
-                    <i class="fas fa-robot"></i>
-                    <span class="ml-2 hidden md:inline mobile-hidden">AI Assist</span>
+                <button id="aiAssistBtn" class="bg-primary text-white rounded-md py-2 px-4 flex items-center justify-center text-sm transform transition-transform hover:scale-105 active:scale-95 ml-auto" data-shadcn="button" data-variant="primary">
+                    <i class="fas fa-robot mr-2"></i>
+                    <span class="md:inline mobile-hidden">AI Assist</span>
                 </button>
                 
                 <!-- Full Screen button -->
-                <button class="toolbar-btn" title="Full Screen">
+                <button class="mobile-icon-btn bg-gray-50" title="Full Screen">
                     <i class="fas fa-expand"></i>
                 </button>
-        </div>
+            </div>
 
             <!-- AI Assistant Panel -->
             <div id="aiAssistPanel" class="fixed right-0 top-0 h-screen w-[400px] bg-white shadow-md-custom transform translate-x-full transition-transform duration-300 z-50 flex flex-col" role="complementary" aria-label="AI Assistant">
