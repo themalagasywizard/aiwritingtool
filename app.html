@@ -696,32 +696,26 @@
             /* Clean up header for mobile */
             header .btn {
                 min-width: unset;
-                width: 32px;
-                height: 32px;
-                border-radius: 4px;
+                width: 32px; /* Reduced size */
+                height: 32px; /* Reduced size */
+                border-radius: 4px; /* Adjusted border radius */
                 padding: 0;
-                margin: 0 2px;
+                margin: 0 2px; /* Reduced margin */
                 display: flex;
                 align-items: center;
                 justify-content: center;
             }
 
             /* Hide button text on mobile */
-            header .btn span {
+            header .btn span,
+            .editor-toolbar .btn span {
                 display: none !important;
             }
 
-            /* Ensure all buttons maintain proper sizing in mobile */
-            .btn {
-                min-width: unset;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            header .btn i {
+            header .btn i,
+            .editor-toolbar .btn i {
                 margin: 0;
-                font-size: 0.875rem;
+                font-size: 0.875rem; /* Adjusted icon size */
             }
 
             /* Make logo smaller */
@@ -743,19 +737,19 @@
                 display: flex;
                 align-items: center;
                 padding-right: 8px;
-                gap: 6px;
+                gap: 2px; /* Reduced gap for tighter buttons */
             }
 
             /* Editor toolbar styling */
             .editor-toolbar {
                 position: fixed;
-                top: 64px;
+                top: 56px; /* Adjusted to be below the header */
                 left: 0;
                 right: 0;
                 width: 100%;
                 background: white;
                 z-index: 49;
-                padding: 8px;
+                padding: 4px 8px; /* Reduced padding */
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
@@ -763,24 +757,30 @@
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
 
+            .editor-toolbar .btn {
+                width: 32px; /* Consistent button size */
+                height: 32px; /* Consistent button size */
+                padding: 0;
+            }
+
             /* Adjust main content area to account for new spacing */
             main {
-                margin-top: 112px; /* Increased from 104px */
-                height: calc(100vh - 112px);
+                margin-top: 104px; /* header (56px) + toolbar (48px) */
+                height: calc(100vh - 104px);
                 overflow-y: auto;
                 width: 100%;
             }
 
             /* Update sidebar top position to match new toolbar position */
             .sidebar {
-                top: 112px; /* Increased from 104px */
+                top: 104px; 
             }
-
+            
             /* Mobile sidebar */
             .sidebar {
                 position: fixed;
                 left: -250px;
-                top: 112px; /* Match header + toolbar height */
+                top: 104px; /* Match header + toolbar height */
                 bottom: 0;
                 width: 250px;
                 background: white;
@@ -789,402 +789,26 @@
                 display: block !important;
                 box-shadow: 2px 0 10px rgba(0,0,0,0.1);
             }
-
-            .sidebar.active {
-                transform: translateX(250px);
-            }
-
-            /* Mobile overlay for sidebar */
-            #sidebarOverlay {
-                position: fixed;
-                inset: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 47;
-                opacity: 0;
-                visibility: hidden;
-                transition: opacity 0.3s ease;
-            }
-
-            #sidebarOverlay.active {
-                opacity: 1;
-                visibility: visible;
-            }
-
-            /* Adjust AI Assistant panel for mobile */
-            #aiAssistPanel {
-                width: 100%;
-                min-width: 100%;
-                max-width: 100%;
-            }
             
-            /* Make sure AI output and chat history are scrollable on mobile */
-            #aiOutput {
-                max-height: calc(50vh - 100px);
-                overflow-y: auto;
-            }
-            
-            #chatHistory {
-                max-height: calc(50vh - 100px);
-                overflow-y: auto;
-            }
         }
 
-                /* Additional mobile-specific styles */        @media (max-width: 640px) {            /* Make all buttons more compact on very small screens */            .btn {                padding: 0.5rem;                margin: 0 2px;            }                        /* Ensure proper icon visibility */            .btn i {                font-size: 1rem;                margin: 0;            }        }                /* Fix for iOS zoom issues */        @supports (-webkit-touch-callout: none) {            @media (max-width: 768px) {
-                header, .editor-toolbar {
-                    -webkit-transform: translateZ(0);
-                    transform: translateZ(0);
-                    will-change: transform;
-                }
-                
-                #editorContent {
-                    -webkit-overflow-scrolling: touch;
-                }
-                
-                /* Enable smooth scrolling for iOS */
-                #aiOutput, #chatHistory {
-                    -webkit-overflow-scrolling: touch;
-                }
+        /* Desktop Styles (for screens wider than 768px) */
+        @media (min-width: 769px) {
+            header .btn span,
+            .editor-toolbar .btn span {
+                display: inline !important;
+                margin-left: 0.25rem; /* Equivalent to ml-1 */
             }
         }
-
-        /* Context selection styles */
-        .context-item-checkbox {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border: 1px solid #d1d5db;
-            border-radius: 4px;
-            background-color: white;
-            cursor: pointer;
-            display: inline-flex;
+        
+        /* Ensure all buttons maintain proper sizing in mobile - this might be too general */
+        /* Consider removing or scoping if it causes issues with other buttons */
+        /* .btn {
+            min-width: unset;
+            display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
-        }
-        
-        .context-item-checkbox:checked {
-            background-color: var(--primary);
-            border-color: var(--primary);
-        }
-        
-        .context-item-checkbox:checked::after {
-            content: '✓';
-            color: white;
-            font-size: 12px;
-            line-height: 1;
-        }
-        
-        .context-item-checkbox:focus {
-            outline: none;
-            ring: 2px var(--primary);
-        }
-        
-        #contextSelectionPanel {
-            transition: max-height 0.3s ease-in-out;
-            overflow: hidden;
-        }
-
-        /* AI Output container in the Generate/Edit view */
-        #generateEditView #aiOutput {
-            padding-top: 1px; /* Ensure consistent 1px top padding */
-        }
-
-        /* More aggressive dark mode overrides for Tailwind classes */
-        .dark .bg-white {
-            background-color: #1f2937 !important;
-        }
-        
-        .dark [class*="bg-white"] {
-            background-color: #1f2937 !important;
-        }
-        
-        /* Make sure the editor and its content are dark */
-        .dark .editor-content, 
-        .dark #editorContent,
-        .dark .flex-1.overflow-y-auto.p-8.bg-white {
-            background-color: var(--background) !important;
-        }
-        
-        /* Ensure all main areas properly get dark styling */
-        .dark .flex-1.overflow-hidden.flex.flex-col.bg-white {
-            background-color: var(--background) !important;
-        }
-
-        /* Specific dark mode overrides for AI Assistant panel */
-        .dark #aiAssistPanel {
-            background-color: #1f2937 !important;
-            color: #f3f4f6 !important;
-            border-color: #374151 !important;
-        }
-
-        .dark #aiOutput,
-        .dark #chatHistory {
-            background-color: #111827 !important;
-            color: #f3f4f6 !important;
-            border-color: #374151 !important;
-        }
-
-        .dark .flex-shrink-0.p-4.border-b.border-gray-200,
-        .dark .flex-shrink-0.bg-primaryLight\/20.p-3.border-b.border-gray-200,
-        .dark .flex-shrink-0.space-y-3.px-4,
-        .dark .flex-shrink-0.p-4.border-t.border-gray-200 {
-            background-color: #1f2937 !important;
-            border-color: #374151 !important;
-        }
-
-        .dark #chatInput,
-        .dark #aiInput,
-        .dark #aiTone,
-        .dark input[type="range"] {
-            background-color: #111827 !important;
-            color: #f3f4f6 !important;
-            border-color: #374151 !important;
-        }
-
-        /* Make buttons white in dark mode - consistent styling */
-        .dark .btn,
-        .dark button[data-shadcn="button"],
-        .dark [data-variant="default"],
-        .dark .btn-primary,
-        .dark .btn-secondary,
-        .dark .btn-success,
-        .dark .btn-error {
-            background-color: white !important;
-            color: black !important;
-            border: 1px solid white !important;
-        }
-        
-        .dark .btn:hover,
-        .dark button[data-shadcn="button"]:hover {
-            background-color: rgba(255, 255, 255, 0.8) !important;
-            color: black !important;
-        }
-
-        /* Override any buttons that might need specific handling */
-        .dark #cancelNewProject,
-        .dark #createNewProject,
-        .dark #aiSubmit,
-        .dark #chatSubmit,
-        .dark #insertIntoChapterBtn {
-            background-color: white !important;
-            color: black !important;
-            border: 1px solid white !important;
-        }
-
-        /* Style for submit buttons */
-        .dark #chatSubmit,
-        .dark #aiSubmit {
-            color: black !important;
-        }
-
-        /* Mode toggle buttons in AI panel */
-        .dark .ai-mode-btn {
-            background-color: #374151 !important;
-            color: #f3f4f6 !important;
-        }
-
-        .dark .ai-mode-btn.active {
-            background-color: #4B5EAA !important;
-            color: white !important;
-        }
-
-        /* Make AI output text visible */
-        .dark .prose,
-        .dark .prose p {
-            color: #f3f4f6 !important;
-        }
-
-        /* Fix placeholder text color */
-        .dark textarea::placeholder,
-        .dark input::placeholder {
-            color: #9CA3AF !important;
-        }
-
-        /* AI Panel Tab Styling for Dark Mode */
-        .dark .ai-mode-btn {
-            background-color: #374151 !important;
-            color: #f3f4f6 !important;
-        }
-
-        .dark .ai-mode-btn.active {
-            background-color: white !important;
-            color: black !important;
-            border: 1px solid white !important;
-        }
-        
-        .dark .ai-mode-btn:hover:not(.active) {
-            background-color: rgba(255, 255, 255, 0.2) !important;
-        }
-        
-        /* Dark mode for model selector and dropdown */
-        .dark select {
-            background-color: #1f2937 !important;
-            color: #f3f4f6 !important;
-            border-color: #374151 !important;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23F3F4F6' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-        }
-
-        /* Monochrome button styles */
-        .btn-monochrome {
-            background-color: black !important;
-            color: white !important;
-            border: 1px solid black !important;
-        }
-
-        .btn-monochrome:hover {
-            background-color: rgba(0, 0, 0, 0.8) !important;
-        }
-
-        .dark .btn-monochrome {
-            background-color: white !important;
-            color: black !important;
-            border: 1px solid white !important;
-        }
-
-        .dark .btn-monochrome:hover {
-            background-color: rgba(255, 255, 255, 0.8) !important;
-        }
-        
-        /* Handle monochrome error states */
-        .btn-monochrome.btn-error {
-            background-color: black !important;
-            color: white !important;
-            border-color: #EF4444 !important;
-        }
-        
-        .dark .btn-monochrome.btn-error {
-            background-color: white !important;
-            color: black !important;
-            border-color: #EF4444 !important;
-        }
-
-        /* Special handling for the dark mode toggle button */
-        .dark #darkModeToggle,
-        .dark .btn-ghost,
-        .dark button[data-variant="ghost"] {
-            background-color: transparent !important;
-            border-color: transparent !important;
-            color: white !important;
-        }
-
-        .dark #darkModeToggle:hover,
-        .dark .btn-ghost:hover,
-        .dark button[data-variant="ghost"]:hover {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            color: white !important;
-        }
-
-        /* More specific and stronger dark mode button styling - overriding anything else */
-        .dark button#loadProjectBtn,
-        .dark button#newProjectBtn,
-        .dark button#addChapterBtn,
-        .dark button#aiAssistBtn,
-        .dark button#exportPdfBtn,
-        .dark button#manageContextBtn,
-        .dark button[class*="btn-"],
-        .dark button[data-shadcn="button"]:not(#darkModeToggle):not([data-variant="ghost"]) {
-            background-color: white !important;
-            color: black !important;
-            border-color: white !important;
-        }
-
-        /* ... rest of the existing styles ... */
-
-        /* Fix AI tabs display */
-        #generateEditView,
-        #chatView {
-            background-color: var(--background) !important;
-            color: var(--foreground);
-        }
-
-        .dark #generateEditView,
-        .dark #chatView {
-            background-color: var(--background) !important;
-            color: var(--foreground) !important;
-        }
-
-        /* AI Output and Chat Styles */
-        #aiOutput, 
-        #chatHistory {
-            background-color: var(--card);
-            color: var(--card-foreground);
-            border-color: var(--border);
-        }
-
-        /* Mode buttons in AI panel */
-        .ai-mode-btn {
-            background-color: var(--secondary);
-            color: var(--secondary-foreground);
-        }
-
-        .ai-mode-btn.active {
-            background-color: var(--primary);
-            color: var(--primary-foreground);
-        }
-
-        .ai-mode-btn:not(.active):hover {
-            background-color: var(--accent);
-            opacity: 0.8;
-        }
-
-        /* Chat messages */
-        .chat-message.user {
-            background-color: var(--card);
-            border-color: var(--border);
-            color: var(--card-foreground);
-        }
-
-        .chat-message.ai {
-            background-color: var(--primary-light);
-            color: var(--primary);
-        }
-
-        .dark .chat-message.user {
-            background-color: var(--secondary);
-            border-color: var(--secondary);
-            color: var(--secondary-foreground);
-        }
-
-        .dark .chat-message.ai {
-            background-color: var(--primary);
-            color: var(--primary-foreground);
-        }
-        
-        /* Character node styling for context panel */
-        .character-node {
-            background-color: var(--card);
-            border-color: var(--primary);
-            color: var(--card-foreground);
-        }
-        
-        .character-tooltip {
-            background-color: var(--popover);
-            color: var(--popover-foreground);
-            border-color: var(--border);
-        }
-        
-        /* Make buttons consistent */
-        button[data-shadcn="button"] {
-            background-color: var(--primary);
-            color: var(--primary-foreground);
-            border-color: var(--primary);
-        }
-        
-        /* Input fields */
-        input, textarea, select {
-            background-color: var(--input);
-            color: var(--foreground);
-            border-color: var(--border);
-        }
-        
-        .dark input, 
-        .dark textarea, 
-        .dark select {
-            background-color: var(--input);
-            color: var(--foreground);
-            border-color: var(--border);
-        }
+        } */
 
         /* ... existing styles continue ... */
 
@@ -2577,15 +2201,15 @@
         <div class="flex items-center space-x-4">
             <button id="saveBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-save"></i>
-                <span class="ml-1 hidden md:inline">Save</span>
+                <span class="ml-1">Save</span>
             </button>
             <button id="loadProjectBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-folder-open"></i>
-                <span class="ml-1 hidden md:inline">Load Project</span>
+                <span class="ml-1">Load Project</span>
             </button>
             <button id="newProjectBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-plus"></i>
-                <span class="ml-1 hidden md:inline">New Project</span>
+                <span class="ml-1">New Project</span>
             </button>
             <div class="relative group">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
@@ -2750,7 +2374,7 @@
                 <!-- AI Assistant Button (right-aligned) -->
                 <button id="aiAssistBtn" class="btn btn-monochrome text-sm transform transition-transform hover:scale-105 active:scale-95 ml-auto" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-robot mr-2"></i>
-                    <span class="hidden md:inline">AI Assist</span>
+                    <span class="">AI Assist</span>
                 </button>
                 
                 <!-- Full Screen button -->
