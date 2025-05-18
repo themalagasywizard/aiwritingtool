@@ -801,7 +801,7 @@
             .sidebar {
                 position: fixed;
                 left: -250px;
-                top: 112px; /* Match header + toolbar height */
+                top: 56px; /* Match only header height since it's now fixed */
                 bottom: 0;
                 width: 250px;
                 background: white;
@@ -809,10 +809,13 @@
                 transition: transform 0.3s ease;
                 display: block !important;
                 box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+                overflow-y: auto;
             }
 
             .sidebar.active {
                 transform: translateX(250px);
+                visibility: visible;
+                opacity: 1;
             }
 
             /* Mobile overlay for sidebar */
@@ -824,11 +827,13 @@
                 opacity: 0;
                 visibility: hidden;
                 transition: opacity 0.3s ease;
+                display: block;
             }
 
             #sidebarOverlay.active {
                 opacity: 1;
                 visibility: visible;
+                display: block !important;
             }
 
             /* Adjust AI Assistant panel for mobile */
@@ -2716,7 +2721,7 @@
     </header>
 
     <!-- Sidebar Overlay (for mobile) -->
-    <div id="sidebarOverlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+    <div id="sidebarOverlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden" style="display: none;"></div>
 
     <!-- Load Project Panel -->
     <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
@@ -4844,18 +4849,32 @@
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             
+            if (!sidebar || !overlay) {
+                console.error('Sidebar or overlay not found');
+                return;
+            }
+            
+            // Toggle the sidebar active state
             sidebar.classList.toggle('active');
             
+            // Handle overlay visibility
             if (sidebar.classList.contains('active')) {
+                // Showing sidebar
+                overlay.style.display = 'block';
                 overlay.classList.remove('hidden');
-                    setTimeout(() => {
+                
+                // Small delay to ensure proper animation
+                setTimeout(() => {
                     overlay.classList.add('active');
                 }, 10);
             } else {
+                // Hiding sidebar
                 overlay.classList.remove('active');
+                
+                // Wait for animation to complete before hiding
                 setTimeout(() => {
                     overlay.classList.add('hidden');
-                    }, 300);
+                }, 300);
             }
             
             console.log('Sidebar toggled', sidebar.classList.contains('active'));
@@ -4929,6 +4948,20 @@
                 justify-content: space-between;
             }
             
+            /* Fix editor toolbar position */
+            .editor-toolbar {
+                position: fixed;
+                top: 56px;
+                left: 0;
+                right: 0;
+                z-index: 49;
+            }
+            
+            /* Adjust main content */
+            main {
+                margin-top: 106px; /* Header + editor toolbar */
+            }
+            
             /* Mobile icon buttons - properly sized */
             .mobile-icon-btn {
                 min-width: unset;
@@ -4947,6 +4980,13 @@
             .dark .editor-toolbar {
                 background-color: #1f1f1f;
                 border-color: #333;
+            }
+            
+            /* Dark mode sidebar */
+            .dark .sidebar {
+                background-color: #1f1f1f;
+                border-color: #333;
+                color: white;
             }
             
             /* When in dark mode, ensure icon visibility */
