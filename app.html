@@ -706,10 +706,7 @@
                 justify-content: center;
             }
 
-            /* Hide button text on mobile */
-            header .btn span {
-                display: none;
-            }
+                        /* Hide button text on mobile */            header .btn span:not(.hidden) {                display: none !important;            }                        /* Ensure all buttons maintain proper sizing in mobile */            .btn {                min-width: unset;                display: flex;                align-items: center;                justify-content: center;            }
 
             header .btn i {
                 margin: 0;
@@ -821,9 +818,7 @@
             }
         }
 
-        /* Fix for iOS zoom issues */
-        @supports (-webkit-touch-callout: none) {
-            @media (max-width: 768px) {
+                /* Additional mobile-specific styles */        @media (max-width: 640px) {            /* Make all buttons more compact on very small screens */            .btn {                padding: 0.5rem;                margin: 0 2px;            }                        /* Ensure proper icon visibility */            .btn i {                font-size: 1rem;                margin: 0;            }        }                /* Fix for iOS zoom issues */        @supports (-webkit-touch-callout: none) {            @media (max-width: 768px) {
                 header, .editor-toolbar {
                     -webkit-transform: translateZ(0);
                     transform: translateZ(0);
@@ -2573,15 +2568,15 @@
         <div class="flex items-center space-x-4">
             <button id="saveBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-save"></i>
-                <span class="ml-1">Save</span>
+                <span class="ml-1 hidden md:inline">Save</span>
             </button>
             <button id="loadProjectBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-folder-open"></i>
-                <span class="ml-1">Load Project</span>
+                <span class="ml-1 hidden md:inline">Load Project</span>
             </button>
             <button id="newProjectBtn" class="btn btn-monochrome" data-shadcn="button" data-variant="monochrome">
                 <i class="fas fa-plus"></i>
-                <span class="ml-1">New Project</span>
+                <span class="ml-1 hidden md:inline">New Project</span>
             </button>
             <div class="relative group">
                 <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
@@ -2673,10 +2668,7 @@
                         <i class="fas fa-spinner fa-spin mr-2"></i>Loading chapters...
                 </div>
                 </div>
-                <button id="addChapterBtn" class="btn btn-monochrome w-full mt-6" data-shadcn="button" data-variant="monochrome">
-                    <i class="fas fa-plus"></i>
-                    Add Chapter
-                </button>
+                <button id="addChapterBtn" class="btn btn-monochrome w-full mt-6" data-shadcn="button" data-variant="monochrome">                    <i class="fas fa-plus"></i>                    <span class="hidden md:inline">Add Chapter</span>                </button>
             </div>
 
             <!-- Context Manager -->
@@ -2694,18 +2686,12 @@
                     </div>
                 </div>
                 <!-- Context Manager Button -->
-                <button id="manageContextBtn" class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">
-                    <i class="fas fa-brain"></i>
-                    Manage Context
-                </button>
+                <button id="manageContextBtn" class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">                    <i class="fas fa-brain"></i>                    <span class="hidden md:inline">Manage Context</span>                </button>
             </div>
 
             <!-- Export Button -->
             <div class="mb-6">
-                <button id="exportPdfBtn" class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">
-                    <i class="fas fa-file-pdf"></i>
-                    Export PDF
-                </button>
+                <button id="exportPdfBtn" class="btn btn-monochrome w-full" data-shadcn="button" data-variant="monochrome">                    <i class="fas fa-file-pdf"></i>                    <span class="hidden md:inline">Export PDF</span>                </button>
             </div>
 
             <!-- Word Count -->
@@ -2755,7 +2741,7 @@
                 <!-- AI Assistant Button (right-aligned) -->
                 <button id="aiAssistBtn" class="btn btn-monochrome text-sm transform transition-transform hover:scale-105 active:scale-95 ml-auto" data-shadcn="button" data-variant="monochrome">
                     <i class="fas fa-robot mr-2"></i>
-                    <span>AI Assist</span>
+                    <span class="hidden md:inline">AI Assist</span>
                 </button>
                 
                 <!-- Full Screen button -->
