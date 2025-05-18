@@ -698,9 +698,9 @@
             /* Mobile icon buttons */
             .mobile-icon-btn {
                 min-width: unset;
-                width: 40px;
-                height: 40px;
-                border-radius: 8px;
+                width: 36px;
+                height: 36px;
+                border-radius: 6px;
                 padding: 0;
                 margin: 0 2px;
                 display: flex;
@@ -709,10 +709,21 @@
                 border: none;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
             }
+            
+            /* Ensure header buttons are properly sized on mobile */
+            #saveBtn, #loadProjectBtn, #newProjectBtn {
+                width: 36px;
+                height: 36px;
+                padding: 0;
+                justify-content: center;
+            }
 
             /* Hide button text on mobile */
             header .btn span,
-            .editor-toolbar .btn span {
+            .editor-toolbar .btn span,
+            #saveBtn span, 
+            #loadProjectBtn span, 
+            #newProjectBtn span {
                 display: none !important;
                 width: 0 !important;
                 height: 0 !important;
@@ -857,7 +868,7 @@
             /* Mobile icon sizing */
             .mobile-icon-btn i,
             #mobileMenuBtn i {
-                font-size: 1.1rem;
+                font-size: 0.95rem;
                 margin: 0;
             }
             
@@ -1904,7 +1915,7 @@
                 const content = elements.editorContent.innerHTML;
                 
                 // Update save button to indicate saving in progress
-                elements.saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span class="ml-1">Saving...</span>';
+                elements.saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span class="ml-1 hidden md:inline">Saving...</span>';
                 
                 const { data: updatedChapter, error } = await chapters.update(
                     appState.currentChapter.id,
@@ -1926,7 +1937,7 @@
                 // Update save button to indicate saved
                 elements.saveBtn.classList.remove('btn-error');
                 elements.saveBtn.classList.add('btn-monochrome');
-                elements.saveBtn.innerHTML = '<i class="fas fa-save"></i><span class="ml-1">Save</span>';
+                elements.saveBtn.innerHTML = '<i class="fas fa-save"></i><span class="ml-1 hidden md:inline">Save</span>';
                 
                 // Update project last edited time (backend will handle this)
                 elements.lastEdited.textContent = 'Last edited: ' + formatDate(new Date());
@@ -1941,7 +1952,7 @@
                 // Update save button to indicate error
                 elements.saveBtn.classList.remove('btn-monochrome');
                 elements.saveBtn.classList.add('btn-error');
-                elements.saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i><span class="ml-1">Error</span>';
+                elements.saveBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i><span class="ml-1 hidden md:inline">Error</span>';
                 
                 // Show toast with error message
                 showToast('Error saving chapter', 'error');
@@ -2642,17 +2653,17 @@
             <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
         </div>
         <div class="flex items-center space-x-2">
-            <button id="saveBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome">
+            <button id="saveBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome" title="Save">
                 <i class="fas fa-save"></i>
-                <span class="ml-1 hidden md:inline mobile-hidden">Save</span>
+                <span class="ml-1 hidden md:inline">Save</span>
             </button>
-            <button id="loadProjectBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome">
+            <button id="loadProjectBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome" title="Load Project">
                 <i class="fas fa-folder-open"></i>
-                <span class="ml-1 hidden md:inline mobile-hidden">Load Project</span>
+                <span class="ml-1 hidden md:inline">Load Project</span>
             </button>
-            <button id="newProjectBtn" class="mobile-icon-btn bg-success" data-shadcn="button" data-variant="monochrome">
+            <button id="newProjectBtn" class="mobile-icon-btn bg-success" data-shadcn="button" data-variant="monochrome" title="New Project">
                 <i class="fas fa-plus"></i>
-                <span class="ml-1 hidden md:inline mobile-hidden">New Project</span>
+                <span class="ml-1 hidden md:inline">New Project</span>
             </button>
             <button id="userProfileBtn" class="mobile-icon-btn bg-primary">
                 <span class="text-lg font-bold text-white">R</span>
