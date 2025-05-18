@@ -696,21 +696,32 @@
             /* Clean up header for mobile */
             header .btn {
                 min-width: unset;
-                width: 40px;
-                height: 40px;
-                border-radius: 8px;
+                width: 32px;
+                height: 32px;
+                border-radius: 4px;
                 padding: 0;
-                margin: 0 4px;
+                margin: 0 2px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
             }
 
-                        /* Hide button text on mobile */            header .btn span:not(.hidden) {                display: none !important;            }                        /* Ensure all buttons maintain proper sizing in mobile */            .btn {                min-width: unset;                display: flex;                align-items: center;                justify-content: center;            }
+            /* Hide button text on mobile */
+            header .btn span {
+                display: none !important;
+            }
+
+            /* Ensure all buttons maintain proper sizing in mobile */
+            .btn {
+                min-width: unset;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
 
             header .btn i {
                 margin: 0;
-                font-size: 1rem;
+                font-size: 0.875rem;
             }
 
             /* Make logo smaller */
@@ -2557,9 +2568,7 @@
     <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
         <div class="flex items-center space-x-4">
             <!-- Mobile Menu Button -->
-            <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary" data-shadcn="button" data-variant="ghost" data-size="icon">
-                <i class="fas fa-bars"></i>
-            </button>
+            <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary cursor-pointer" data-shadcn="button" data-variant="ghost" data-size="icon">                <i class="fas fa-bars"></i>            </button>
             <div class="w-10 h-10 rounded-full flex items-center justify-center text-xl border border-gray-200 dark:border-gray-700 logo-container" style="background-color: white !important;">
                 <i class="fas fa-feather-alt text-black" style="color: black !important;"></i>
             </div>
@@ -2606,7 +2615,7 @@
     </header>
 
     <!-- Sidebar Overlay (for mobile) -->
-    <div id="sidebarOverlay" class="lg:hidden" onclick="toggleSidebar()"></div>
+    <div id="sidebarOverlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
 
     <!-- Load Project Panel -->
     <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
@@ -4719,152 +4728,31 @@
     </div>
 
     <!-- Add this script at the end of the body -->
-    <script>
+        <script>
         // Mobile sidebar toggle function
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             
             sidebar.classList.toggle('active');
-            overlay.classList.toggle('active');
+            
+            if (sidebar.classList.contains('active')) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.add('active');
+                }, 10);
+            } else {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 300);
+            }
+            
+            console.log('Sidebar toggled', sidebar.classList.contains('active'));
         }
-
-        // Add click handler to mobile menu button
-        document.getElementById('mobileMenuBtn').addEventListener('click', toggleSidebar);
         
-        // Add dark mode toggle handler
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if dark mode was enabled previously and ensure the UI reflects it
-            const isDarkMode = document.documentElement.classList.contains('dark');
-            if (isDarkMode) {
-                // Apply dark mode button styles
-                if (window.applyDarkModeButtonStyles) {
-                    window.applyDarkModeButtonStyles();
-                    console.log('Dark mode button styles applied on page load');
-                }
-                
-                // Apply header and toolbar dark styles on initial load
-                const header = document.querySelector('header');
-                const toolbar = document.querySelector('.editor-toolbar');
-                const editorContent = document.querySelector('#editorContent');
-                const projectInfoBox = document.querySelector('.sidebar .bg-white.rounded-lg');
-                const contextBox = document.querySelector('#contextList');
-                const wordCountContainer = document.querySelector('.flex.items-center.justify-between.bg-white.p-3.rounded-lg.shadow-sm-custom.text-sm');
-
-                if (header) header.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (toolbar) toolbar.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (editorContent) editorContent.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (projectInfoBox) projectInfoBox.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (contextBox) contextBox.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (wordCountContainer) wordCountContainer.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-
-                // Apply to all sidebar white background elements
-                document.querySelectorAll('.sidebar .bg-white').forEach(el => {
-                    el.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                });
-            }
-            
-            // The old dark mode toggle button is now removed, using switch in profile dropdown instead
-            
-            // Ensure AI output containers can scroll properly when content changes
-            const aiOutput = document.getElementById('aiOutput');
-            const chatHistory = document.getElementById('chatHistory');
-            
-            // Setup resize observer for AI output and chat history
-            if (window.ResizeObserver) {
-                // For aiOutput
-                const outputObserver = new ResizeObserver(entries => {
-                    for (let entry of entries) {
-                        if (entry.target.scrollHeight > entry.target.clientHeight) {
-                            // Content exceeds container height, ensure scrollable
-                            entry.target.style.overflowY = 'auto';
-                        }
-                    }
-                });
-                
-                if (aiOutput) outputObserver.observe(aiOutput);
-                
-                // For chatHistory
-                const chatObserver = new ResizeObserver(entries => {
-                    for (let entry of entries) {
-                        if (entry.target.scrollHeight > entry.target.clientHeight) {
-                            // Scroll to the bottom when content changes
-                            entry.target.scrollTop = entry.target.scrollHeight;
-                        }
-                    }
-                });
-                
-                if (chatHistory) chatObserver.observe(chatHistory);
-            }
-            
-            // Mobile keyboard handling for AI chat inputs
-            const chatInput = document.getElementById('chatInput');
-            const aiInput = document.getElementById('aiInput');
-            const aiAssistPanel = document.getElementById('aiAssistPanel');
-            
-            // Function to adjust input position when keyboard appears
-            function handleMobileKeyboard(input) {
-                if (!input || window.innerWidth > 768) return; // Only apply on mobile devices
-                
-                // When input is focused (keyboard appears)
-                input.addEventListener('focus', () => {
-                    // Small delay to ensure keyboard is fully shown
-                    setTimeout(() => {
-                        // Get the input container (the parent div of the textarea)
-                        const inputContainer = input.closest('.flex-shrink-0');
-                        if (!inputContainer) return;
-                        
-                        // Add class to position the input above keyboard
-                        inputContainer.classList.add('keyboard-visible');
-                        
-                        // Scroll the panel to ensure input is visible
-                        aiAssistPanel.scrollTop = aiAssistPanel.scrollHeight;
-                        
-                        // Scroll the input into view
-                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 300);
-                });
-                
-                // When input loses focus (keyboard disappears)
-                input.addEventListener('blur', () => {
-                    // Get the input container
-                    const inputContainer = input.closest('.flex-shrink-0');
-                    if (!inputContainer) return;
-                    
-                    // Remove the positioning class
-                    inputContainer.classList.remove('keyboard-visible');
-                });
-            }
-            
-            // Apply keyboard handling to both chat inputs
-            handleMobileKeyboard(chatInput);
-            handleMobileKeyboard(aiInput);
-            
-            // Handle visual viewport changes (for iOS)
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', () => {
-                    const activeInput = document.activeElement;
-                    // Check if active element is one of our inputs
-                    if (activeInput === chatInput || activeInput === aiInput) {
-                        // Calculate the difference between window height and viewport height (keyboard height)
-                        const keyboardHeight = window.innerHeight - window.visualViewport.height;
-                        
-                        if (keyboardHeight > 100) { // Keyboard is visible
-                            // Get the input container
-                            const inputContainer = activeInput.closest('.flex-shrink-0');
-                            if (!inputContainer) return;
-                            
-                            // Position the input above the keyboard
-                            inputContainer.style.marginBottom = `${keyboardHeight}px`;
-                            
-                            // Scroll input into view
-                            activeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                    }
-                });
-            }
-        });
-    </script>
+                // Add click handlers for sidebar toggle        document.addEventListener('DOMContentLoaded', function() {            // Mobile menu button click handler            const mobileMenuBtn = document.getElementById('mobileMenuBtn');            if (mobileMenuBtn) {                mobileMenuBtn.addEventListener('click', function(e) {                    e.preventDefault();                    toggleSidebar();                });            } else {                console.error('Mobile menu button not found');            }                        // Sidebar overlay click handler            const sidebarOverlay = document.getElementById('sidebarOverlay');            if (sidebarOverlay) {                sidebarOverlay.addEventListener('click', function() {                    toggleSidebar();                });            }                        // Check if dark mode was enabled previously and ensure the UI reflects it            const isDarkMode = document.documentElement.classList.contains('dark');            if (isDarkMode) {                // Apply dark mode button styles                if (window.applyDarkModeButtonStyles) {                    window.applyDarkModeButtonStyles();                    console.log('Dark mode button styles applied on page load');                }                                // Apply header and toolbar dark styles on initial load                const header = document.querySelector('header');                const toolbar = document.querySelector('.editor-toolbar');                const editorContent = document.querySelector('#editorContent');                const projectInfoBox = document.querySelector('.sidebar .bg-white.rounded-lg');                const contextBox = document.querySelector('#contextList');                const wordCountContainer = document.querySelector('.flex.items-center.justify-between.bg-white.p-3.rounded-lg.shadow-sm-custom.text-sm');                if (header) header.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';                if (toolbar) toolbar.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';                if (editorContent) editorContent.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';                if (projectInfoBox) projectInfoBox.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';                if (contextBox) contextBox.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';                if (wordCountContainer) wordCountContainer.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';                // Apply to all sidebar white background elements                document.querySelectorAll('.sidebar .bg-white').forEach(el => {                    el.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';                });            }                        // The old dark mode toggle button is now removed, using switch in profile dropdown instead                        // Ensure AI output containers can scroll properly when content changes            const aiOutput = document.getElementById('aiOutput');            const chatHistory = document.getElementById('chatHistory');                        // Setup resize observer for AI output and chat history            if (window.ResizeObserver) {                // For aiOutput                const outputObserver = new ResizeObserver(entries => {                    for (let entry of entries) {                        if (entry.target.scrollHeight > entry.target.clientHeight) {                            // Content exceeds container height, ensure scrollable                            entry.target.style.overflowY = 'auto';                        }                    }                });                                if (aiOutput) outputObserver.observe(aiOutput);                                // For chatHistory                const chatObserver = new ResizeObserver(entries => {                    for (let entry of entries) {                        if (entry.target.scrollHeight > entry.target.clientHeight) {                            // Scroll to the bottom when content changes                            entry.target.scrollTop = entry.target.scrollHeight;                        }                    }                });                                if (chatHistory) chatObserver.observe(chatHistory);            }                        // Mobile keyboard handling for AI chat inputs            const chatInput = document.getElementById('chatInput');            const aiInput = document.getElementById('aiInput');            const aiAssistPanel = document.getElementById('aiAssistPanel');                        // Function to adjust input position when keyboard appears            function handleMobileKeyboard(input) {                if (!input || window.innerWidth > 768) return; // Only apply on mobile devices                                // When input is focused (keyboard appears)                input.addEventListener('focus', () => {                    // Small delay to ensure keyboard is fully shown                    setTimeout(() => {                        // Get the input container (the parent div of the textarea)                        const inputContainer = input.closest('.flex-shrink-0');                        if (!inputContainer) return;                                                // Add class to position the input above keyboard                        inputContainer.classList.add('keyboard-visible');                                                // Scroll the panel to ensure input is visible                        aiAssistPanel.scrollTop = aiAssistPanel.scrollHeight;                                                // Scroll the input into view                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });                    }, 300);                });                                // When input loses focus (keyboard disappears)                input.addEventListener('blur', () => {                    // Get the input container                    const inputContainer = input.closest('.flex-shrink-0');                    if (!inputContainer) return;                                        // Remove the positioning class                    inputContainer.classList.remove('keyboard-visible');                });            }                        // Apply keyboard handling to both chat inputs            handleMobileKeyboard(chatInput);            handleMobileKeyboard(aiInput);                        // Handle visual viewport changes (for iOS)            if (window.visualViewport) {                window.visualViewport.addEventListener('resize', () => {                    const activeInput = document.activeElement;                    // Check if active element is one of our inputs                    if (activeInput === chatInput || activeInput === aiInput) {                        // Calculate the difference between window height and viewport height (keyboard height)                        const keyboardHeight = window.innerHeight - window.visualViewport.height;                                                if (keyboardHeight > 100) { // Keyboard is visible                            // Get the input container                            const inputContainer = activeInput.closest('.flex-shrink-0');                            if (!inputContainer) return;                                                        // Position the input above the keyboard                            inputContainer.style.marginBottom = `${keyboardHeight}px`;                                                        // Scroll input into view                            activeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });                        }                    }                });            }        });
+</script>
     
     <style>
         /* Mobile keyboard adjustments for AI chat inputs */
