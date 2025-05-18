@@ -2663,29 +2663,29 @@
     <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 shadow-sm-custom">
         <div class="flex items-center space-x-2">
             <!-- Mobile Menu Button -->
-            <button id="mobileMenuBtn" class="mobile-icon-btn text-gray-500 hover:text-primary cursor-pointer" data-shadcn="button" data-variant="ghost" data-size="icon">
-                <i class="fas fa-bars"></i>
+            <button id="mobileMenuBtn" class="mobile-icon-btn cursor-pointer" data-shadcn="button" data-variant="ghost" data-size="icon" style="background-color: rgba(255,255,255,0.2) !important;">
+                <i class="fas fa-bars" style="color: white !important;"></i>
             </button>
-            <div class="mobile-icon-btn bg-primary text-white rounded-md flex items-center justify-center">
-                <i class="fas fa-feather-alt"></i>
+            <div class="mobile-icon-btn bg-primary text-white rounded-md flex items-center justify-center" style="background-color: rgb(75, 94, 170) !important;">
+                <i class="fas fa-feather-alt" style="color: white !important;"></i>
             </div>
             <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
         </div>
         <div class="flex items-center space-x-2">
-            <button id="saveBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome" title="Save">
-                <i class="fas fa-save"></i>
+            <button id="saveBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome" title="Save" style="background-color: white !important;">
+                <i class="fas fa-save" style="color: black !important;"></i>
                 <span class="ml-1 hidden md:inline">Save</span>
             </button>
-            <button id="loadProjectBtn" class="mobile-icon-btn bg-primary-light" data-shadcn="button" data-variant="monochrome" title="Load Project">
-                <i class="fas fa-folder-open"></i>
+            <button id="loadProjectBtn" class="mobile-icon-btn" data-shadcn="button" data-variant="monochrome" title="Load Project" style="background-color: rgba(255,255,255,0.2) !important;">
+                <i class="fas fa-folder-open" style="color: white !important;"></i>
                 <span class="ml-1 hidden md:inline">Load Project</span>
             </button>
-            <button id="newProjectBtn" class="mobile-icon-btn bg-success" data-shadcn="button" data-variant="monochrome" title="New Project">
-                <i class="fas fa-plus"></i>
+            <button id="newProjectBtn" class="mobile-icon-btn" data-shadcn="button" data-variant="monochrome" title="New Project" style="background-color: rgba(255,255,255,0.2) !important;">
+                <i class="fas fa-plus" style="color: white !important;"></i>
                 <span class="ml-1 hidden md:inline">New Project</span>
             </button>
-            <button id="userProfileBtn" class="mobile-icon-btn bg-primary">
-                <span class="text-lg font-bold text-white">R</span>
+            <button id="userProfileBtn" class="mobile-icon-btn" style="background-color: rgb(75, 94, 170) !important;">
+                <span class="text-lg font-bold text-white" style="color: white !important; display: inline-block !important;">R</span>
                 <span class="ml-1 hidden md:inline mobile-hidden">Profile</span>
             </button>
             <div class="relative group hidden" id="profileDropdownContainer">
@@ -4915,21 +4915,57 @@
     <style>
         /* Fix for mobile buttons icon display */
         @media (max-width: 768px) {
+            /* Force dark background for header in mobile */
+            header, .editor-toolbar {
+                background-color: #1f1f1f !important;
+                border-color: #333 !important;
+            }
+            
+            /* Make formatting buttons visible */
+            .editor-toolbar button i {
+                color: white !important;
+                font-size: 1rem !important;
+                display: inline-block !important;
+            }
+            
+            /* Style the AI Assist button */
+            #aiAssistBtn {
+                background-color: rgb(75, 94, 170) !important;
+            }
             /* Ensure icons are always visible in mobile view */
             #saveBtn i, 
             #loadProjectBtn i, 
             #newProjectBtn i,
-            .mobile-icon-btn i {
+            .mobile-icon-btn i,
+            header i {
                 display: inline-block !important;
                 opacity: 1 !important; 
                 visibility: visible !important;
-                font-size: 0.95rem;
+                font-size: 1rem !important;
+                color: white !important;
             }
             
             /* Make icons larger and more visible */
-            .fa-save, .fa-folder-open, .fa-plus, .fa-bars {
-                font-size: 1rem !important;
+            .fa-save, .fa-folder-open, .fa-plus, .fa-bars, .fa-feather-alt {
+                font-size: 1.1rem !important;
                 display: block !important;
+                color: white !important;
+            }
+            
+            /* Force white color for icons in dark mode */
+            header button i,
+            .mobile-icon-btn i {
+                color: white !important;
+            }
+            
+            /* Ensure specific buttons have proper icon colors */
+            #saveBtn i {
+                color: black !important;
+            }
+            
+            /* Make sure buttons have proper background */
+            #loadProjectBtn, #newProjectBtn {
+                background-color: rgba(255, 255, 255, 0.2) !important;  
             }
             
             /* Hide button text on mobile with stronger specificity */
