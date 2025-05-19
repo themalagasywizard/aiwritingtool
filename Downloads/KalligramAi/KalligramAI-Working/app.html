@@ -669,20 +669,26 @@
 
         /* Theme toggle styles */
         .theme-toggle {
-            width: 40px;
+            min-width: 40px;
             height: 40px;
-            border-radius: 50%;
+            border-radius: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-primary);
-            background-color: transparent;
+            color: var(--primary);
+            background-color: var(--primary-light);
             cursor: pointer;
             transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            margin-left: 8px;
+            font-size: 1.1rem;
+            padding: 0 12px;
+            border: 1px solid var(--primary);
         }
 
         .theme-toggle:hover {
             background-color: var(--primary-light);
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -1883,9 +1889,10 @@
                 <span class="ml-1">New</span>
             </button>
             
-            <!-- Dark Mode Toggle -->
-            <button class="theme-toggle" onclick="window.toggleDarkMode()">
+            <!-- Dark Mode Toggle Button -->
+            <button class="theme-toggle" onclick="window.toggleDarkMode()" title="Toggle Dark Mode">
                 <i id="themeToggleIcon" class="fas fa-moon"></i>
+                <span class="ml-2 text-sm font-medium hidden sm:inline">Dark Mode</span>
             </button>
             
             <!-- User Avatar with Dropdown -->
@@ -1900,15 +1907,15 @@
                             <span id="userDisplayName">Guest User</span>
                         </div>
                     </a>
-                    <div class="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center justify-between">
+                    <div class="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center justify-between" id="darkModeItem" onclick="window.toggleDarkMode()">
                         <div class="flex items-center">
-                            <i class="fas fa-moon text-secondary mr-2"></i>
+                            <i class="fas fa-moon text-primary mr-2"></i>
                             <span>Dark Mode</span>
                         </div>
                         <!-- Toggle Switch -->
-                        <label class="inline-flex items-center cursor-pointer">
+                        <label class="inline-flex items-center cursor-pointer" onclick="event.stopPropagation()">
                             <input type="checkbox" id="darkModeToggle" class="sr-only" onchange="window.toggleDarkMode()">
-                            <div class="relative w-10 h-5 bg-gray-200 rounded-full dark:bg-gray-700">
+                            <div class="relative w-10 h-5 bg-gray-200 rounded-full dark:bg-gray-700 border border-gray-300">
                                 <div class="dot absolute left-0.5 top-0.5 bg-white dark:bg-primary w-4 h-4 rounded-full transition-transform duration-300 ease-in-out" id="darkModeToggleDot"></div>
                             </div>
                         </label>
