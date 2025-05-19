@@ -3043,30 +3043,11 @@
                 <i class="fas fa-plus"></i>
                 <span class="ml-1 hidden md:inline">New Project</span>
             </button>
-            <div class="relative">
+            <div>
                 <button id="userProfileBtn" class="header-btn">
                     <i class="fas fa-user-circle"></i>
                     <span class="ml-1 hidden md:inline">Profile</span>
                 </button>
-                <div id="profileDropdownContainer" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown z-50">
-                    <a href="/profile.html" class="block">
-                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                            <i class="fas fa-user-circle text-primary mr-2"></i>
-                            <span id="userDisplayName">Guest User</span>
-                        </div>
-                    </a>
-                    <a href="/profile.html#preferences" class="block">
-                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                            <i class="fas fa-cog text-secondary mr-2"></i>
-                            <span>Settings</span>
-                        </div>
-                    </a>
-                    <!-- Dark mode toggle switch will be inserted here by initializeDarkModeSwitch() -->
-                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                        <i class="fas fa-sign-out-alt mr-2"></i>
-                        <span>Sign Out</span>
-                    </div>
-                </div>
             </div>
         </div>
     </header>
@@ -5247,17 +5228,36 @@
             // Also check periodically to override any scripts that might change styles
             setInterval(forceDarkModeButtonStyling, 1000);
             
-            // User Profile Button click handler - FIXED VERSION
-            const userProfileBtn = document.getElementById('userProfileBtn');
-            let profileDropdownContainer = document.getElementById('profileDropdownContainer');
-            
-            // Ensure the dropdown container exists directly in the DOM
-            if (!profileDropdownContainer) {
-                // Create the dropdown container if it doesn't exist
-                profileDropdownContainer = document.createElement('div');
-                profileDropdownContainer.id = 'profileDropdownContainer';
-                profileDropdownContainer.className = 'hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown z-50';
-                profileDropdownContainer.innerHTML = `
+            // User Profile Button click handler - COMPLETELY REWRITTEN
+            const setupProfileDropdown = function() {
+                console.log("Setting up profile dropdown");
+                
+                // Get or create new profile button (with forced ID)
+                let userProfileBtn = document.getElementById('userProfileBtn');
+                
+                if (!userProfileBtn) {
+                    console.log("Profile button not found, cannot setup dropdown");
+                    return;
+                }
+                
+                // Force replace any existing dropdown
+                let existingDropdown = document.getElementById('profileDropdownContainer');
+                if (existingDropdown) {
+                    existingDropdown.remove();
+                }
+                
+                // Create new dropdown from scratch
+                const dropdown = document.createElement('div');
+                dropdown.id = 'profileDropdownContainer';
+                dropdown.className = 'hidden fixed right-4 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown z-[9999]';
+                
+                // Position it based on the button
+                const rect = userProfileBtn.getBoundingClientRect();
+                dropdown.style.top = (rect.bottom + 5) + 'px';
+                dropdown.style.right = '10px';
+                
+                // Set content
+                dropdown.innerHTML = `
                     <a href="/profile.html" class="block">
                         <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                             <i class="fas fa-user-circle text-primary mr-2"></i>
@@ -5276,80 +5276,97 @@
                     </div>
                 `;
                 
-                // Find the parent container for the profile button
-                const parentContainer = userProfileBtn.parentElement;
-                if (parentContainer) {
-                    parentContainer.appendChild(profileDropdownContainer);
-                } else {
-                    // If no parent, append to body
-                    document.body.appendChild(profileDropdownContainer);
+                // Add to document body (not as child of any other element)
+                document.body.appendChild(dropdown);
+                
+                // Handle dark mode
+                if (document.documentElement.classList.contains('dark')) {
+                    dropdown.style.backgroundColor = '#1f2937';
+                    dropdown.style.color = 'white';
+                    dropdown.style.borderColor = '#374151';
                 }
-            }
-            
-            if (userProfileBtn && profileDropdownContainer) {
-                // Remove any existing click event listeners
+                
+                // Remove old event listeners by cloning
                 const newButton = userProfileBtn.cloneNode(true);
                 userProfileBtn.parentNode.replaceChild(newButton, userProfileBtn);
+                userProfileBtn = newButton;
                 
-                // Add fresh click event listener
-                newButton.addEventListener('click', function(e) {
+                // Add click event with direct reference to dropdown
+                userProfileBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     
                     console.log("Profile button clicked");
                     
-                    // Toggle dropdown visibility
-                    const isHidden = profileDropdownContainer.classList.contains('hidden');
+                    // Get the dropdown by ID to ensure we have the right element
+                    const dropdown = document.getElementById('profileDropdownContainer');
                     
-                    if (isHidden) {
-                        // Show dropdown
-                        profileDropdownContainer.classList.remove('hidden');
+                    if (!dropdown) {
+                        console.log("Dropdown not found, recreating");
+                        setupProfileDropdown();
+                        return;
+                    }
+                    
+                    // Toggle visibility with inline styles
+                    if (dropdown.classList.contains('hidden')) {
+                        dropdown.classList.remove('hidden');
+                        dropdown.style.display = 'block';
                         
-                        // Position dropdown properly for mobile
-                        if (window.innerWidth <= 768) {
-                            profileDropdownContainer.style.position = 'fixed';
-                            profileDropdownContainer.style.right = '10px';
-                            profileDropdownContainer.style.top = '60px';
-                            profileDropdownContainer.style.zIndex = '100';
-                            
-                            // Add a temporary overlay to handle clicks outside
-                            const overlay = document.createElement('div');
-                            overlay.id = 'profileOverlay';
-                            overlay.className = 'fixed inset-0 z-40';
-                            overlay.style.background = 'transparent';
-                            document.body.appendChild(overlay);
-                            
-                            // Close dropdown when clicking outside
-                            overlay.addEventListener('click', function() {
-                                profileDropdownContainer.classList.add('hidden');
-                                document.body.removeChild(overlay);
-                            });
-                        }
+                        // Position it based on current button position
+                        const rect = userProfileBtn.getBoundingClientRect();
+                        dropdown.style.top = (rect.bottom + 5) + 'px';
+                        dropdown.style.right = '10px';
+                        
+                        // Add a direct overlay for click-outside detection
+                        const overlay = document.createElement('div');
+                        overlay.id = 'profileOverlay';
+                        overlay.style.position = 'fixed';
+                        overlay.style.inset = '0';
+                        overlay.style.zIndex = '9998';
+                        overlay.style.background = 'transparent';
+                        document.body.appendChild(overlay);
+                        
+                        overlay.addEventListener('click', function(e) {
+                            dropdown.classList.add('hidden');
+                            dropdown.style.display = 'none';
+                            overlay.remove();
+                        });
                     } else {
-                        // Hide dropdown
-                        profileDropdownContainer.classList.add('hidden');
+                        dropdown.classList.add('hidden');
+                        dropdown.style.display = 'none';
                         
-                        // Remove overlay if it exists
                         const overlay = document.getElementById('profileOverlay');
-                        if (overlay) {
-                            document.body.removeChild(overlay);
-                        }
+                        if (overlay) overlay.remove();
                     }
                 });
                 
-                // Set up click outside to close
-                document.addEventListener('click', function(e) {
-                    if (!newButton.contains(e.target) && !profileDropdownContainer.contains(e.target)) {
-                        profileDropdownContainer.classList.add('hidden');
-                        
-                        // Remove overlay if it exists
-                        const overlay = document.getElementById('profileOverlay');
-                        if (overlay) {
-                            document.body.removeChild(overlay);
-                        }
+                // Set up sign out handler
+                setTimeout(() => {
+                    const signOutBtn = document.getElementById('signOutBtn');
+                    if (signOutBtn) {
+                        signOutBtn.addEventListener('click', async function() {
+                            try {
+                                const auth = window.supabaseServices?.auth;
+                                if (auth) {
+                                    await auth.signOut();
+                                    window.location.href = '/auth/auth.html';
+                                } else {
+                                    console.error("Auth service not available");
+                                }
+                            } catch (error) {
+                                console.error('Error signing out:', error);
+                                alert('Failed to sign out. Please try again.');
+                            }
+                        });
                     }
-                });
-            }
+                }, 100);
+            };
+            
+            // Run setup immediately
+            setupProfileDropdown();
+            
+            // Also setup later to handle any late DOM changes
+            setTimeout(setupProfileDropdown, 1000);
             // Check if dark mode was enabled previously and ensure the UI reflects it
             const isDarkMode = document.documentElement.classList.contains('dark');
             if (isDarkMode) {
