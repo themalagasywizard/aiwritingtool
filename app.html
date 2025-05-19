@@ -5276,9 +5276,9 @@
             // Also check periodically to override any scripts that might change styles
             setInterval(forceDarkModeButtonStyling, 1000);
             
-            // User Profile Button click handler - ENHANCED FOR MOBILE
+            // User Profile Button click handler - MOBILE-FIRST APPROACH
             const setupProfileDropdown = function() {
-                console.log("Setting up profile dropdown");
+                console.log("Setting up profile dropdown with mobile-first approach");
                 
                 // Get or create new profile button (with forced ID)
                 let userProfileBtn = document.getElementById('userProfileBtn');
@@ -5296,77 +5296,92 @@
                 
                 // Check if mobile view
                 const isMobile = window.innerWidth <= 768;
+                console.log("Is mobile view:", isMobile);
                 
-                // Create new dropdown from scratch
+                // Create new dropdown from scratch - with a new approach
                 const dropdown = document.createElement('div');
                 dropdown.id = 'profileDropdownContainer';
                 
-                // Different styling for mobile
+                // Use different styling for mobile vs desktop
                 if (isMobile) {
-                    dropdown.className = 'hidden fixed bg-white rounded-lg shadow-lg p-4 profile-dropdown z-[9999]';
-                    dropdown.style.left = '10px';
-                    dropdown.style.right = '10px';
-                    dropdown.style.top = '70px'; // Position below header
-                    dropdown.style.width = 'calc(100% - 20px)';
-                    // Add border for better visibility
-                    dropdown.style.border = '2px solid #e5e7eb';
+                    // Mobile-specific styling - make it full-width and obvious
+                    dropdown.className = 'hidden fixed bg-white rounded-lg shadow-lg profile-dropdown';
+                    dropdown.style.left = '0';
+                    dropdown.style.right = '0';
+                    dropdown.style.top = '60px';
+                    dropdown.style.padding = '12px';
+                    dropdown.style.zIndex = '10000';
+                    dropdown.style.border = '2px solid #4B5EAA';
+                    dropdown.style.margin = '10px';
+                    dropdown.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
                 } else {
-                    dropdown.className = 'hidden fixed right-4 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown z-[9999]';
-                    // Position it based on the button
-                    const rect = userProfileBtn.getBoundingClientRect();
-                    dropdown.style.top = (rect.bottom + 5) + 'px';
+                    // Desktop styling
+                    dropdown.className = 'hidden fixed right-4 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown';
+                    dropdown.style.zIndex = '9999';
+                    dropdown.style.top = (userProfileBtn.getBoundingClientRect().bottom + 5) + 'px';
                     dropdown.style.right = '10px';
                 }
                 
-                // Set content - larger padding and text for mobile
-                const itemClass = isMobile ? 'p-5 text-base font-medium mb-2' : 'p-2';
-                // For mobile, we'll use buttons instead of links and divs for better touch handling
+                // Create the content with simpler implementation for mobile
                 if (isMobile) {
                     dropdown.innerHTML = `
-                        <button id="profileMenuBtn" class="${itemClass} hover:bg-gray-100 rounded-lg cursor-pointer flex items-center w-full text-left" type="button">
-                            <i class="fas fa-user-circle text-primary mr-3 text-xl"></i>
-                            <span id="userDisplayName" class="text-base">Guest User</span>
-                        </button>
-                        <button id="settingsMenuBtn" class="${itemClass} hover:bg-gray-100 rounded-lg cursor-pointer flex items-center w-full text-left" type="button">
-                            <i class="fas fa-cog text-secondary mr-3 text-xl"></i>
-                            <span class="text-base">Settings</span>
-                        </button>
-                        <div id="darkModeToggleContainer" class="${itemClass} hover:bg-gray-100 rounded-lg cursor-pointer flex items-center justify-between w-full text-left">
-                            <div class="flex items-center">
-                                <i class="fas fa-moon text-primary mr-3 text-xl"></i>
-                                <span class="text-base">Dark Mode</span>
-                            </div>
-                            <div class="relative inline-block w-16 h-9 transition duration-200 ease-in-out rounded-full">
-                                <input type="checkbox" id="darkModeToggle" class="absolute w-9 h-9 opacity-0 z-10 cursor-pointer peer" />
-                                <span class="
-                                    block w-16 h-9 overflow-hidden rounded-full 
-                                    bg-gray-300 cursor-pointer peer-checked:bg-primary
-                                    after:content-[''] after:absolute after:z-[2] after:block 
-                                    after:w-7 after:h-7 after:rounded-full after:left-1 after:top-1 
-                                    after:bg-white after:transition-all after:duration-300 
-                                    peer-checked:after:translate-x-7"></span>
-                            </div>
+                        <div class="flex flex-col space-y-3">
+                            <!-- Profile Link - Using <a> for direct navigation -->
+                            <a href="/profile.html" class="block py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user-circle text-primary mr-3 text-xl"></i>
+                                    <span class="text-base font-medium">Profile</span>
+                                </div>
+                            </a>
+                            
+                            <!-- Settings Link - Using <a> for direct navigation -->
+                            <a href="/profile.html#preferences" class="block py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg">
+                                <div class="flex items-center">
+                                    <i class="fas fa-cog text-secondary mr-3 text-xl"></i>
+                                    <span class="text-base font-medium">Settings</span>
+                                </div>
+                            </a>
+                            
+                            <!-- Dark Mode Toggle - Using real button for better touch handling -->
+                            <button id="darkModeToggleBtn" type="button" class="py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg text-left">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-moon text-primary mr-3 text-xl"></i>
+                                        <span class="text-base font-medium">Dark Mode</span>
+                                    </div>
+                                    <div class="relative inline-block w-16 h-9">
+                                        <div id="darkModeToggleIndicator" class="w-16 h-9 overflow-hidden rounded-full bg-gray-300">
+                                            <div id="darkModeToggleKnob" class="absolute w-7 h-7 rounded-full bg-white shadow-md transform translate-y-1 translate-x-1 transition-transform duration-200"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                            
+                            <!-- Sign Out Button - Using real button for better touch handling -->
+                            <button id="signOutBtnMobile" type="button" class="py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg text-left">
+                                <div class="flex items-center text-error">
+                                    <i class="fas fa-sign-out-alt mr-3 text-xl"></i>
+                                    <span class="text-base font-medium">Sign Out</span>
+                                </div>
+                            </button>
                         </div>
-                        <button id="signOutBtn" class="${itemClass} hover:bg-gray-100 rounded-lg cursor-pointer flex items-center w-full text-left text-error" type="button">
-                            <i class="fas fa-sign-out-alt mr-3 text-xl"></i>
-                            <span class="text-base">Sign Out</span>
-                        </button>
                     `;
                 } else {
+                    // Desktop dropdown with original implementation
                     dropdown.innerHTML = `
                         <a href="/profile.html" class="block">
-                            <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                                 <i class="fas fa-user-circle text-primary mr-2"></i>
                                 <span id="userDisplayName">Guest User</span>
                             </div>
                         </a>
                         <a href="/profile.html#preferences" class="block">
-                            <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                                 <i class="fas fa-cog text-secondary mr-2"></i>
                                 <span>Settings</span>
                             </div>
                         </a>
-                        <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
                             <div class="flex items-center">
                                 <i class="fas fa-moon text-primary mr-2"></i>
                                 <span>Dark Mode</span>
@@ -5382,7 +5397,7 @@
                                     peer-checked:after:translate-x-6"></label>
                             </div>
                         </div>
-                        <div id="signOutBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+                        <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
                             <i class="fas fa-sign-out-alt mr-2"></i>
                             <span>Sign Out</span>
                         </div>
@@ -5392,436 +5407,314 @@
                 // Add to document body (not as child of any other element)
                 document.body.appendChild(dropdown);
                 
-                // Handle dark mode styling for the dropdown
-                if (document.documentElement.classList.contains('dark')) {
-                    dropdown.style.backgroundColor = '#1f2937';
-                    dropdown.style.color = 'white';
-                    dropdown.style.borderColor = '#374151';
-                    
-                    // Also style all hover elements for dark mode
-                    const hoverElements = dropdown.querySelectorAll('.hover\\:bg-gray-50, .hover\\:bg-gray-100');
-                    hoverElements.forEach(el => {
-                        el.classList.remove('hover:bg-gray-50');
-                        el.classList.remove('hover:bg-gray-100');
-                        el.classList.add('hover:bg-gray-700');
-                    });
+                // Apply dark mode styling if needed
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                if (isDarkMode) {
+                    applyDarkModeToDropdown(dropdown, isMobile);
                 }
                 
-                // Remove old event listeners by cloning
+                // Update the toggle UI to match current state
+                updateDarkModeToggleState(isDarkMode, isMobile);
+                
+                // Remove old event listeners by cloning profile button
                 const newButton = userProfileBtn.cloneNode(true);
                 userProfileBtn.parentNode.replaceChild(newButton, userProfileBtn);
                 userProfileBtn = newButton;
                 
-                // Add both click and touch events with direct reference to dropdown
-                const handleButtonPress = function(e) {
+                // Add click handlers for profile button - simplified
+                userProfileBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    
-                    console.log("Profile button triggered");
-                    
-                    // Get the dropdown by ID to ensure we have the right element
-                    const dropdown = document.getElementById('profileDropdownContainer');
-                    
-                    if (!dropdown) {
-                        console.log("Dropdown not found, recreating");
-                        setupProfileDropdown();
-                        return;
-                    }
-                    
-                    // Toggle visibility with inline styles
-                    if (dropdown.classList.contains('hidden')) {
-                        dropdown.classList.remove('hidden');
-                        dropdown.style.display = 'block';
-                        
-                        // Reposition based on current button and screen size
-                        if (isMobile) {
-                            dropdown.style.top = '70px';
-                            dropdown.style.left = '10px';
-                            dropdown.style.right = '10px';
-                            dropdown.style.width = 'calc(100% - 20px)';
-                            dropdown.style.zIndex = '9999';
-                        } else {
-                            const rect = userProfileBtn.getBoundingClientRect();
-                            dropdown.style.top = (rect.bottom + 5) + 'px';
-                            dropdown.style.right = '10px';
-                        }
-                        
-                        // Add a direct overlay for click-outside detection
-                        const overlay = document.createElement('div');
-                        overlay.id = 'profileOverlay';
-                        overlay.style.position = 'fixed';
-                        overlay.style.inset = '0';
-                        overlay.style.zIndex = '9998';
-                        overlay.style.background = 'transparent';
-                        document.body.appendChild(overlay);
-                        
-                        // Use both click and touch events for overlay
-                        const closeDropdown = function(e) {
-                            const dropdown = document.getElementById('profileDropdownContainer');
-                            if (dropdown) {
-                                dropdown.classList.add('hidden');
-                                dropdown.style.display = 'none';
-                            }
-                            overlay.remove();
-                        };
-                        
-                        overlay.addEventListener('click', closeDropdown);
-                        overlay.addEventListener('touchend', function(e) {
-                            e.preventDefault();
-                            closeDropdown(e);
-                        });
-                    } else {
-                        dropdown.classList.add('hidden');
-                        dropdown.style.display = 'none';
-                        
-                        const overlay = document.getElementById('profileOverlay');
-                        if (overlay) overlay.remove();
-                    }
-                };
-                
-                // Add both mouse and touch events
-                userProfileBtn.addEventListener('click', handleButtonPress);
-                userProfileBtn.addEventListener('touchend', function(e) {
-                    e.preventDefault();
-                    handleButtonPress(e);
+                    toggleDropdown(dropdown, isMobile);
                 });
                 
-                // Set up interactive elements in the dropdown with special handling for mobile
-                setTimeout(() => {
-                    // Dark Mode Toggle setup with mobile improvements
-                    const darkModeToggle = document.getElementById('darkModeToggle');
-                    const darkModeContainer = document.getElementById('darkModeToggleContainer');
-                    
-                    if (darkModeToggle && darkModeContainer) {
-                        // Set initial state based on current mode
-                        darkModeToggle.checked = document.documentElement.classList.contains('dark');
-                        
-                        // Make the whole container clickable on mobile
-                        darkModeContainer.addEventListener('click', function(e) {
-                            // Don't trigger if clicking directly on the checkbox
-                            if (e.target !== darkModeToggle) {
-                                darkModeToggle.checked = !darkModeToggle.checked;
-                                
-                                // Manually trigger change event
-                                const event = new Event('change');
-                                darkModeToggle.dispatchEvent(event);
-                            }
-                        });
-                        
-                        darkModeContainer.addEventListener('touchend', function(e) {
-                            // Don't trigger if touching directly on the checkbox
-                            if (e.target !== darkModeToggle) {
-                                e.preventDefault();
-                                darkModeToggle.checked = !darkModeToggle.checked;
-                                
-                                // Manually trigger change event
-                                const event = new Event('change');
-                                darkModeToggle.dispatchEvent(event);
-                            }
-                        });
-                        
-                        // Add toggle event with direct DOM manipulation
-                        darkModeToggle.addEventListener('change', function() {
-                            console.log("Dark mode toggle changed");
-                            
-                            // Toggle dark mode
-                            document.documentElement.classList.toggle('dark');
-                            
-                            // Store preference
-                            localStorage.setItem('darkMode', darkModeToggle.checked ? 'enabled' : 'disabled');
-                            
-                            // Update dropdown styling immediately for better feedback
-                            const dropdown = document.getElementById('profileDropdownContainer');
-                            if (dropdown) {
-                                if (document.documentElement.classList.contains('dark')) {
-                                    dropdown.style.backgroundColor = '#1f2937';
-                                    dropdown.style.color = 'white';
-                                    dropdown.style.borderColor = '#374151';
-                                    
-                                    // Style hover elements
-                                    dropdown.querySelectorAll('.hover\\:bg-gray-50, .hover\\:bg-gray-100').forEach(el => {
-                                        el.classList.remove('hover:bg-gray-50');
-                                        el.classList.remove('hover:bg-gray-100');
-                                        el.classList.add('hover:bg-gray-700');
-                                    });
-                                } else {
-                                    dropdown.style.backgroundColor = 'white';
-                                    dropdown.style.color = 'black';
-                                    dropdown.style.borderColor = '#e5e7eb';
-                                    
-                                    // Revert hover elements
-                                    dropdown.querySelectorAll('.hover\\:bg-gray-700').forEach(el => {
-                                        el.classList.remove('hover:bg-gray-700');
-                                        if (isMobile) {
-                                            el.classList.add('hover:bg-gray-100');
-                                        } else {
-                                            el.classList.add('hover:bg-gray-50');
-                                        }
-                                    });
-                                }
-                            }
-                            
-                            // Custom event to notify other parts of the app
-                            document.dispatchEvent(new CustomEvent('darkModeChanged', {
-                                detail: { enabled: darkModeToggle.checked }
-                            }));
-                        });
-                    }
-                    
-                    // Set up settings button handler for mobile
-                    if (isMobile) {
-                        const settingsBtn = document.getElementById('settingsMenuBtn');
-                        if (settingsBtn) {
-                            const settingsHandler = function(e) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                
-                                console.log("Settings button clicked");
-                                
-                                // Navigate to settings page
-                                window.location.href = '/profile.html#preferences';
-                                
-                                // Close the dropdown
-                                const dropdown = document.getElementById('profileDropdownContainer');
-                                if (dropdown) {
-                                    dropdown.classList.add('hidden');
-                                    dropdown.style.display = 'none';
-                                }
-                                
-                                const overlay = document.getElementById('profileOverlay');
-                                if (overlay) overlay.remove();
-                            };
-                            
-                            settingsBtn.addEventListener('click', settingsHandler);
-                            settingsBtn.addEventListener('touchend', function(e) {
-                                e.preventDefault(); 
-                                e.stopPropagation();
-                                settingsHandler(e);
-                            }, { passive: false });
-                        }
-                        
-                        // Set up profile button handler for mobile
-                        const profileBtn = document.getElementById('profileMenuBtn');
-                        if (profileBtn) {
-                            const profileHandler = function(e) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                
-                                console.log("Profile button clicked");
-                                
-                                // Navigate to profile page
-                                window.location.href = '/profile.html';
-                                
-                                // Close the dropdown
-                                const dropdown = document.getElementById('profileDropdownContainer');
-                                if (dropdown) {
-                                    dropdown.classList.add('hidden');
-                                    dropdown.style.display = 'none';
-                                }
-                                
-                                const overlay = document.getElementById('profileOverlay');
-                                if (overlay) overlay.remove();
-                            };
-                            
-                            profileBtn.addEventListener('click', profileHandler);
-                            profileBtn.addEventListener('touchend', function(e) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                profileHandler(e);
-                            }, { passive: false });
-                        }
-                    }
-                    
-                    // Set up sign out handler
-                    const signOutBtn = document.getElementById('signOutBtn');
-                    if (signOutBtn) {
-                        // Use both click and touch events
-                        const signOutHandler = async function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            
-                            console.log("Sign out button clicked");
-                            
-                            try {
-                                const auth = window.supabaseServices?.auth;
-                                if (auth) {
-                                    await auth.signOut();
-                                    window.location.href = '/auth/auth.html';
-                                } else {
-                                    console.error("Auth service not available");
-                                    alert('Authentication service unavailable');
-                                }
-                            } catch (error) {
-                                console.error('Error signing out:', error);
-                                alert('Failed to sign out. Please try again.');
-                            }
-                        };
-                        
-                        signOutBtn.addEventListener('click', signOutHandler);
-                        signOutBtn.addEventListener('touchend', function(e) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            signOutHandler(e);
-                        }, { passive: false });
-                    }
-                }, 100);
-                
-                // Run another setup after a longer delay to ensure all elements are properly initialized
-                setTimeout(() => {
-                    // Reattach event handlers for all buttons to ensure they work
-                    if (isMobile) {
-                        const menuButtons = dropdown.querySelectorAll('button, #darkModeToggleContainer');
-                        menuButtons.forEach(btn => {
-                            // Apply active state styling on touch start
-                            btn.addEventListener('touchstart', function() {
-                                this.style.backgroundColor = document.documentElement.classList.contains('dark') 
-                                    ? '#374151' 
-                                    : '#f3f4f6';
-                            });
-                            
-                            // Remove active state styling on touch end
-                            btn.addEventListener('touchend', function() {
-                                setTimeout(() => {
-                                    this.style.backgroundColor = '';
-                                }, 150);
-                            });
-                        });
-                    }
-                }, 500);
+                // For mobile touch events
+                if (isMobile) {
+                    // Setup mobile-specific event handlers
+                    setupMobileHandlers(dropdown);
+                } else {
+                    // Setup desktop-specific event handlers
+                    setupDesktopHandlers(dropdown);
+                }
             };
             
-            // Run setup immediately
-            setupProfileDropdown();
-            
-            // Also setup later to handle any late DOM changes
-            setTimeout(setupProfileDropdown, 1000);
-            // Check if dark mode was enabled previously and ensure the UI reflects it
-            const isDarkMode = document.documentElement.classList.contains('dark');
-            if (isDarkMode) {
-                // Apply dark mode button styles
-                if (window.applyDarkModeButtonStyles) {
-                    window.applyDarkModeButtonStyles();
-                    console.log('Dark mode button styles applied on page load');
+            // Helper function to toggle dropdown visibility
+            function toggleDropdown(dropdown, isMobile) {
+                const isHidden = dropdown.classList.contains('hidden');
+                
+                if (isHidden) {
+                    // Show dropdown
+                    dropdown.classList.remove('hidden');
+                    dropdown.style.display = 'block';
+                    
+                    // Create overlay for click-outside detection
+                    const overlay = document.createElement('div');
+                    overlay.id = 'profileOverlay';
+                    overlay.style.position = 'fixed';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.right = '0';
+                    overlay.style.bottom = '0';
+                    overlay.style.zIndex = '9998';
+                    overlay.style.background = 'transparent';
+                    
+                    // Add overlay click handler
+                    overlay.addEventListener('click', function() {
+                        dropdown.classList.add('hidden');
+                        dropdown.style.display = 'none';
+                        overlay.remove();
+                    });
+                    
+                    document.body.appendChild(overlay);
+                } else {
+                    // Hide dropdown
+                    dropdown.classList.add('hidden');
+                    dropdown.style.display = 'none';
+                    
+                    // Remove overlay
+                    const overlay = document.getElementById('profileOverlay');
+                    if (overlay) overlay.remove();
                 }
-                // Apply header and toolbar dark styles on initial load
-                const header = document.querySelector('header');
-                const toolbar = document.querySelector('.editor-toolbar');
-                const editorContent = document.querySelector('#editorContent');
-                const projectInfoBox = document.querySelector('.sidebar .bg-white.rounded-lg');
-                const contextBox = document.querySelector('#contextList');
-                const wordCountContainer = document.querySelector('.flex.items-center.justify-between.bg-white.p-3.rounded-lg.shadow-sm-custom.text-sm');
-                if (header) header.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (toolbar) toolbar.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (editorContent) editorContent.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (projectInfoBox) projectInfoBox.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (contextBox) contextBox.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                if (wordCountContainer) wordCountContainer.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                // Apply to all sidebar white background elements
-                document.querySelectorAll('.sidebar .bg-white').forEach(el => {
-                    el.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-                });
             }
-
-            // The old dark mode toggle button is now removed, using switch in profile dropdown instead
-
-            // Ensure AI output containers can scroll properly when content changes
-            const aiOutput = document.getElementById('aiOutput');
-            const chatHistory = document.getElementById('chatHistory');
-
-            // Setup resize observer for AI output and chat history
-            if (window.ResizeObserver) {
-                // For aiOutput
-                const outputObserver = new ResizeObserver(entries => {
-                    for (let entry of entries) {
-                        if (entry.target.scrollHeight > entry.target.clientHeight) {
-                            // Content exceeds container height, ensure scrollable
-                            entry.target.style.overflowY = 'auto';
+            
+            // Apply dark mode styling to dropdown
+            function applyDarkModeToDropdown(dropdown, isMobile) {
+                dropdown.style.backgroundColor = '#1f2937';
+                dropdown.style.color = 'white';
+                dropdown.style.borderColor = '#374151';
+                
+                if (isMobile) {
+                    // Mobile specific dark styling
+                    const buttons = dropdown.querySelectorAll('a, button');
+                    buttons.forEach(btn => {
+                        btn.classList.remove('bg-gray-100', 'hover:bg-gray-200', 'active:bg-gray-300');
+                        btn.classList.add('bg-gray-800', 'hover:bg-gray-700', 'active:bg-gray-600');
+                    });
+                    
+                    // Style toggle indicator if it exists
+                    const indicator = document.getElementById('darkModeToggleIndicator');
+                    if (indicator) {
+                        indicator.classList.remove('bg-gray-300');
+                        indicator.classList.add('bg-primary');
+                    }
+                } else {
+                    // Desktop specific dark styling
+                    const hoverElements = dropdown.querySelectorAll('.hover\\:bg-gray-50');
+                    hoverElements.forEach(el => {
+                        el.classList.remove('hover:bg-gray-50');
+                        el.classList.add('hover:bg-gray-700');
+                    });
+                }
+            }
+            
+            // Update dark mode toggle state
+            function updateDarkModeToggleState(isDarkMode, isMobile) {
+                if (isMobile) {
+                    // Update the mobile toggle UI
+                    const knob = document.getElementById('darkModeToggleKnob');
+                    const indicator = document.getElementById('darkModeToggleIndicator');
+                    
+                    if (knob && indicator) {
+                        if (isDarkMode) {
+                            knob.style.transform = 'translateY(1px) translateX(8px)';
+                            indicator.classList.remove('bg-gray-300');
+                            indicator.classList.add('bg-primary');
+                        } else {
+                            knob.style.transform = 'translateY(1px) translateX(1px)';
+                            indicator.classList.remove('bg-primary');
+                            indicator.classList.add('bg-gray-300');
                         }
                     }
-                });
-
-                if (aiOutput) outputObserver.observe(aiOutput);
-
-                // For chatHistory
-                const chatObserver = new ResizeObserver(entries => {
-                    for (let entry of entries) {
-                        if (entry.target.scrollHeight > entry.target.clientHeight) {
-                            // Scroll to the bottom when content changes
-                            entry.target.scrollTop = entry.target.scrollHeight;
-                        }
+                } else {
+                    // Update the desktop toggle UI
+                    const checkbox = document.getElementById('darkModeToggle');
+                    if (checkbox) {
+                        checkbox.checked = isDarkMode;
                     }
-                });
-
-                if (chatHistory) chatObserver.observe(chatHistory);
+                }
             }
-
-            // Mobile keyboard handling for AI chat inputs
-            const chatInput = document.getElementById('chatInput');
-            const aiInput = document.getElementById('aiInput');
-            const aiAssistPanel = document.getElementById('aiAssistPanel');
-
-            // Function to adjust input position when keyboard appears
-            function handleMobileKeyboard(input) {
-                if (!input || window.innerWidth > 768) return; // Only apply on mobile devices
-
-                // When input is focused (keyboard appears)
-                input.addEventListener('focus', () => {
-                    // Small delay to ensure keyboard is fully shown
-                    setTimeout(() => {
-                        // Get the input container (the parent div of the textarea)
-                        const inputContainer = input.closest('.flex-shrink-0');
-                        if (!inputContainer) return;
-
-                        // Add class to position the input above keyboard
-                        inputContainer.classList.add('keyboard-visible');
-
-                        // Scroll the panel to ensure input is visible
-                        aiAssistPanel.scrollTop = aiAssistPanel.scrollHeight;
-
-                        // Scroll the input into view
-                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 300);
-                });
-
-                // When input loses focus (keyboard disappears)
-                input.addEventListener('blur', () => {
-                    // Get the input container
-                    const inputContainer = input.closest('.flex-shrink-0');
-                    if (!inputContainer) return;
-
-                    // Remove the positioning class
-                    inputContainer.classList.remove('keyboard-visible');
-                });
-            }
-
-            // Apply keyboard handling to both chat inputs
-            handleMobileKeyboard(chatInput);
-            handleMobileKeyboard(aiInput);
-
-            // Handle visual viewport changes (for iOS)
-            if (window.visualViewport) {
-                window.visualViewport.addEventListener('resize', () => {
-                    const activeInput = document.activeElement;
-                    // Check if active element is one of our inputs
-                    if (activeInput === chatInput || activeInput === aiInput) {
-                        // Calculate the difference between window height and viewport height (keyboard height)
-                        const keyboardHeight = window.innerHeight - window.visualViewport.height;
-
-                        if (keyboardHeight > 100) { // Keyboard is visible
-                            // Get the input container
-                            const inputContainer = activeInput.closest('.flex-shrink-0');
-                            if (!inputContainer) return;
-
-                            // Position the input above the keyboard
-                            inputContainer.style.marginBottom = `${keyboardHeight}px`;
-
-                            // Scroll input into view
-                            activeInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Setup mobile event handlers
+            function setupMobileHandlers(dropdown) {
+                console.log('Setting up mobile handlers');
+                
+                // Dark mode toggle button handler
+                const darkModeToggleBtn = document.getElementById('darkModeToggleBtn');
+                if (darkModeToggleBtn) {
+                    darkModeToggleBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Mobile dark mode toggle clicked');
+                        
+                        // Toggle dark mode
+                        const isDarkMode = document.documentElement.classList.contains('dark');
+                        document.documentElement.classList.toggle('dark');
+                        
+                        // Store preference
+                        localStorage.setItem('darkMode', !isDarkMode ? 'enabled' : 'disabled');
+                        
+                        // Update UI
+                        updateDarkModeToggleState(!isDarkMode, true);
+                        
+                        // Apply dark mode styling to dropdown
+                        if (!isDarkMode) {
+                            applyDarkModeToDropdown(dropdown, true);
+                        } else {
+                            // Revert to light mode styling
+                            dropdown.style.backgroundColor = 'white';
+                            dropdown.style.color = 'black';
+                            dropdown.style.borderColor = '#4B5EAA';
+                            
+                            const buttons = dropdown.querySelectorAll('a, button');
+                            buttons.forEach(btn => {
+                                btn.classList.remove('bg-gray-800', 'hover:bg-gray-700', 'active:bg-gray-600');
+                                btn.classList.add('bg-gray-100', 'hover:bg-gray-200', 'active:bg-gray-300');
+                            });
+                            
+                            // Revert toggle indicator
+                            const indicator = document.getElementById('darkModeToggleIndicator');
+                            if (indicator) {
+                                indicator.classList.remove('bg-primary');
+                                indicator.classList.add('bg-gray-300');
+                            }
                         }
-                    }
-                });
+                        
+                        // Dispatch event for other components
+                        document.dispatchEvent(new CustomEvent('darkModeChanged', {
+                            detail: { enabled: !isDarkMode }
+                        }));
+                    });
+                }
+                
+                // Sign out button handler
+                const signOutBtn = document.getElementById('signOutBtnMobile');
+                if (signOutBtn) {
+                    signOutBtn.addEventListener('click', async function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Mobile sign out button clicked');
+                        
+                        try {
+                            const auth = window.supabaseServices?.auth;
+                            if (auth) {
+                                await auth.signOut();
+                                window.location.href = '/auth/auth.html';
+                            } else {
+                                console.error("Auth service not available");
+                                alert('Authentication service unavailable');
+                            }
+                        } catch (error) {
+                            console.error('Error signing out:', error);
+                            alert('Failed to sign out. Please try again.');
+                        }
+                    });
+                }
+            }
+            
+            // Setup desktop event handlers
+            function setupDesktopHandlers(dropdown) {
+                // Dark mode toggle handler
+                const darkModeToggle = document.getElementById('darkModeToggle');
+                const darkModeContainer = document.getElementById('darkModeToggleContainer');
+                
+                if (darkModeToggle && darkModeContainer) {
+                    // Set initial state
+                    darkModeToggle.checked = document.documentElement.classList.contains('dark');
+                    
+                    // Make container clickable
+                    darkModeContainer.addEventListener('click', function(e) {
+                        if (e.target !== darkModeToggle) {
+                            darkModeToggle.checked = !darkModeToggle.checked;
+                            
+                            // Trigger change event
+                            const event = new Event('change');
+                            darkModeToggle.dispatchEvent(event);
+                        }
+                    });
+                    
+                    // Handle toggle changes
+                    darkModeToggle.addEventListener('change', function() {
+                        // Toggle dark mode
+                        document.documentElement.classList.toggle('dark');
+                        
+                        // Store preference
+                        localStorage.setItem('darkMode', darkModeToggle.checked ? 'enabled' : 'disabled');
+                        
+                        // Apply styling to dropdown
+                        if (darkModeToggle.checked) {
+                            applyDarkModeToDropdown(dropdown, false);
+                        } else {
+                            // Revert to light mode
+                            dropdown.style.backgroundColor = 'white';
+                            dropdown.style.color = 'black';
+                            dropdown.style.borderColor = '#e5e7eb';
+                            
+                            // Revert hover styles
+                            dropdown.querySelectorAll('.hover\\:bg-gray-700').forEach(el => {
+                                el.classList.remove('hover:bg-gray-700');
+                                el.classList.add('hover:bg-gray-50');
+                            });
+                        }
+                        
+                        // Notify other components
+                        document.dispatchEvent(new CustomEvent('darkModeChanged', {
+                            detail: { enabled: darkModeToggle.checked }
+                        }));
+                    });
+                }
+                
+                // Sign out button
+                const signOutBtn = document.getElementById('signOutBtn');
+                if (signOutBtn) {
+                    signOutBtn.addEventListener('click', async function() {
+                        try {
+                            const auth = window.supabaseServices?.auth;
+                            if (auth) {
+                                await auth.signOut();
+                                window.location.href = '/auth/auth.html';
+                            } else {
+                                console.error("Auth service not available");
+                                alert('Authentication service unavailable');
+                            }
+                        } catch (error) {
+                            console.error('Error signing out:', error);
+                            alert('Failed to sign out. Please try again.');
+                        }
+                    });
+                }
             }
         });
+        
+        // Run setup immediately
+        setupProfileDropdown();
+        
+        // Also setup on resize to handle orientation changes
+        window.addEventListener('resize', function() {
+            // Debounce resize event
+            clearTimeout(window.resizeTimer);
+            window.resizeTimer = setTimeout(function() {
+                setupProfileDropdown();
+            }, 250);
+        });
+        
+        // Ensure dark mode is applied on page load
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        if (isDarkMode) {
+            // Apply dark mode button styles
+            if (window.applyDarkModeButtonStyles) {
+                window.applyDarkModeButtonStyles();
+            }
+            // Apply header and toolbar dark styles on initial load
+            const header = document.querySelector('header');
+            const toolbar = document.querySelector('.editor-toolbar');
+            const editorContent = document.querySelector('#editorContent');
+            if (header) header.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+            if (toolbar) toolbar.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+            if (editorContent) editorContent.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+        }
+        
+        // Run setup again after a delay to ensure all elements are loaded
+        setTimeout(setupProfileDropdown, 1000);
     </script>
     
     <style>
