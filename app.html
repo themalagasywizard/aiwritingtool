@@ -784,32 +784,32 @@
                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
 
-            /* Adjust main content area to account for new spacing */
-            main {
-                margin-top: 112px; /* Increased from 104px */
-                height: calc(100vh - 112px);
-                overflow-y: auto;
-                width: 100%;
-            }
+                          /* Adjust main content area to account for new spacing */
+              main {
+                 margin-top: 112px; /* Increased from 104px */
+                  height: calc(100vh - 112px);
+                  overflow-y: auto;
+                  width: 100%;
+              }
 
-            /* Update sidebar top position to match new toolbar position */
-            .sidebar {
-                top: 112px; /* Increased from 104px */
-            }
+              /* Update sidebar top position to match new toolbar position */
+              .sidebar {
+                 top: 112px; /* Increased from 104px */
+              }
 
-            /* Mobile sidebar */
-            .sidebar {
-                position: fixed;
-                left: -250px;
-                top: 112px; /* Match header + toolbar height */
-                bottom: 0;
-                width: 250px;
-                background: white;
-                z-index: 48;
-                transition: transform 0.3s ease;
-                display: block !important;
-                box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-            }
+                          /* Mobile sidebar */
+              .sidebar {
+                  position: fixed;
+                  left: -250px;
+                  top: 112px; /* Match header + toolbar height */
+                  bottom: 0;
+                  width: 250px;
+                  background: white;
+                  z-index: 48;
+                  transition: transform 0.3s ease;
+                  display: block !important;
+                  box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+              }
 
             .sidebar.active {
                 transform: translateX(250px);
@@ -5303,11 +5303,13 @@
                 
                 // Different styling for mobile
                 if (isMobile) {
-                    dropdown.className = 'hidden fixed bg-white rounded-lg shadow-md-custom p-4 profile-dropdown z-[9999]';
+                    dropdown.className = 'hidden fixed bg-white rounded-lg shadow-lg p-4 profile-dropdown z-[9999]';
                     dropdown.style.left = '10px';
                     dropdown.style.right = '10px';
                     dropdown.style.top = '70px'; // Position below header
                     dropdown.style.width = 'calc(100% - 20px)';
+                    // Add border for better visibility
+                    dropdown.style.border = '2px solid #e5e7eb';
                 } else {
                     dropdown.className = 'hidden fixed right-4 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown z-[9999]';
                     // Position it based on the button
@@ -5317,37 +5319,37 @@
                 }
                 
                 // Set content - larger padding and text for mobile
-                const itemClass = isMobile ? 'p-4 text-base' : 'p-2';
+                const itemClass = isMobile ? 'p-5 text-base font-medium mb-2' : 'p-2';
                 // For mobile, we'll use buttons instead of links and divs for better touch handling
                 if (isMobile) {
                     dropdown.innerHTML = `
-                        <button id="profileMenuBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center w-full text-left" data-action="profile">
-                            <i class="fas fa-user-circle text-primary mr-2"></i>
-                            <span id="userDisplayName">Guest User</span>
+                        <button id="profileMenuBtn" class="${itemClass} hover:bg-gray-100 rounded-lg cursor-pointer flex items-center w-full text-left" type="button">
+                            <i class="fas fa-user-circle text-primary mr-3 text-xl"></i>
+                            <span id="userDisplayName" class="text-base">Guest User</span>
                         </button>
-                        <button id="settingsMenuBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center w-full text-left" data-action="settings">
-                            <i class="fas fa-cog text-secondary mr-2"></i>
-                            <span>Settings</span>
+                        <button id="settingsMenuBtn" class="${itemClass} hover:bg-gray-100 rounded-lg cursor-pointer flex items-center w-full text-left" type="button">
+                            <i class="fas fa-cog text-secondary mr-3 text-xl"></i>
+                            <span class="text-base">Settings</span>
                         </button>
-                        <div id="darkModeToggleContainer" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between w-full text-left">
+                        <div id="darkModeToggleContainer" class="${itemClass} hover:bg-gray-100 rounded-lg cursor-pointer flex items-center justify-between w-full text-left">
                             <div class="flex items-center">
-                                <i class="fas fa-moon text-primary mr-2"></i>
-                                <span>Dark Mode</span>
+                                <i class="fas fa-moon text-primary mr-3 text-xl"></i>
+                                <span class="text-base">Dark Mode</span>
                             </div>
-                            <div class="relative inline-block w-14 h-8 transition duration-200 ease-in-out rounded-full">
-                                <input type="checkbox" id="darkModeToggle" class="absolute w-8 h-8 opacity-0 z-10 cursor-pointer peer" />
+                            <div class="relative inline-block w-16 h-9 transition duration-200 ease-in-out rounded-full">
+                                <input type="checkbox" id="darkModeToggle" class="absolute w-9 h-9 opacity-0 z-10 cursor-pointer peer" />
                                 <span class="
-                                    block w-14 h-8 overflow-hidden rounded-full 
+                                    block w-16 h-9 overflow-hidden rounded-full 
                                     bg-gray-300 cursor-pointer peer-checked:bg-primary
                                     after:content-[''] after:absolute after:z-[2] after:block 
-                                    after:w-6 after:h-6 after:rounded-full after:left-1 after:top-1 
+                                    after:w-7 after:h-7 after:rounded-full after:left-1 after:top-1 
                                     after:bg-white after:transition-all after:duration-300 
-                                    peer-checked:after:translate-x-6"></span>
+                                    peer-checked:after:translate-x-7"></span>
                             </div>
                         </div>
-                        <button id="signOutBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center w-full text-left text-error" data-action="signOut">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            <span>Sign Out</span>
+                        <button id="signOutBtn" class="${itemClass} hover:bg-gray-100 rounded-lg cursor-pointer flex items-center w-full text-left text-error" type="button">
+                            <i class="fas fa-sign-out-alt mr-3 text-xl"></i>
+                            <span class="text-base">Sign Out</span>
                         </button>
                     `;
                 } else {
@@ -5397,9 +5399,10 @@
                     dropdown.style.borderColor = '#374151';
                     
                     // Also style all hover elements for dark mode
-                    const hoverElements = dropdown.querySelectorAll('.hover\\:bg-gray-50');
+                    const hoverElements = dropdown.querySelectorAll('.hover\\:bg-gray-50, .hover\\:bg-gray-100');
                     hoverElements.forEach(el => {
                         el.classList.remove('hover:bg-gray-50');
+                        el.classList.remove('hover:bg-gray-100');
                         el.classList.add('hover:bg-gray-700');
                     });
                 }
@@ -5436,6 +5439,7 @@
                             dropdown.style.left = '10px';
                             dropdown.style.right = '10px';
                             dropdown.style.width = 'calc(100% - 20px)';
+                            dropdown.style.zIndex = '9999';
                         } else {
                             const rect = userProfileBtn.getBoundingClientRect();
                             dropdown.style.top = (rect.bottom + 5) + 'px';
@@ -5453,13 +5457,19 @@
                         
                         // Use both click and touch events for overlay
                         const closeDropdown = function(e) {
-                            dropdown.classList.add('hidden');
-                            dropdown.style.display = 'none';
+                            const dropdown = document.getElementById('profileDropdownContainer');
+                            if (dropdown) {
+                                dropdown.classList.add('hidden');
+                                dropdown.style.display = 'none';
+                            }
                             overlay.remove();
                         };
                         
                         overlay.addEventListener('click', closeDropdown);
-                        overlay.addEventListener('touchend', closeDropdown);
+                        overlay.addEventListener('touchend', function(e) {
+                            e.preventDefault();
+                            closeDropdown(e);
+                        });
                     } else {
                         dropdown.classList.add('hidden');
                         dropdown.style.display = 'none';
@@ -5471,7 +5481,10 @@
                 
                 // Add both mouse and touch events
                 userProfileBtn.addEventListener('click', handleButtonPress);
-                userProfileBtn.addEventListener('touchend', handleButtonPress);
+                userProfileBtn.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    handleButtonPress(e);
+                });
                 
                 // Set up interactive elements in the dropdown with special handling for mobile
                 setTimeout(() => {
@@ -5526,8 +5539,9 @@
                                     dropdown.style.borderColor = '#374151';
                                     
                                     // Style hover elements
-                                    dropdown.querySelectorAll('.hover\\:bg-gray-50').forEach(el => {
+                                    dropdown.querySelectorAll('.hover\\:bg-gray-50, .hover\\:bg-gray-100').forEach(el => {
                                         el.classList.remove('hover:bg-gray-50');
+                                        el.classList.remove('hover:bg-gray-100');
                                         el.classList.add('hover:bg-gray-700');
                                     });
                                 } else {
@@ -5538,7 +5552,11 @@
                                     // Revert hover elements
                                     dropdown.querySelectorAll('.hover\\:bg-gray-700').forEach(el => {
                                         el.classList.remove('hover:bg-gray-700');
-                                        el.classList.add('hover:bg-gray-50');
+                                        if (isMobile) {
+                                            el.classList.add('hover:bg-gray-100');
+                                        } else {
+                                            el.classList.add('hover:bg-gray-50');
+                                        }
                                     });
                                 }
                             }
@@ -5558,6 +5576,8 @@
                                 e.preventDefault();
                                 e.stopPropagation();
                                 
+                                console.log("Settings button clicked");
+                                
                                 // Navigate to settings page
                                 window.location.href = '/profile.html#preferences';
                                 
@@ -5574,9 +5594,10 @@
                             
                             settingsBtn.addEventListener('click', settingsHandler);
                             settingsBtn.addEventListener('touchend', function(e) {
-                                e.preventDefault();
+                                e.preventDefault(); 
+                                e.stopPropagation();
                                 settingsHandler(e);
-                            });
+                            }, { passive: false });
                         }
                         
                         // Set up profile button handler for mobile
@@ -5585,6 +5606,8 @@
                             const profileHandler = function(e) {
                                 e.preventDefault();
                                 e.stopPropagation();
+                                
+                                console.log("Profile button clicked");
                                 
                                 // Navigate to profile page
                                 window.location.href = '/profile.html';
@@ -5603,8 +5626,9 @@
                             profileBtn.addEventListener('click', profileHandler);
                             profileBtn.addEventListener('touchend', function(e) {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 profileHandler(e);
-                            });
+                            }, { passive: false });
                         }
                     }
                     
@@ -5615,6 +5639,8 @@
                         const signOutHandler = async function(e) {
                             e.preventDefault();
                             e.stopPropagation();
+                            
+                            console.log("Sign out button clicked");
                             
                             try {
                                 const auth = window.supabaseServices?.auth;
@@ -5634,10 +5660,34 @@
                         signOutBtn.addEventListener('click', signOutHandler);
                         signOutBtn.addEventListener('touchend', function(e) {
                             e.preventDefault();
+                            e.stopPropagation();
                             signOutHandler(e);
-                        });
+                        }, { passive: false });
                     }
                 }, 100);
+                
+                // Run another setup after a longer delay to ensure all elements are properly initialized
+                setTimeout(() => {
+                    // Reattach event handlers for all buttons to ensure they work
+                    if (isMobile) {
+                        const menuButtons = dropdown.querySelectorAll('button, #darkModeToggleContainer');
+                        menuButtons.forEach(btn => {
+                            // Apply active state styling on touch start
+                            btn.addEventListener('touchstart', function() {
+                                this.style.backgroundColor = document.documentElement.classList.contains('dark') 
+                                    ? '#374151' 
+                                    : '#f3f4f6';
+                            });
+                            
+                            // Remove active state styling on touch end
+                            btn.addEventListener('touchend', function() {
+                                setTimeout(() => {
+                                    this.style.backgroundColor = '';
+                                }, 150);
+                            });
+                        });
+                    }
+                }, 500);
             };
             
             // Run setup immediately
