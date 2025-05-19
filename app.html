@@ -5492,11 +5492,17 @@
             }));
         };
         
+                // Global variable for dropdown
+        let profileDropdown;
+
         // For desktop dropdown
         } else {
                     // Create a dropdown container for desktop
-                    const dropdown = document.createElement('div');
-                    dropdown.id = 'profileDropdownContainer';
+                    if (profileDropdown) {
+                        profileDropdown.remove();
+                    }
+                    profileDropdown = document.createElement('div');
+                    profileDropdown.id = 'profileDropdownContainer';
                     
                     // Desktop dropdown with original implementation
                     dropdown.innerHTML = `
@@ -5536,12 +5542,12 @@
                 }
                 
                 // Add to document body (not as child of any other element)
-                document.body.appendChild(dropdown);
+                document.body.appendChild(profileDropdown);
                 
                 // Apply dark mode styling if needed
                 const isDarkMode = document.documentElement.classList.contains('dark');
                 if (isDarkMode) {
-                    applyDarkModeToDropdown(dropdown, isMobile);
+                    applyDarkModeToDropdown(profileDropdown, isMobile);
                 }
                 
                 // Update the toggle UI to match current state
@@ -5556,7 +5562,7 @@
                 userProfileBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    toggleDropdown(dropdown, isMobile);
+                    toggleDropdown(profileDropdown, isMobile);
                 });
                 
                 // For desktop touch events - mobile handles this separately
@@ -5565,7 +5571,7 @@
                     console.log("Mobile handlers already set up");
                 } else {
                     // Setup desktop-specific event handlers
-                    setupDesktopHandlers(dropdown);
+                    setupDesktopHandlers(profileDropdown);
                 }
             };
             
