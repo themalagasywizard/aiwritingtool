@@ -5247,53 +5247,109 @@
             // Also check periodically to override any scripts that might change styles
             setInterval(forceDarkModeButtonStyling, 1000);
             
-            // User Profile Button click handler
-             const userProfileBtn = document.getElementById('userProfileBtn');
-             const profileDropdownContainer = document.getElementById('profileDropdownContainer');
-             
-             if (userProfileBtn && profileDropdownContainer) {
-                 userProfileBtn.addEventListener('click', function(e) {
-                     e.preventDefault();
-                     
-                     // Toggle dropdown visibility
-                     const isHidden = profileDropdownContainer.classList.contains('hidden');
-                     
-                     if (isHidden) {
-                         // Show dropdown
-                         profileDropdownContainer.classList.remove('hidden');
-                         
-                         // Position dropdown properly for mobile
-                         if (window.innerWidth <= 768) {
-                             profileDropdownContainer.style.position = 'fixed';
-                             profileDropdownContainer.style.right = '10px';
-                             profileDropdownContainer.style.top = '60px';
-                             profileDropdownContainer.style.zIndex = '100';
-                             
-                             // Add a temporary overlay to handle clicks outside
-                             const overlay = document.createElement('div');
-                             overlay.id = 'profileOverlay';
-                             overlay.className = 'fixed inset-0 z-40';
-                             overlay.style.background = 'transparent';
-                             document.body.appendChild(overlay);
-                             
-                             // Close dropdown when clicking outside
-                             overlay.addEventListener('click', function() {
-                                 profileDropdownContainer.classList.add('hidden');
-                                 document.body.removeChild(overlay);
-                             });
-                         }
-                     } else {
-                         // Hide dropdown
-                         profileDropdownContainer.classList.add('hidden');
-                         
-                         // Remove overlay if it exists
-                         const overlay = document.getElementById('profileOverlay');
-                         if (overlay) {
-                             document.body.removeChild(overlay);
-                         }
-                     }
-                 });
-             }
+            // User Profile Button click handler - FIXED VERSION
+            const userProfileBtn = document.getElementById('userProfileBtn');
+            let profileDropdownContainer = document.getElementById('profileDropdownContainer');
+            
+            // Ensure the dropdown container exists directly in the DOM
+            if (!profileDropdownContainer) {
+                // Create the dropdown container if it doesn't exist
+                profileDropdownContainer = document.createElement('div');
+                profileDropdownContainer.id = 'profileDropdownContainer';
+                profileDropdownContainer.className = 'hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown z-50';
+                profileDropdownContainer.innerHTML = `
+                    <a href="/profile.html" class="block">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-user-circle text-primary mr-2"></i>
+                            <span id="userDisplayName">Guest User</span>
+                        </div>
+                    </a>
+                    <a href="/profile.html#preferences" class="block">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-cog text-secondary mr-2"></i>
+                            <span>Settings</span>
+                        </div>
+                    </a>
+                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        <span>Sign Out</span>
+                    </div>
+                `;
+                
+                // Find the parent container for the profile button
+                const parentContainer = userProfileBtn.parentElement;
+                if (parentContainer) {
+                    parentContainer.appendChild(profileDropdownContainer);
+                } else {
+                    // If no parent, append to body
+                    document.body.appendChild(profileDropdownContainer);
+                }
+            }
+            
+            if (userProfileBtn && profileDropdownContainer) {
+                // Remove any existing click event listeners
+                const newButton = userProfileBtn.cloneNode(true);
+                userProfileBtn.parentNode.replaceChild(newButton, userProfileBtn);
+                
+                // Add fresh click event listener
+                newButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log("Profile button clicked");
+                    
+                    // Toggle dropdown visibility
+                    const isHidden = profileDropdownContainer.classList.contains('hidden');
+                    
+                    if (isHidden) {
+                        // Show dropdown
+                        profileDropdownContainer.classList.remove('hidden');
+                        
+                        // Position dropdown properly for mobile
+                        if (window.innerWidth <= 768) {
+                            profileDropdownContainer.style.position = 'fixed';
+                            profileDropdownContainer.style.right = '10px';
+                            profileDropdownContainer.style.top = '60px';
+                            profileDropdownContainer.style.zIndex = '100';
+                            
+                            // Add a temporary overlay to handle clicks outside
+                            const overlay = document.createElement('div');
+                            overlay.id = 'profileOverlay';
+                            overlay.className = 'fixed inset-0 z-40';
+                            overlay.style.background = 'transparent';
+                            document.body.appendChild(overlay);
+                            
+                            // Close dropdown when clicking outside
+                            overlay.addEventListener('click', function() {
+                                profileDropdownContainer.classList.add('hidden');
+                                document.body.removeChild(overlay);
+                            });
+                        }
+                    } else {
+                        // Hide dropdown
+                        profileDropdownContainer.classList.add('hidden');
+                        
+                        // Remove overlay if it exists
+                        const overlay = document.getElementById('profileOverlay');
+                        if (overlay) {
+                            document.body.removeChild(overlay);
+                        }
+                    }
+                });
+                
+                // Set up click outside to close
+                document.addEventListener('click', function(e) {
+                    if (!newButton.contains(e.target) && !profileDropdownContainer.contains(e.target)) {
+                        profileDropdownContainer.classList.add('hidden');
+                        
+                        // Remove overlay if it exists
+                        const overlay = document.getElementById('profileOverlay');
+                        if (overlay) {
+                            document.body.removeChild(overlay);
+                        }
+                    }
+                });
+            }
             // Check if dark mode was enabled previously and ensure the UI reflects it
             const isDarkMode = document.documentElement.classList.contains('dark');
             if (isDarkMode) {
