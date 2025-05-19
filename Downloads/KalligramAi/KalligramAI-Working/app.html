@@ -729,6 +729,16 @@
             if (toggleIcon) {
                 toggleIcon.className = appState.darkMode ? 'fas fa-sun' : 'fas fa-moon';
             }
+            
+            // Sync with dropdown toggle
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const darkModeToggleDot = document.getElementById('darkModeToggleDot');
+            if (darkModeToggle) {
+                darkModeToggle.checked = appState.darkMode;
+                if (darkModeToggleDot) {
+                    darkModeToggleDot.style.transform = appState.darkMode ? 'translateX(20px)' : 'translateX(0)';
+                }
+            }
         };
         
         // Expose appState to window object for access from other scripts
@@ -1782,6 +1792,14 @@
             const userAvatar = document.querySelector('#userAvatar');
             const userDisplayName = document.querySelector('#userDisplayName');
             const signOutBtn = document.querySelector('#signOutBtn');
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const darkModeToggleDot = document.getElementById('darkModeToggleDot');
+            
+            // Initialize dark mode toggle state
+            if (darkModeToggle && darkModeToggleDot && appState.darkMode) {
+                darkModeToggle.checked = true;
+                darkModeToggleDot.style.transform = 'translateX(20px)';
+            }
             
             // Update user info if authenticated
             auth.getUser().then(async ({ data: { user } }) => {
@@ -1852,11 +1870,6 @@
         
         <!-- Right Section -->
         <div class="flex items-center space-x-2">
-            <!-- Dark Mode Toggle -->
-            <button class="theme-toggle" onclick="window.toggleDarkMode()">
-                <i id="themeToggleIcon" class="fas fa-moon"></i>
-            </button>
-            
             <button class="btn btn-primary" id="saveBtn">
                 <i class="fas fa-save"></i>
                 <span class="ml-1">Save</span>
@@ -1869,6 +1882,49 @@
                 <i class="fas fa-plus"></i>
                 <span class="ml-1">New</span>
             </button>
+            
+            <!-- Dark Mode Toggle -->
+            <button class="theme-toggle" onclick="window.toggleDarkMode()">
+                <i id="themeToggleIcon" class="fas fa-moon"></i>
+            </button>
+            
+            <!-- User Avatar with Dropdown -->
+            <div class="relative group">
+                <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
+                     alt="User Avatar" 
+                     class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
+                <div class="absolute right-0 mt-2 w-56 rounded-lg shadow-md p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10" style="background-color: var(--background); color: var(--text-primary);">
+                    <a href="/profile.html" class="block">
+                        <div class="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-user-circle text-primary mr-2"></i>
+                            <span id="userDisplayName">Guest User</span>
+                        </div>
+                    </a>
+                    <div class="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-moon text-secondary mr-2"></i>
+                            <span>Dark Mode</span>
+                        </div>
+                        <!-- Toggle Switch -->
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="darkModeToggle" class="sr-only" onchange="window.toggleDarkMode()">
+                            <div class="relative w-10 h-5 bg-gray-200 rounded-full dark:bg-gray-700">
+                                <div class="dot absolute left-0.5 top-0.5 bg-white dark:bg-primary w-4 h-4 rounded-full transition-transform duration-300 ease-in-out" id="darkModeToggleDot"></div>
+                            </div>
+                        </label>
+                    </div>
+                    <a href="/profile.html#preferences" class="block">
+                        <div class="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-cog text-secondary mr-2"></i>
+                            <span>Settings</span>
+                        </div>
+                    </a>
+                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded cursor-pointer flex items-center text-error">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        <span>Sign Out</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
