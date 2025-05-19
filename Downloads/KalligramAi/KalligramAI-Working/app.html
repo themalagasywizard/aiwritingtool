@@ -730,10 +730,16 @@
             // Save preference to localStorage
             localStorage.setItem('darkMode', appState.darkMode);
             
-            // Update toggle icon
+            // Update toggle icon and button text
             const toggleIcon = document.getElementById('themeToggleIcon');
+            const darkModeBtn = document.getElementById('darkModeBtn');
             if (toggleIcon) {
-                toggleIcon.className = appState.darkMode ? 'fas fa-sun' : 'fas fa-moon';
+                toggleIcon.className = appState.darkMode ? 'fas fa-sun mr-1' : 'fas fa-moon mr-1';
+            }
+            if (darkModeBtn) {
+                darkModeBtn.querySelector('span').textContent = appState.darkMode ? 'Light Mode' : 'Dark Mode';
+                darkModeBtn.classList.toggle('btn-warning', appState.darkMode);
+                darkModeBtn.classList.toggle('btn-secondary', !appState.darkMode);
             }
             
             // Sync with dropdown toggle
@@ -1807,6 +1813,18 @@
                 darkModeToggleDot.style.transform = 'translateX(20px)';
             }
             
+            // Initialize dark mode button state in header
+            const darkModeBtn = document.getElementById('darkModeBtn');
+            if (darkModeBtn && appState.darkMode) {
+                const toggleIcon = document.getElementById('themeToggleIcon');
+                if (toggleIcon) {
+                    toggleIcon.className = 'fas fa-sun mr-1';
+                }
+                darkModeBtn.querySelector('span').textContent = 'Light Mode';
+                darkModeBtn.classList.add('btn-warning');
+                darkModeBtn.classList.remove('btn-secondary');
+            }
+            
             // Update user info if authenticated
             auth.getUser().then(async ({ data: { user } }) => {
                 if (user && userAvatar) {
@@ -1889,10 +1907,10 @@
                 <span class="ml-1">New</span>
             </button>
             
-            <!-- Dark Mode Toggle Button -->
-            <button class="theme-toggle" onclick="window.toggleDarkMode()" title="Toggle Dark Mode">
-                <i id="themeToggleIcon" class="fas fa-moon"></i>
-                <span class="ml-2 text-sm font-medium hidden sm:inline">Dark Mode</span>
+            <!-- Dark Mode Button NEW -->
+            <button class="btn btn-secondary mr-2" id="darkModeBtn" onclick="window.toggleDarkMode()" title="Toggle Dark/Light Mode">
+                <i id="themeToggleIcon" class="fas fa-moon mr-1"></i>
+                <span>Dark Mode</span>
             </button>
             
             <!-- User Avatar with Dropdown -->
