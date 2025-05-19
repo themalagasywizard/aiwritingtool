@@ -2975,27 +2975,70 @@
                 });
             }
             
-            // Update user info if authenticated
+                            // Update user info if authenticated
             auth.getUser().then(async ({ data: { user } }) => {
                 if (user) {
                     try {
                         // Get user profile data
                         const { data: profile, error } = await profiles.get();
                         
-                        // Update display name with first name if available
+                        // Update profile button to show user initials
+                        const userProfileBtn = document.getElementById('userProfileBtn');
+                        const updateProfileDisplay = (name) => {
+                            if (userProfileBtn) {
+                                // Get the icon in the button
+                                const icon = userProfileBtn.querySelector('i');
+                                if (icon) {
+                                    // Replace icon with user initials
+                                    icon.parentNode.removeChild(icon);
+                                    const initialsSpan = document.createElement('span');
+                                    initialsSpan.className = 'w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold';
+                                    
+                                    // Get initials from name or email
+                                    const initials = name.split(' ')
+                                        .filter(part => part.length > 0)
+                                        .map(part => part[0].toUpperCase())
+                                        .slice(0, 2)
+                                        .join('');
+                                    
+                                    initialsSpan.textContent = initials;
+                                    userProfileBtn.insertBefore(initialsSpan, userProfileBtn.firstChild);
+                                }
+                            }
+                        };
+                        
+                        // Update display name and profile button with user name
                         if (userDisplayName) {
                             if (profile && profile.first_name) {
-                                userDisplayName.textContent = profile.first_name;
+                                const fullName = profile.first_name + (profile.last_name ? ' ' + profile.last_name : '');
+                                userDisplayName.textContent = fullName;
+                                updateProfileDisplay(fullName);
                             } else {
                                 // Fallback to email
-                                userDisplayName.textContent = user.email.split('@')[0];
+                                const emailName = user.email.split('@')[0];
+                                userDisplayName.textContent = emailName;
+                                updateProfileDisplay(emailName);
                             }
                         }
                     } catch (error) {
                         console.error('Error loading user profile:', error);
                         // Fallback to email-based display
                         if (userDisplayName) {
-                            userDisplayName.textContent = user.email.split('@')[0];
+                            const emailName = user.email.split('@')[0];
+                            userDisplayName.textContent = emailName;
+                            
+                            // Update profile button with email initial
+                            const userProfileBtn = document.getElementById('userProfileBtn');
+                            if (userProfileBtn) {
+                                const icon = userProfileBtn.querySelector('i');
+                                if (icon) {
+                                    icon.parentNode.removeChild(icon);
+                                    const initialsSpan = document.createElement('span');
+                                    initialsSpan.className = 'w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center text-sm font-semibold';
+                                    initialsSpan.textContent = emailName[0].toUpperCase();
+                                    userProfileBtn.insertBefore(initialsSpan, userProfileBtn.firstChild);
+                                }
+                            }
                         }
                     }
                 }
@@ -5200,14 +5243,19 @@
             // Fix for dark mode button styling
             function forceDarkModeButtonStyling() {
                 if (document.documentElement.classList.contains('dark')) {
-                    const saveBtn = document.getElementById('saveBtn');
-                    if (saveBtn) {
-                        saveBtn.style.cssText = "background-color: #1f2937 !important; background: #1f2937 !important; border-color: #374151 !important; color: white !important;";
-                        const icon = saveBtn.querySelector('i');
+                    // Fix all header buttons in dark mode
+                    const headerButtons = document.querySelectorAll('.header-btn');
+                    headerButtons.forEach(btn => {
+                        btn.style.cssText = "background-color: #1f2937 !important; background: #1f2937 !important; border-color: #374151 !important; color: white !important;";
+                        const icon = btn.querySelector('i');
                         if (icon) {
                             icon.style.cssText = "color: white !important;";
                         }
-                    }
+                        const span = btn.querySelector('span');
+                        if (span) {
+                            span.style.cssText = "color: white !important;";
+                        }
+                    });
                 }
             }
             
@@ -5257,7 +5305,7 @@
                 dropdown.style.right = '10px';
                 
                 // Set content
-                dropdown.innerHTML = `
+                                 dropdown.innerHTML = `
                     <a href="/profile.html" class="block">
                         <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                             <i class="fas fa-user-circle text-primary mr-2"></i>
@@ -5270,6 +5318,22 @@
                             <span>Settings</span>
                         </div>
                     </a>
+                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
+                        <div class="flex items-center">
+                            <i class="fas fa-moon text-primary mr-2"></i>
+                            <span>Dark Mode</span>
+                        </div>
+                        <div class="relative inline-block w-10 h-5 transition duration-200 ease-in-out rounded-full">
+                            <input type="checkbox" id="darkModeToggle" class="absolute w-5 h-5 opacity-0 z-10 cursor-pointer peer" />
+                            <label for="darkModeToggle" class="
+                                block w-10 h-5 overflow-hidden rounded-full 
+                                bg-gray-300 cursor-pointer peer-checked:bg-primary
+                                after:content-[''] after:absolute after:z-[2] after:block 
+                                after:w-4 after:h-4 after:rounded-full after:left-0.5 after:top-0.5 
+                                after:bg-white after:transition-all after:duration-300 
+                                peer-checked:after:translate-x-5"></label>
+                        </div>
+                    </div>
                     <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
                         <i class="fas fa-sign-out-alt mr-2"></i>
                         <span>Sign Out</span>
@@ -5340,26 +5404,47 @@
                     }
                 });
                 
-                // Set up sign out handler
-                setTimeout(() => {
-                    const signOutBtn = document.getElementById('signOutBtn');
-                    if (signOutBtn) {
-                        signOutBtn.addEventListener('click', async function() {
-                            try {
-                                const auth = window.supabaseServices?.auth;
-                                if (auth) {
-                                    await auth.signOut();
-                                    window.location.href = '/auth/auth.html';
-                                } else {
-                                    console.error("Auth service not available");
-                                }
-                            } catch (error) {
-                                console.error('Error signing out:', error);
-                                alert('Failed to sign out. Please try again.');
-                            }
-                        });
-                    }
-                }, 100);
+                                 // Set up dark mode toggle
+                 setTimeout(() => {
+                     const darkModeToggle = document.getElementById('darkModeToggle');
+                     if (darkModeToggle) {
+                         // Set initial state based on current mode
+                         darkModeToggle.checked = document.documentElement.classList.contains('dark');
+                         
+                         // Add toggle event
+                         darkModeToggle.addEventListener('change', function() {
+                             // Toggle dark mode
+                             document.documentElement.classList.toggle('dark');
+                             
+                             // Store preference
+                             localStorage.setItem('darkMode', darkModeToggle.checked ? 'enabled' : 'disabled');
+                             
+                             // Custom event to notify other parts of the app
+                             document.dispatchEvent(new CustomEvent('darkModeChanged', {
+                                 detail: { enabled: darkModeToggle.checked }
+                             }));
+                         });
+                     }
+                     
+                     // Set up sign out handler
+                     const signOutBtn = document.getElementById('signOutBtn');
+                     if (signOutBtn) {
+                         signOutBtn.addEventListener('click', async function() {
+                             try {
+                                 const auth = window.supabaseServices?.auth;
+                                 if (auth) {
+                                     await auth.signOut();
+                                     window.location.href = '/auth/auth.html';
+                                 } else {
+                                     console.error("Auth service not available");
+                                 }
+                             } catch (error) {
+                                 console.error('Error signing out:', error);
+                                 alert('Failed to sign out. Please try again.');
+                             }
+                         });
+                     }
+                 }, 100);
             };
             
             // Run setup immediately
