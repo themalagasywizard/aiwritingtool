@@ -5494,6 +5494,10 @@
         
         // For desktop dropdown
         } else {
+                    // Create a dropdown container for desktop
+                    const dropdown = document.createElement('div');
+                    dropdown.id = 'profileDropdownContainer';
+                    
                     // Desktop dropdown with original implementation
                     dropdown.innerHTML = `
                         <a href="/profile.html" class="block">
@@ -5548,17 +5552,17 @@
                 userProfileBtn.parentNode.replaceChild(newButton, userProfileBtn);
                 userProfileBtn = newButton;
                 
-                // Add click handlers for profile button - simplified
+                // Add click handlers for profile button for desktop mode
                 userProfileBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     e.stopPropagation();
                     toggleDropdown(dropdown, isMobile);
                 });
                 
-                // For mobile touch events
+                // For desktop touch events - mobile handles this separately
                 if (isMobile) {
-                    // Setup mobile-specific event handlers
-                    setupMobileHandlers(dropdown);
+                    // We don't need this for mobile as we handle it separately
+                    console.log("Mobile handlers already set up");
                 } else {
                     // Setup desktop-specific event handlers
                     setupDesktopHandlers(dropdown);
@@ -5661,10 +5665,11 @@
                 }
             }
             
-            // Setup mobile event handlers
-            function setupMobileHandlers(dropdown) {
-                console.log('Setting up mobile handlers');
+            // Setup mobile event handlers - kept for backward compatibility
+            function setupMobileHandlers(dropdownEl) {
+                console.log('Setting up mobile handlers - using separate implementation now');
                 
+                // We're now using a different implementation for mobile, but keeping this for desktop compatibility
                 // Dark mode toggle button handler
                 const darkModeToggleBtn = document.getElementById('darkModeToggleBtn');
                 if (darkModeToggleBtn) {
