@@ -5316,9 +5316,15 @@
         profileDropdown.className = 'hidden absolute right-0 top-16 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2 mt-1';
         profileDropdown.style.maxHeight = '80vh';
         profileDropdown.style.overflowY = 'auto';
+        profileDropdown.style.right = '4px';
     } else {
         // Desktop styling - positioned under the profile button
         profileDropdown.className = 'hidden absolute right-4 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2';
+        
+        // Position below profile button
+        const rect = userProfileBtn.getBoundingClientRect();
+        profileDropdown.style.top = (rect.bottom + window.scrollY) + 'px';
+        profileDropdown.style.right = '4px';
     }
     
     // Use the same dropdown content for both mobile and desktop as requested
@@ -5616,6 +5622,14 @@
                             });
                         }
                         
+                        // Hide dropdown after selection
+                        dropdown.classList.add('hidden');
+                        dropdown.style.display = 'none';
+                        
+                        // Remove overlay
+                        const overlay = document.getElementById('profileOverlay');
+                        if (overlay) overlay.remove();
+                        
                         // Notify other components
                         document.dispatchEvent(new CustomEvent('darkModeChanged', {
                             detail: { enabled: darkModeToggle.checked }
@@ -5626,12 +5640,23 @@
                 // Sign out button
                 const signOutBtn = document.getElementById('signOutBtn');
                 if (signOutBtn) {
-                    signOutBtn.addEventListener('click', async function() {
+                    signOutBtn.addEventListener('click', async function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        // Hide dropdown first
+                        dropdown.classList.add('hidden');
+                        dropdown.style.display = 'none';
+                        
+                        // Remove overlay
+                        const overlay = document.getElementById('profileOverlay');
+                        if (overlay) overlay.remove();
+                        
                         try {
                             const auth = window.supabaseServices?.auth;
                             if (auth) {
                                 await auth.signOut();
-                                window.location.href = '/auth/auth.html';
+                                window.location.href = '/';
                             } else {
                                 console.error("Auth service not available");
                                 alert('Authentication service unavailable');
@@ -5642,6 +5667,20 @@
                         }
                     });
                 }
+                
+                // Ensure profile and settings links work on mobile too
+                const profileLinks = dropdown.querySelectorAll('a');
+                profileLinks.forEach(link => {
+                    link.addEventListener('click', function() {
+                        // Hide dropdown after clicking a link
+                        dropdown.classList.add('hidden');
+                        dropdown.style.display = 'none';
+                        
+                        // Remove overlay
+                        const overlay = document.getElementById('profileOverlay');
+                        if (overlay) overlay.remove();
+                    });
+                });
             }
         });
     </script>
