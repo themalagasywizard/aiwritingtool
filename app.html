@@ -1594,12 +1594,19 @@
             color: white !important;
         }
 
-        .dark .header-btn i {
+        .dark .header-btn i,
+        .dark .header-btn span {
             color: white !important;
         }
 
         .dark .header-btn:hover {
             background-color: #374151 !important;
+        }
+        
+        /* Save button specific styling */
+        .dark #saveBtn {
+            background-color: #4B5EAA !important;
+            border-color: #4B5EAA !important;
         }
 
         /* Mobile Specific Fixes */
@@ -2888,13 +2895,29 @@
         
         // Initialize with a default user avatar and handle sign out
         document.addEventListener('DOMContentLoaded', () => {
-            const userAvatar = document.querySelector('#userAvatar');
+            const userProfileBtn = document.querySelector('#userProfileBtn');
+            const profileDropdown = document.querySelector('#profileDropdownContainer');
             const userDisplayName = document.querySelector('#userDisplayName');
             const signOutBtn = document.querySelector('#signOutBtn');
             
+            // Toggle profile dropdown when clicking the profile button
+            if (userProfileBtn && profileDropdown) {
+                userProfileBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    profileDropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!userProfileBtn.contains(e.target) && !profileDropdown.contains(e.target)) {
+                        profileDropdown.classList.add('hidden');
+                    }
+                });
+            }
+            
             // Update user info if authenticated
             auth.getUser().then(async ({ data: { user } }) => {
-                if (user && userAvatar) {
+                if (user) {
                     try {
                         // Get user profile data
                         const { data: profile, error } = await profiles.get();
@@ -2908,22 +2931,12 @@
                                 userDisplayName.textContent = user.email.split('@')[0];
                             }
                         }
-                        
-                        // Update avatar with first letter of name or email
-                        const nameInitial = profile?.first_name ? profile.first_name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
-                        userAvatar.src = `https://ui-avatars.com/api/?name=${nameInitial}&background=4B5EAA&color=fff`;
-                        
-                        // If we have a profile picture URL, use it
-                        if (profile?.profile_picture_url) {
-                            userAvatar.src = profile.profile_picture_url;
-                        }
                     } catch (error) {
                         console.error('Error loading user profile:', error);
                         // Fallback to email-based display
                         if (userDisplayName) {
                             userDisplayName.textContent = user.email.split('@')[0];
                         }
-                        userAvatar.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
                     }
                 }
             }).catch(error => {
@@ -2970,10 +2983,31 @@
                 <i class="fas fa-plus"></i>
                 <span class="ml-1 hidden md:inline">New Project</span>
             </button>
-            <button id="userProfileBtn" class="header-btn">
-                <span class="text-lg font-bold">R</span>
-                <span class="ml-1 hidden md:inline">Profile</span>
-            </button>
+            <div class="relative">
+                <button id="userProfileBtn" class="header-btn">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="ml-1 hidden md:inline">Profile</span>
+                </button>
+                <div id="profileDropdownContainer" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown z-50">
+                    <a href="/profile.html" class="block">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-user-circle text-primary mr-2"></i>
+                            <span id="userDisplayName">Guest User</span>
+                        </div>
+                    </a>
+                    <a href="/profile.html#preferences" class="block">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-cog text-secondary mr-2"></i>
+                            <span>Settings</span>
+                        </div>
+                    </a>
+                    <!-- Dark mode toggle switch will be inserted here by initializeDarkModeSwitch() -->
+                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        <span>Sign Out</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </header>
 
