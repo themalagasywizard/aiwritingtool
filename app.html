@@ -5229,6 +5229,9 @@
             }
         }
         
+        // Global variable for dropdown
+        let profileDropdown;
+        
         // This DOMContentLoaded listener now handles sidebarOverlay, userProfileBtn logic, and dark mode button fixes.
         // The mobileMenuBtn listener has been moved to setupEventListeners.
         document.addEventListener('DOMContentLoaded', function() {
@@ -5492,9 +5495,6 @@
             }));
         };
         
-                // Global variable for dropdown
-        let profileDropdown;
-
         // For desktop dropdown
         } else {
                     // Create a dropdown container for desktop
@@ -5505,7 +5505,7 @@
                     profileDropdown.id = 'profileDropdownContainer';
                     
                     // Desktop dropdown with original implementation
-                    dropdown.innerHTML = `
+                    profileDropdown.innerHTML = `
                         <a href="/profile.html" class="block">
                             <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
                                 <i class="fas fa-user-circle text-primary mr-2"></i>
