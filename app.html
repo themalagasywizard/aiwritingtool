@@ -5361,26 +5361,94 @@
             </div>
         `;
         
+        // Add the mobile menu to the document body
+        document.body.appendChild(mobileMenu);
+
+        // Create a function to toggle the mobile menu visibility with animation
+        function toggleMobileMenu(show) {
+            // If show parameter is not provided, toggle based on current state
+            if (show === undefined) {
+                show = mobileMenu.classList.contains('hidden');
+            }
+            
+            if (show) {
+                // Show menu with animation
+                mobileMenu.classList.remove('hidden');
+                overlay.classList.remove('hidden');
+                
+                // Start animation after a small delay for the browser to process
+                setTimeout(() => {
+                    mobileMenu.style.transform = 'translateY(0)';
+                    overlay.style.opacity = '1';
+                    overlay.style.visibility = 'visible';
+                }, 10);
+            } else {
+                // Hide menu with animation
+                mobileMenu.style.transform = 'translateY(100%)';
+                overlay.style.opacity = '0';
+                overlay.style.visibility = 'hidden';
+                
+                // Remove from DOM after animation completes
+                setTimeout(() => {
+                    mobileMenu.classList.add('hidden');
+                    overlay.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // Add click listener to the profile button to show the mobile menu
+        userProfileBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Profile button clicked on mobile');
+            toggleMobileMenu(true);
+        });
+        
+        // Add click listener to the overlay to close the mobile menu
+        overlay.addEventListener('click', function() {
+            toggleMobileMenu(false);
+        });
+        
+        // Add click listener to the mobile sign out button
+        const mobileSignOutBtn = document.getElementById('mobileSignOutBtn');
+        if (mobileSignOutBtn) {
+            mobileSignOutBtn.addEventListener('click', async function(e) {
+                e.preventDefault();
+                console.log('Mobile sign out button clicked');
+                
+                // Close the menu with animation
+                toggleMobileMenu(false);
+                
+                // Wait for animation to complete before signing out
+                setTimeout(async () => {
+                    try {
+                        const auth = window.supabaseServices?.auth;
+                        if (auth) {
+                            await auth.signOut();
+                            window.location.href = '/';
+                        } else {
+                            console.error("Auth service not available");
+                            alert('Authentication service unavailable');
+                        }
+                    } catch (error) {
+                        console.error('Error signing out:', error);
+                        alert('Failed to sign out. Please try again.');
+                    }
+                }, 300);
+            });
+        }
+        
         // Add function to handle navigation with improved touch support
         window.closeMenuAndNavigate = function(url, event) {
             event.preventDefault();
             event.stopPropagation();
             console.log("Navigating to:", url);
             
-            // Close menu first
-            const menu = document.getElementById('profileDropdownContainer');
-            const overlay = document.getElementById('mobileMenuOverlay');
+            // Close menu first using the toggleMobileMenu function
+            toggleMobileMenu(false);
             
-            if (menu) {
-                menu.style.transform = 'translateY(100%)';
-            }
-            
-            // Hide overlay and menu after animation
+            // Navigate after the animation completes
             setTimeout(() => {
-                if (menu) menu.classList.add('hidden');
-                if (overlay) overlay.classList.add('hidden');
-                
-                // Then navigate
                 window.location.href = url;
             }, 300);
         };
@@ -5398,17 +5466,30 @@
             
             // Update toggle switch UI
             const darkModeSwitchInner = document.getElementById('darkModeSwitchInner');
+            const darkModeSwitchOuter = document.getElementById('darkModeSwitchOuter');
+            
             if (darkModeSwitchInner) {
                 if (!isDarkMode) {
                     // Switched to dark mode
                     darkModeSwitchInner.style.transform = 'translateX(1.5rem)';
                     darkModeSwitchInner.style.backgroundColor = '#4B5EAA';
+                    if (darkModeSwitchOuter) {
+                        darkModeSwitchOuter.style.backgroundColor = '#6B7280';
+                    }
                 } else {
                     // Switched to light mode
                     darkModeSwitchInner.style.transform = 'translateX(0)';
                     darkModeSwitchInner.style.backgroundColor = 'white';
+                    if (darkModeSwitchOuter) {
+                        darkModeSwitchOuter.style.backgroundColor = '#D1D5DB';
+                    }
                 }
             }
+            
+            // Dispatch event for other components that might need to respond to dark mode changes
+            document.dispatchEvent(new CustomEvent('darkModeChanged', {
+                detail: { enabled: !isDarkMode }
+            }));
         };
         
         // For desktop dropdown
