@@ -5074,29 +5074,32 @@
                 justify-content: space-between;
             }
             
-            /* Mobile icon buttons - properly sized */
+            /* Mobile icon buttons - match toolbar buttons */
             .mobile-icon-btn {
                 min-width: unset;
-                width: 36px;
-                height: 36px;
-                border-radius: 6px;
+                width: 40px;
+                height: 40px;
+                border-radius: 8px;
                 padding: 0;
                 margin: 0 2px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background-color: white;
-                border: 1px solid #e5e7eb;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                background-color: #f9f9f9;
+                border: 1px solid #e0e0e0;
             }
             
-            /* Light mode button icon styling */
+            /* Light mode button icon styling - match toolbar buttons */
             button#mobileMenuBtn i,
             button#saveBtn i,
             button#loadProjectBtn i,
-            button#newProjectBtn i {
-                color: #4B5EAA;
-                font-size: 1rem;
+            button#newProjectBtn i,
+            button#userProfileBtn i {
+                color: #333;
+                font-size: 1.25rem;
+                display: inline-block;
+                visibility: visible;
+                opacity: 1;
             }
             
             /* Dark mode specific styles */
@@ -5106,67 +5109,63 @@
                 border-color: #333;
             }
             
-            /* Mobile button backgrounds in dark mode */
+            /* Mobile button backgrounds in dark mode - match toolbar buttons */
             .dark button#mobileMenuBtn,
             .dark button#saveBtn,
             .dark button#loadProjectBtn,
-            .dark button#newProjectBtn {
-                background-color: rgba(255, 255, 255, 0.15) !important;
-                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            .dark button#newProjectBtn,
+            .dark button#userProfileBtn {
+                background-color: #1f1f1f !important;
+                border: 1px solid #333 !important;
             }
             
             /* Mobile button hover effect */
             .dark button#mobileMenuBtn:hover,
             .dark button#saveBtn:hover,
             .dark button#loadProjectBtn:hover,
-            .dark button#newProjectBtn:hover {
-                background-color: rgba(255, 255, 255, 0.25) !important;
+            .dark button#newProjectBtn:hover,
+            .dark button#userProfileBtn:hover {
+                background-color: #2a2a2a !important;
             }
             
-            /* When in dark mode, ensure icon visibility */
+            /* When in dark mode, ensure icon visibility - match toolbar */
             .dark .mobile-icon-btn i,
             .dark header i,
             .dark .fa-bars,
             .dark .fa-feather-alt,
             .dark .fa-folder-open,
             .dark .fa-plus,
+            .dark .fa-save,
             .dark button.mobile-icon-btn i {
                 color: white !important;
                 display: inline-block !important;
                 visibility: visible !important;
                 opacity: 1 !important;
-                font-size: 1rem !important;
+                font-size: 1.25rem !important; /* Slightly larger for better visibility */
             }
             
-            /* Preserve the save button's specific styling in dark mode */
-            .dark #saveBtn {
-                background-color: rgba(255, 255, 255, 0.25) !important;
-            }
+            /* All buttons in header should have consistent styling */
             
-            .dark #saveBtn i {
-                color: white !important;
-            }
-            
-            /* Make sure app logo icon container is properly styled */
-            .dark .bg-primary.mobile-icon-btn,
-            .dark .mobile-icon-btn.bg-primary {
+            /* Make sure app logo icon container is properly styled - always keep blue bg */
+            .logo-container, .mobile-icon-btn.logo-container {
                 background-color: #4B5EAA !important;
                 border-color: #5A6EC8 !important;
             }
             
             /* Make sure the app logo icon is visible */
-            .dark .bg-primary i.fa-feather-alt {
+            .logo-container i.fa-feather-alt {
                 color: white !important;
                 display: inline-block !important;
+                font-size: 1.25rem !important;
             }
             
             /* Profile button specific styling */
-            .dark #userProfileBtn {
+            #userProfileBtn {
                 background-color: #4B5EAA !important;
                 border-color: #5A6EC8 !important;
             }
             
-            .dark #userProfileBtn span {
+            #userProfileBtn span {
                 color: white !important;
             }
             
