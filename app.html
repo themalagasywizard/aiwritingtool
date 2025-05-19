@@ -5277,7 +5277,7 @@
             setInterval(forceDarkModeButtonStyling, 1000);
             
             // User Profile Button click handler - MOBILE-FIRST APPROACH
-            const setupProfileDropdown = function() {
+            window.setupProfileDropdown = function() {
                 console.log("Setting up profile dropdown with mobile-first approach");
                 
                 // Get or create new profile button (with forced ID)
@@ -5684,37 +5684,448 @@
                 }
             }
         });
-        
-        // Run setup immediately
-        setupProfileDropdown();
-        
-        // Also setup on resize to handle orientation changes
-        window.addEventListener('resize', function() {
-            // Debounce resize event
-            clearTimeout(window.resizeTimer);
-            window.resizeTimer = setTimeout(function() {
-                setupProfileDropdown();
-            }, 250);
-        });
-        
-        // Ensure dark mode is applied on page load
-        const isDarkMode = document.documentElement.classList.contains('dark');
-        if (isDarkMode) {
-            // Apply dark mode button styles
-            if (window.applyDarkModeButtonStyles) {
-                window.applyDarkModeButtonStyles();
+    </script>
+    
+    <script>
+        // Define the profile dropdown functionality
+        // User Profile Button click handler - MOBILE-FIRST APPROACH
+        function setupProfileDropdown() {
+            console.log("Setting up profile dropdown with mobile-first approach");
+            
+            // Get or create new profile button (with forced ID)
+            let userProfileBtn = document.getElementById('userProfileBtn');
+            
+            if (!userProfileBtn) {
+                console.log("Profile button not found, cannot setup dropdown");
+                return;
             }
-            // Apply header and toolbar dark styles on initial load
-            const header = document.querySelector('header');
-            const toolbar = document.querySelector('.editor-toolbar');
-            const editorContent = document.querySelector('#editorContent');
-            if (header) header.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-            if (toolbar) toolbar.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
-            if (editorContent) editorContent.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+            
+            // Force replace any existing dropdown
+            let existingDropdown = document.getElementById('profileDropdownContainer');
+            if (existingDropdown) {
+                existingDropdown.remove();
+            }
+            
+            // Check if mobile view
+            const isMobile = window.innerWidth <= 768;
+            console.log("Is mobile view:", isMobile);
+            
+            // Create new dropdown from scratch - with a new approach
+            const dropdown = document.createElement('div');
+            dropdown.id = 'profileDropdownContainer';
+            
+            // Use different styling for mobile vs desktop
+            if (isMobile) {
+                // Mobile-specific styling - make it full-width and obvious
+                dropdown.className = 'hidden fixed bg-white rounded-lg shadow-lg profile-dropdown';
+                dropdown.style.left = '0';
+                dropdown.style.right = '0';
+                dropdown.style.top = '60px';
+                dropdown.style.padding = '12px';
+                dropdown.style.zIndex = '10000';
+                dropdown.style.border = '2px solid #4B5EAA';
+                dropdown.style.margin = '10px';
+                dropdown.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+            } else {
+                // Desktop styling
+                dropdown.className = 'hidden fixed right-4 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown';
+                dropdown.style.zIndex = '9999';
+                dropdown.style.top = (userProfileBtn.getBoundingClientRect().bottom + 5) + 'px';
+                dropdown.style.right = '10px';
+            }
+            
+            // Create the content with simpler implementation for mobile
+            if (isMobile) {
+                dropdown.innerHTML = `
+                    <div class="flex flex-col space-y-3">
+                        <!-- Profile Link - Using <a> for direct navigation -->
+                        <a href="/profile.html" class="block py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-circle text-primary mr-3 text-xl"></i>
+                                <span class="text-base font-medium">Profile</span>
+                            </div>
+                        </a>
+                        
+                        <!-- Settings Link - Using <a> for direct navigation -->
+                        <a href="/profile.html#preferences" class="block py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-cog text-secondary mr-3 text-xl"></i>
+                                <span class="text-base font-medium">Settings</span>
+                            </div>
+                        </a>
+                        
+                        <!-- Dark Mode Toggle - Using real button for better touch handling -->
+                        <button id="darkModeToggleBtn" type="button" class="py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg text-left">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-moon text-primary mr-3 text-xl"></i>
+                                    <span class="text-base font-medium">Dark Mode</span>
+                                </div>
+                                <div class="relative inline-block w-16 h-9">
+                                    <div id="darkModeToggleIndicator" class="w-16 h-9 overflow-hidden rounded-full bg-gray-300">
+                                        <div id="darkModeToggleKnob" class="absolute w-7 h-7 rounded-full bg-white shadow-md transform translate-y-1 translate-x-1 transition-transform duration-200"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </button>
+                        
+                        <!-- Sign Out Button - Using real button for better touch handling -->
+                        <button id="signOutBtnMobile" type="button" class="py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg text-left">
+                            <div class="flex items-center text-error">
+                                <i class="fas fa-sign-out-alt mr-3 text-xl"></i>
+                                <span class="text-base font-medium">Sign Out</span>
+                            </div>
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Desktop dropdown with original implementation
+                dropdown.innerHTML = `
+                    <a href="/profile.html" class="block">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-user-circle text-primary mr-2"></i>
+                            <span id="userDisplayName">Guest User</span>
+                        </div>
+                    </a>
+                    <a href="/profile.html#preferences" class="block">
+                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                            <i class="fas fa-cog text-secondary mr-2"></i>
+                            <span>Settings</span>
+                        </div>
+                    </a>
+                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
+                        <div class="flex items-center">
+                            <i class="fas fa-moon text-primary mr-2"></i>
+                            <span>Dark Mode</span>
+                        </div>
+                        <div class="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full">
+                            <input type="checkbox" id="darkModeToggle" class="absolute w-6 h-6 opacity-0 z-10 cursor-pointer peer" />
+                            <label for="darkModeToggle" class="
+                                block w-12 h-6 overflow-hidden rounded-full 
+                                bg-gray-300 cursor-pointer peer-checked:bg-primary
+                                after:content-[''] after:absolute after:z-[2] after:block 
+                                after:w-5 after:h-5 after:rounded-full after:left-0.5 after:top-0.5 
+                                after:bg-white after:transition-all after:duration-300 
+                                peer-checked:after:translate-x-6"></label>
+                        </div>
+                    </div>
+                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+                        <i class="fas fa-sign-out-alt mr-2"></i>
+                        <span>Sign Out</span>
+                    </div>
+                `;
+            }
+            
+            // Add to document body (not as child of any other element)
+            document.body.appendChild(dropdown);
+            
+            // Apply dark mode styling if needed
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            if (isDarkMode) {
+                applyDarkModeToDropdown(dropdown, isMobile);
+            }
+            
+            // Update the toggle UI to match current state
+            updateDarkModeToggleState(isDarkMode, isMobile);
+            
+            // Remove old event listeners by cloning profile button
+            const newButton = userProfileBtn.cloneNode(true);
+            userProfileBtn.parentNode.replaceChild(newButton, userProfileBtn);
+            userProfileBtn = newButton;
+            
+            // Add click handlers for profile button - simplified
+            userProfileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleDropdown(dropdown, isMobile);
+            });
+            
+            // For mobile touch events
+            if (isMobile) {
+                // Setup mobile-specific event handlers
+                setupMobileHandlers(dropdown);
+            } else {
+                // Setup desktop-specific event handlers
+                setupDesktopHandlers(dropdown);
+            }
         }
         
-        // Run setup again after a delay to ensure all elements are loaded
-        setTimeout(setupProfileDropdown, 1000);
+        // Helper function to toggle dropdown visibility
+        function toggleDropdown(dropdown, isMobile) {
+            const isHidden = dropdown.classList.contains('hidden');
+            
+            if (isHidden) {
+                // Show dropdown
+                dropdown.classList.remove('hidden');
+                dropdown.style.display = 'block';
+                
+                // Create overlay for click-outside detection
+                const overlay = document.createElement('div');
+                overlay.id = 'profileOverlay';
+                overlay.style.position = 'fixed';
+                overlay.style.top = '0';
+                overlay.style.left = '0';
+                overlay.style.right = '0';
+                overlay.style.bottom = '0';
+                overlay.style.zIndex = '9998';
+                overlay.style.background = 'transparent';
+                
+                // Add overlay click handler
+                overlay.addEventListener('click', function() {
+                    dropdown.classList.add('hidden');
+                    dropdown.style.display = 'none';
+                    overlay.remove();
+                });
+                
+                document.body.appendChild(overlay);
+            } else {
+                // Hide dropdown
+                dropdown.classList.add('hidden');
+                dropdown.style.display = 'none';
+                
+                // Remove overlay
+                const overlay = document.getElementById('profileOverlay');
+                if (overlay) overlay.remove();
+            }
+        }
+        
+        // Apply dark mode styling to dropdown
+        function applyDarkModeToDropdown(dropdown, isMobile) {
+            dropdown.style.backgroundColor = '#1f2937';
+            dropdown.style.color = 'white';
+            dropdown.style.borderColor = '#374151';
+            
+            if (isMobile) {
+                // Mobile specific dark styling
+                const buttons = dropdown.querySelectorAll('a, button');
+                buttons.forEach(btn => {
+                    btn.classList.remove('bg-gray-100', 'hover:bg-gray-200', 'active:bg-gray-300');
+                    btn.classList.add('bg-gray-800', 'hover:bg-gray-700', 'active:bg-gray-600');
+                });
+                
+                // Style toggle indicator if it exists
+                const indicator = document.getElementById('darkModeToggleIndicator');
+                if (indicator) {
+                    indicator.classList.remove('bg-gray-300');
+                    indicator.classList.add('bg-primary');
+                }
+            } else {
+                // Desktop specific dark styling
+                const hoverElements = dropdown.querySelectorAll('.hover\\:bg-gray-50');
+                hoverElements.forEach(el => {
+                    el.classList.remove('hover:bg-gray-50');
+                    el.classList.add('hover:bg-gray-700');
+                });
+            }
+        }
+        
+        // Update dark mode toggle state
+        function updateDarkModeToggleState(isDarkMode, isMobile) {
+            if (isMobile) {
+                // Update the mobile toggle UI
+                const knob = document.getElementById('darkModeToggleKnob');
+                const indicator = document.getElementById('darkModeToggleIndicator');
+                
+                if (knob && indicator) {
+                    if (isDarkMode) {
+                        knob.style.transform = 'translateY(1px) translateX(8px)';
+                        indicator.classList.remove('bg-gray-300');
+                        indicator.classList.add('bg-primary');
+                    } else {
+                        knob.style.transform = 'translateY(1px) translateX(1px)';
+                        indicator.classList.remove('bg-primary');
+                        indicator.classList.add('bg-gray-300');
+                    }
+                }
+            } else {
+                // Update the desktop toggle UI
+                const checkbox = document.getElementById('darkModeToggle');
+                if (checkbox) {
+                    checkbox.checked = isDarkMode;
+                }
+            }
+        }
+        
+        // Setup mobile event handlers
+        function setupMobileHandlers(dropdown) {
+            console.log('Setting up mobile handlers');
+            
+            // Dark mode toggle button handler
+            const darkModeToggleBtn = document.getElementById('darkModeToggleBtn');
+            if (darkModeToggleBtn) {
+                darkModeToggleBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Mobile dark mode toggle clicked');
+                    
+                    // Toggle dark mode
+                    const isDarkMode = document.documentElement.classList.contains('dark');
+                    document.documentElement.classList.toggle('dark');
+                    
+                    // Store preference
+                    localStorage.setItem('darkMode', !isDarkMode ? 'enabled' : 'disabled');
+                    
+                    // Update UI
+                    updateDarkModeToggleState(!isDarkMode, true);
+                    
+                    // Apply dark mode styling to dropdown
+                    if (!isDarkMode) {
+                        applyDarkModeToDropdown(dropdown, true);
+                    } else {
+                        // Revert to light mode styling
+                        dropdown.style.backgroundColor = 'white';
+                        dropdown.style.color = 'black';
+                        dropdown.style.borderColor = '#4B5EAA';
+                        
+                        const buttons = dropdown.querySelectorAll('a, button');
+                        buttons.forEach(btn => {
+                            btn.classList.remove('bg-gray-800', 'hover:bg-gray-700', 'active:bg-gray-600');
+                            btn.classList.add('bg-gray-100', 'hover:bg-gray-200', 'active:bg-gray-300');
+                        });
+                        
+                        // Revert toggle indicator
+                        const indicator = document.getElementById('darkModeToggleIndicator');
+                        if (indicator) {
+                            indicator.classList.remove('bg-primary');
+                            indicator.classList.add('bg-gray-300');
+                        }
+                    }
+                    
+                    // Dispatch event for other components
+                    document.dispatchEvent(new CustomEvent('darkModeChanged', {
+                        detail: { enabled: !isDarkMode }
+                    }));
+                });
+            }
+            
+            // Sign out button handler
+            const signOutBtn = document.getElementById('signOutBtnMobile');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Mobile sign out button clicked');
+                    
+                    try {
+                        const auth = window.supabaseServices?.auth;
+                        if (auth) {
+                            await auth.signOut();
+                            window.location.href = '/auth/auth.html';
+                        } else {
+                            console.error("Auth service not available");
+                            alert('Authentication service unavailable');
+                        }
+                    } catch (error) {
+                        console.error('Error signing out:', error);
+                        alert('Failed to sign out. Please try again.');
+                    }
+                });
+            }
+        }
+        
+        // Setup desktop event handlers
+        function setupDesktopHandlers(dropdown) {
+            // Dark mode toggle handler
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const darkModeContainer = document.getElementById('darkModeToggleContainer');
+            
+            if (darkModeToggle && darkModeContainer) {
+                // Set initial state
+                darkModeToggle.checked = document.documentElement.classList.contains('dark');
+                
+                // Make container clickable
+                darkModeContainer.addEventListener('click', function(e) {
+                    if (e.target !== darkModeToggle) {
+                        darkModeToggle.checked = !darkModeToggle.checked;
+                        
+                        // Trigger change event
+                        const event = new Event('change');
+                        darkModeToggle.dispatchEvent(event);
+                    }
+                });
+                
+                // Handle toggle changes
+                darkModeToggle.addEventListener('change', function() {
+                    // Toggle dark mode
+                    document.documentElement.classList.toggle('dark');
+                    
+                    // Store preference
+                    localStorage.setItem('darkMode', darkModeToggle.checked ? 'enabled' : 'disabled');
+                    
+                    // Apply styling to dropdown
+                    if (darkModeToggle.checked) {
+                        applyDarkModeToDropdown(dropdown, false);
+                    } else {
+                        // Revert to light mode
+                        dropdown.style.backgroundColor = 'white';
+                        dropdown.style.color = 'black';
+                        dropdown.style.borderColor = '#e5e7eb';
+                        
+                        // Revert hover styles
+                        dropdown.querySelectorAll('.hover\\:bg-gray-700').forEach(el => {
+                            el.classList.remove('hover:bg-gray-700');
+                            el.classList.add('hover:bg-gray-50');
+                        });
+                    }
+                    
+                    // Notify other components
+                    document.dispatchEvent(new CustomEvent('darkModeChanged', {
+                        detail: { enabled: darkModeToggle.checked }
+                    }));
+                });
+            }
+            
+            // Sign out button
+            const signOutBtn = document.getElementById('signOutBtn');
+            if (signOutBtn) {
+                signOutBtn.addEventListener('click', async function() {
+                    try {
+                        const auth = window.supabaseServices?.auth;
+                        if (auth) {
+                            await auth.signOut();
+                            window.location.href = '/auth/auth.html';
+                        } else {
+                            console.error("Auth service not available");
+                            alert('Authentication service unavailable');
+                        }
+                    } catch (error) {
+                        console.error('Error signing out:', error);
+                        alert('Failed to sign out. Please try again.');
+                    }
+                });
+            }
+        }
+        
+        // Run setup immediately when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup profile dropdown if the function is available
+            if (typeof window.setupProfileDropdown === 'function') {
+                window.setupProfileDropdown();
+            }
+            
+            // Handle window resize for responsive layout
+            window.addEventListener('resize', function() {
+                // Debounce resize event
+                clearTimeout(window.resizeTimer);
+                window.resizeTimer = setTimeout(function() {
+                    if (typeof window.setupProfileDropdown === 'function') {
+                        window.setupProfileDropdown();
+                    }
+                }, 250);
+            });
+            
+            // Apply dark mode styling if enabled
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            if (isDarkMode) {
+                // Apply dark mode styles to various UI elements
+                const header = document.querySelector('header');
+                const toolbar = document.querySelector('.editor-toolbar');
+                const editorContent = document.querySelector('#editorContent');
+                if (header) header.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+                if (toolbar) toolbar.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+                if (editorContent) editorContent.style.backgroundColor = 'hsl(240, 3.7%, 15.9%)';
+            }
+        });
     </script>
     
     <style>
