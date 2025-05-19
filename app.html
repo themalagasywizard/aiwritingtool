@@ -5318,40 +5318,74 @@
                 
                 // Set content - larger padding and text for mobile
                 const itemClass = isMobile ? 'p-4 text-base' : 'p-2';
-                dropdown.innerHTML = `
-                    <a href="/profile.html" class="block">
-                        <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                // For mobile, we'll use buttons instead of links and divs for better touch handling
+                if (isMobile) {
+                    dropdown.innerHTML = `
+                        <button id="profileMenuBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center w-full text-left" data-action="profile">
                             <i class="fas fa-user-circle text-primary mr-2"></i>
                             <span id="userDisplayName">Guest User</span>
-                        </div>
-                    </a>
-                    <a href="/profile.html#preferences" class="block">
-                        <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                        </button>
+                        <button id="settingsMenuBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center w-full text-left" data-action="settings">
                             <i class="fas fa-cog text-secondary mr-2"></i>
                             <span>Settings</span>
+                        </button>
+                        <div id="darkModeToggleContainer" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between w-full text-left">
+                            <div class="flex items-center">
+                                <i class="fas fa-moon text-primary mr-2"></i>
+                                <span>Dark Mode</span>
+                            </div>
+                            <div class="relative inline-block w-14 h-8 transition duration-200 ease-in-out rounded-full">
+                                <input type="checkbox" id="darkModeToggle" class="absolute w-8 h-8 opacity-0 z-10 cursor-pointer peer" />
+                                <span class="
+                                    block w-14 h-8 overflow-hidden rounded-full 
+                                    bg-gray-300 cursor-pointer peer-checked:bg-primary
+                                    after:content-[''] after:absolute after:z-[2] after:block 
+                                    after:w-6 after:h-6 after:rounded-full after:left-1 after:top-1 
+                                    after:bg-white after:transition-all after:duration-300 
+                                    peer-checked:after:translate-x-6"></span>
+                            </div>
                         </div>
-                    </a>
-                    <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
-                        <div class="flex items-center">
-                            <i class="fas fa-moon text-primary mr-2"></i>
-                            <span>Dark Mode</span>
+                        <button id="signOutBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center w-full text-left text-error" data-action="signOut">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            <span>Sign Out</span>
+                        </button>
+                    `;
+                } else {
+                    dropdown.innerHTML = `
+                        <a href="/profile.html" class="block">
+                            <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                                <i class="fas fa-user-circle text-primary mr-2"></i>
+                                <span id="userDisplayName">Guest User</span>
+                            </div>
+                        </a>
+                        <a href="/profile.html#preferences" class="block">
+                            <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center">
+                                <i class="fas fa-cog text-secondary mr-2"></i>
+                                <span>Settings</span>
+                            </div>
+                        </a>
+                        <div class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
+                            <div class="flex items-center">
+                                <i class="fas fa-moon text-primary mr-2"></i>
+                                <span>Dark Mode</span>
+                            </div>
+                            <div class="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full">
+                                <input type="checkbox" id="darkModeToggle" class="absolute w-6 h-6 opacity-0 z-10 cursor-pointer peer" />
+                                <label for="darkModeToggle" class="
+                                    block w-12 h-6 overflow-hidden rounded-full 
+                                    bg-gray-300 cursor-pointer peer-checked:bg-primary
+                                    after:content-[''] after:absolute after:z-[2] after:block 
+                                    after:w-5 after:h-5 after:rounded-full after:left-0.5 after:top-0.5 
+                                    after:bg-white after:transition-all after:duration-300 
+                                    peer-checked:after:translate-x-6"></label>
+                            </div>
                         </div>
-                        <div class="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full">
-                            <input type="checkbox" id="darkModeToggle" class="absolute w-6 h-6 opacity-0 z-10 cursor-pointer peer" />
-                            <label for="darkModeToggle" class="
-                                block w-12 h-6 overflow-hidden rounded-full 
-                                bg-gray-300 cursor-pointer peer-checked:bg-primary
-                                after:content-[''] after:absolute after:z-[2] after:block 
-                                after:w-5 after:h-5 after:rounded-full after:left-0.5 after:top-0.5 
-                                after:bg-white after:transition-all after:duration-300 
-                                peer-checked:after:translate-x-6"></label>
+                        <div id="signOutBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            <span>Sign Out</span>
                         </div>
-                    </div>
-                    <div id="signOutBtn" class="${itemClass} hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                        <i class="fas fa-sign-out-alt mr-2"></i>
-                        <span>Sign Out</span>
-                    </div>
-                `;
+                    `;
+                }
                 
                 // Add to document body (not as child of any other element)
                 document.body.appendChild(dropdown);
@@ -5450,30 +5484,28 @@
                         darkModeToggle.checked = document.documentElement.classList.contains('dark');
                         
                         // Make the whole container clickable on mobile
-                        if (isMobile) {
-                            darkModeContainer.addEventListener('click', function(e) {
-                                // Don't trigger if clicking directly on the checkbox
-                                if (e.target !== darkModeToggle) {
-                                    darkModeToggle.checked = !darkModeToggle.checked;
-                                    
-                                    // Manually trigger change event
-                                    const event = new Event('change');
-                                    darkModeToggle.dispatchEvent(event);
-                                }
-                            });
-                            
-                            darkModeContainer.addEventListener('touchend', function(e) {
-                                // Don't trigger if touching directly on the checkbox
-                                if (e.target !== darkModeToggle) {
-                                    e.preventDefault();
-                                    darkModeToggle.checked = !darkModeToggle.checked;
-                                    
-                                    // Manually trigger change event
-                                    const event = new Event('change');
-                                    darkModeToggle.dispatchEvent(event);
-                                }
-                            });
-                        }
+                        darkModeContainer.addEventListener('click', function(e) {
+                            // Don't trigger if clicking directly on the checkbox
+                            if (e.target !== darkModeToggle) {
+                                darkModeToggle.checked = !darkModeToggle.checked;
+                                
+                                // Manually trigger change event
+                                const event = new Event('change');
+                                darkModeToggle.dispatchEvent(event);
+                            }
+                        });
+                        
+                        darkModeContainer.addEventListener('touchend', function(e) {
+                            // Don't trigger if touching directly on the checkbox
+                            if (e.target !== darkModeToggle) {
+                                e.preventDefault();
+                                darkModeToggle.checked = !darkModeToggle.checked;
+                                
+                                // Manually trigger change event
+                                const event = new Event('change');
+                                darkModeToggle.dispatchEvent(event);
+                            }
+                        });
                         
                         // Add toggle event with direct DOM manipulation
                         darkModeToggle.addEventListener('change', function() {
@@ -5518,6 +5550,64 @@
                         });
                     }
                     
+                    // Set up settings button handler for mobile
+                    if (isMobile) {
+                        const settingsBtn = document.getElementById('settingsMenuBtn');
+                        if (settingsBtn) {
+                            const settingsHandler = function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                // Navigate to settings page
+                                window.location.href = '/profile.html#preferences';
+                                
+                                // Close the dropdown
+                                const dropdown = document.getElementById('profileDropdownContainer');
+                                if (dropdown) {
+                                    dropdown.classList.add('hidden');
+                                    dropdown.style.display = 'none';
+                                }
+                                
+                                const overlay = document.getElementById('profileOverlay');
+                                if (overlay) overlay.remove();
+                            };
+                            
+                            settingsBtn.addEventListener('click', settingsHandler);
+                            settingsBtn.addEventListener('touchend', function(e) {
+                                e.preventDefault();
+                                settingsHandler(e);
+                            });
+                        }
+                        
+                        // Set up profile button handler for mobile
+                        const profileBtn = document.getElementById('profileMenuBtn');
+                        if (profileBtn) {
+                            const profileHandler = function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                // Navigate to profile page
+                                window.location.href = '/profile.html';
+                                
+                                // Close the dropdown
+                                const dropdown = document.getElementById('profileDropdownContainer');
+                                if (dropdown) {
+                                    dropdown.classList.add('hidden');
+                                    dropdown.style.display = 'none';
+                                }
+                                
+                                const overlay = document.getElementById('profileOverlay');
+                                if (overlay) overlay.remove();
+                            };
+                            
+                            profileBtn.addEventListener('click', profileHandler);
+                            profileBtn.addEventListener('touchend', function(e) {
+                                e.preventDefault();
+                                profileHandler(e);
+                            });
+                        }
+                    }
+                    
                     // Set up sign out handler
                     const signOutBtn = document.getElementById('signOutBtn');
                     if (signOutBtn) {
@@ -5542,7 +5632,10 @@
                         };
                         
                         signOutBtn.addEventListener('click', signOutHandler);
-                        signOutBtn.addEventListener('touchend', signOutHandler);
+                        signOutBtn.addEventListener('touchend', function(e) {
+                            e.preventDefault();
+                            signOutHandler(e);
+                        });
                     }
                 }, 100);
             };
