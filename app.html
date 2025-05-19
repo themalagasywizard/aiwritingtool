@@ -1609,20 +1609,48 @@
             background-color: #374151 !important;
         }
         
-        /* Save button specific styling in dark mode - with higher specificity */
+        /* Save button specific styling in dark mode - with extremely high specificity and override */
         .dark #saveBtn,
         .dark button#saveBtn.header-btn,
-        .dark button#saveBtn[class*="header-btn"] {
+        .dark button#saveBtn[class*="header-btn"],
+        .dark button#saveBtn[class*="btn"],
+        .dark button[id="saveBtn"],
+        html.dark button#saveBtn,
+        html.dark body button#saveBtn {
             background-color: #1f2937 !important;
             border-color: #374151 !important;
             color: white !important;
+            background-image: none !important;
+            box-shadow: none !important;
         }
         
         /* Make sure save button icon is white in dark mode */
         .dark #saveBtn i,
         .dark button#saveBtn i.fas,
-        .dark button#saveBtn i.fa-save {
+        .dark button#saveBtn i.fa-save,
+        html.dark button#saveBtn i {
             color: white !important;
+        }
+        
+        /* Additional override for save button */
+        #saveBtn.dark-override {
+            background-color: #1f2937 !important;
+            background: #1f2937 !important;
+            border-color: #374151 !important;
+            color: white !important;
+            background-image: none !important;
+        }
+
+        /* Force all header buttons to have the same style in dark mode */
+        .dark .header-btn, 
+        .dark button.header-btn,
+        html.dark header button,
+        html.dark header button[class*="btn"] {
+            background-color: #1f2937 !important;
+            background: #1f2937 !important;
+            border-color: #374151 !important;
+            color: white !important;
+            background-image: none !important;
         }
 
         /* Mobile Specific Fixes */
@@ -2876,6 +2904,22 @@
                     toggleSidebar();
                 });
             }
+            
+            // Additional dark mode handler for save button
+            function ensureDarkModeButtonStyling() {
+                const saveBtn = document.getElementById('saveBtn');
+                if (saveBtn) {
+                    if (document.documentElement.classList.contains('dark')) {
+                        saveBtn.classList.add('dark-override');
+                    } else {
+                        saveBtn.classList.remove('dark-override');
+                    }
+                }
+            }
+            
+            // Call immediately and attach to dark mode changes
+            ensureDarkModeButtonStyling();
+            document.addEventListener('darkModeChanged', ensureDarkModeButtonStyling);
         }
 
         // Initialization
@@ -5161,7 +5205,7 @@
             }
         }
         
-        // This DOMContentLoaded listener now ONLY handles sidebarOverlay and userProfileBtn logic.
+        // This DOMContentLoaded listener now handles sidebarOverlay, userProfileBtn logic, and dark mode button fixes.
         // The mobileMenuBtn listener has been moved to setupEventListeners.
         document.addEventListener('DOMContentLoaded', function() {
             // Sidebar overlay click handler
@@ -5171,6 +5215,37 @@
                     toggleSidebar();
                 });
             }
+            
+            // Fix for dark mode button styling
+            function forceDarkModeButtonStyling() {
+                if (document.documentElement.classList.contains('dark')) {
+                    const saveBtn = document.getElementById('saveBtn');
+                    if (saveBtn) {
+                        saveBtn.style.cssText = "background-color: #1f2937 !important; background: #1f2937 !important; border-color: #374151 !important; color: white !important;";
+                        const icon = saveBtn.querySelector('i');
+                        if (icon) {
+                            icon.style.cssText = "color: white !important;";
+                        }
+                    }
+                }
+            }
+            
+            // Apply immediately
+            forceDarkModeButtonStyling();
+            
+            // Apply on dark mode toggle
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'class' && mutation.target === document.documentElement) {
+                        forceDarkModeButtonStyling();
+                    }
+                });
+            });
+            
+            observer.observe(document.documentElement, { attributes: true });
+            
+            // Also check periodically to override any scripts that might change styles
+            setInterval(forceDarkModeButtonStyling, 1000);
             
             // User Profile Button click handler
              const userProfileBtn = document.getElementById('userProfileBtn');
