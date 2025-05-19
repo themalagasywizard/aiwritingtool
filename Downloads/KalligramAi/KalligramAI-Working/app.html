@@ -53,135 +53,34 @@
             --success: #34D399;
             --error: #EF4444;
             --warning: #FBBF24;
-            
-            /* Dark mode variables */
-            --dark-bg: #121212;
-            --dark-panel: #1E1E1E;
-            --dark-text-primary: #E4E6EB;
-            --dark-text-secondary: #B0B3B8;
-            --dark-border: #3A3B3C;
+            --header-bg: white;
+            --toolbar-bg: white;
+            --context-panel-bg: var(--primary-light);
+            --project-title-bg: white;
         }
 
-        /* Dark mode styles */
+        /* Dark mode variables */
         [data-theme="dark"] {
-            --primary: #5B6EBA;
-            --primary-light: #2D2F3A;
-            --background: var(--dark-bg);
-            --text-primary: var(--dark-text-primary);
-            --text-secondary: var(--dark-text-secondary);
+            --primary: #4B5EAA;
+            --primary-light: #2D3748;
+            --secondary: #6B7280;
+            --accent: #F472B6;
+            --background: #121212;
+            --text-primary: #E5E7EB;
+            --text-secondary: #9CA3AF;
+            --success: #34D399;
+            --error: #EF4444;
+            --warning: #FBBF24;
+            --header-bg: #2D3748;
+            --toolbar-bg: #2D3748;
+            --context-panel-bg: #2D3748;
+            --project-title-bg: #2D3748;
         }
 
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background);
             color: var(--text-primary);
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
-        
-        /* Dark mode header and toolbar */
-        [data-theme="dark"] header, 
-        [data-theme="dark"] .editor-toolbar {
-            background-color: var(--dark-panel);
-            border-color: var(--dark-border);
-        }
-        
-        /* Dark mode sidebar */
-        [data-theme="dark"] .sidebar {
-            background-color: var(--primary-light);
-            border-color: var(--dark-border);
-        }
-        
-        /* Dark mode chapter items */
-        [data-theme="dark"] .chapter-item:hover {
-            background-color: var(--dark-panel);
-        }
-        
-        [data-theme="dark"] .chapter-item.active {
-            background-color: var(--dark-panel);
-        }
-        
-        /* Dark mode modals and panels */
-        [data-theme="dark"] .bg-white, 
-        [data-theme="dark"] .project-title-bar, 
-        [data-theme="dark"] #storyContextPanel,
-        [data-theme="dark"] .modal-content {
-            background-color: var(--dark-panel);
-            border-color: var(--dark-border);
-        }
-        
-        /* Toggle switch styles */
-        .theme-toggle {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        
-        .theme-toggle input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        
-        input:checked + .toggle-slider {
-            background-color: var(--primary);
-        }
-        
-        input:checked + .toggle-slider:before {
-            transform: translateX(26px);
-        }
-        
-        /* Dark mode icons */
-        .theme-toggle .light-icon,
-        .theme-toggle .dark-icon {
-            position: absolute;
-            top: 5px;
-            font-size: 14px;
-            transition: opacity 0.3s ease;
-        }
-        
-        .theme-toggle .light-icon {
-            left: 6px;
-            color: #FFD700;
-            opacity: 1;
-        }
-        
-        .theme-toggle .dark-icon {
-            right: 6px;
-            color: white;
-            opacity: 0;
-        }
-        
-        input:checked + .toggle-slider .light-icon {
-            opacity: 0;
-        }
-        
-        input:checked + .toggle-slider .dark-icon {
-            opacity: 1;
         }
 
         .editor-content {
@@ -191,7 +90,7 @@
 
         .sidebar {
             width: 250px;
-            background-color: var(--primary-light);
+            background-color: var(--context-panel-bg);
             border-right: 1px solid rgba(107, 114, 128, 0.1);
             box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
         }
@@ -202,13 +101,13 @@
         }
 
         .chapter-item:hover {
-            background-color: white;
+            background-color: var(--background);
             border-left: 3px solid var(--primary);
             transform: translateX(2px);
         }
 
         .chapter-item.active {
-            background-color: white;
+            background-color: var(--background);
             border-left: 3px solid var(--primary);
             color: var(--primary);
             font-weight: 500;
@@ -767,6 +666,24 @@
             transition: max-height 0.3s ease-in-out;
             overflow: hidden;
         }
+
+        /* Theme toggle styles */
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            background-color: transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--primary-light);
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -787,7 +704,31 @@
             currentUser: null,
             isDirty: false, // Track if editor has unsaved changes
             wordTarget: 1000, // Default target word count,
-            chapterCache: new Map() // Cache for chapter content
+            chapterCache: new Map(), // Cache for chapter content
+            darkMode: localStorage.getItem('darkMode') === 'true' // Get dark mode preference from localStorage
+        };
+        
+        // Apply dark mode on load if previously set
+        if (appState.darkMode) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+        
+        // Toggle dark mode function
+        window.toggleDarkMode = function() {
+            appState.darkMode = !appState.darkMode;
+            if (appState.darkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            // Save preference to localStorage
+            localStorage.setItem('darkMode', appState.darkMode);
+            
+            // Update toggle icon
+            const toggleIcon = document.getElementById('themeToggleIcon');
+            if (toggleIcon) {
+                toggleIcon.className = appState.darkMode ? 'fas fa-sun' : 'fas fa-moon';
+            }
         };
         
         // Expose appState to window object for access from other scripts
@@ -1896,60 +1837,38 @@
     </script>
 
     <!-- Top Bar -->
-    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom">
-                <div class="flex items-center space-x-4">
-            <!-- Mobile Menu Button -->
-            <button id="mobileMenuBtn" class="lg:hidden text-gray-500 hover:text-primary">
-                <i class="fas fa-bars"></i>
-                    </button>
-            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
-                <i class="fas fa-feather-alt"></i>
-                </div>
-            <h1 class="text-xl font-semibold text-primary hidden md:block">Kalligram</h1>
-            </div>
+    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm-custom" style="background-color: var(--header-bg);">
+        <!-- Left Section -->
         <div class="flex items-center space-x-4">
-            <label class="theme-toggle mr-2" title="Toggle dark mode">
-                <input type="checkbox" id="themeToggle">
-                <span class="toggle-slider">
-                    <i class="fas fa-sun light-icon"></i>
-                    <i class="fas fa-moon dark-icon"></i>
-                </span>
-            </label>
-            <button id="saveBtn" class="btn btn-primary">
+            <div class="w-10 h-10 bg-primary rounded flex items-center justify-center text-white">
+                <i class="fas fa-feather-alt"></i>
+            </div>
+            <div>
+                <h1 id="projectTitle" class="text-lg font-semibold">Loading project...</h1>
+                <p id="lastEdited" class="text-xs text-textSecondary">Last edited: Never</p>
+                <p id="saveStatus" class="text-xs text-textSecondary hidden"></p>
+            </div>
+        </div>
+        
+        <!-- Right Section -->
+        <div class="flex items-center space-x-2">
+            <!-- Dark Mode Toggle -->
+            <button class="theme-toggle" onclick="window.toggleDarkMode()">
+                <i id="themeToggleIcon" class="fas fa-moon"></i>
+            </button>
+            
+            <button class="btn btn-primary" id="saveBtn">
                 <i class="fas fa-save"></i>
                 <span class="ml-1">Save</span>
             </button>
-            <button id="loadProjectBtn" class="btn btn-primary">
+            <button class="btn btn-secondary" id="loadProjectBtn">
                 <i class="fas fa-folder-open"></i>
-                <span class="ml-1">Load Project</span>
+                <span class="ml-1">Projects</span>
             </button>
-            <button id="newProjectBtn" class="btn btn-success">
+            <button class="btn btn-success" id="newProjectBtn">
                 <i class="fas fa-plus"></i>
-                <span class="ml-1">New Project</span>
+                <span class="ml-1">New</span>
             </button>
-            <div class="relative group">
-                <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
-                     alt="User Avatar" 
-                     class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
-                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-10">
-                    <a href="/profile.html" class="block">
-                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                            <i class="fas fa-user-circle text-primary mr-2"></i>
-                            <span id="userDisplayName">Guest User</span>
-                        </div>
-                    </a>
-                    <a href="/profile.html#preferences" class="block">
-                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                            <i class="fas fa-cog text-secondary mr-2"></i>
-                            <span>Settings</span>
-                        </div>
-                    </a>
-                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                        <i class="fas fa-sign-out-alt mr-2"></i>
-                        <span>Sign Out</span>
-                    </div>
-                </div>
-            </div>
         </div>
     </header>
 
@@ -1957,7 +1876,7 @@
     <div id="sidebarOverlay" class="lg:hidden" onclick="toggleSidebar()"></div>
 
     <!-- Load Project Panel -->
-    <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+    <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 shadow-lg transform translate-x-full transition-transform duration-300 z-50" style="background-color: var(--background); color: var(--text-primary);">
         <div class="h-full flex flex-col">
             <div class="p-6 border-b border-gray-100">
                 <div class="flex items-center justify-between mb-4">
@@ -2028,7 +1947,7 @@
                     <h2 class="text-sm font-semibold uppercase tracking-wider text-secondary">Story Context</h2>
                     <span id="contextCount" class="text-xs text-textSecondary">0 items</span>
                     </div>
-                <div class="bg-white rounded-lg p-2 shadow-sm-custom mb-3">
+                <div class="rounded-lg p-2 shadow-sm-custom mb-3" style="background-color: var(--project-title-bg); color: var(--text-primary);">
                     <div id="contextList" class="space-y-1">
                         <!-- Context items will be loaded here -->
                         <div class="text-center p-2 text-textSecondary text-sm">
@@ -2051,7 +1970,7 @@
             </div>
 
             <!-- Word Count -->
-            <div class="flex items-center justify-between bg-white p-3 rounded-lg shadow-sm-custom text-sm">
+            <div class="flex items-center justify-between p-3 rounded-lg shadow-sm-custom text-sm" style="background-color: var(--project-title-bg); color: var(--text-primary);">
                 <div>
                     <div class="text-textSecondary">Total Words</div>
                     <div id="wordCount" class="text-xl font-semibold text-primary">0</div>
@@ -2067,9 +1986,9 @@
         </aside>
 
         <!-- Editor Area -->
-        <main class="flex-1 overflow-hidden flex flex-col bg-white">
+        <main class="flex-1 overflow-hidden flex flex-col bg-white" style="background-color: var(--background);">
             <!-- Editor Toolbar -->
-            <div class="bg-white border-b border-gray-100 p-2 flex items-center space-x-2 shadow-sm-custom editor-toolbar">
+            <div class="border-b border-gray-100 p-2 flex items-center space-x-2 shadow-sm-custom editor-toolbar" style="background-color: var(--toolbar-bg); color: var(--text-primary);">
                 <!-- Formatting buttons grouped together -->
                 <div class="flex items-center space-x-1">
                     <button class="toolbar-btn" title="Bold">
@@ -2107,7 +2026,7 @@
         </div>
 
             <!-- AI Assistant Panel -->
-            <div id="aiAssistPanel" class="fixed right-0 top-0 h-screen w-[400px] bg-white shadow-md-custom transform translate-x-full transition-transform duration-300 z-50 flex flex-col" role="complementary" aria-label="AI Assistant">
+            <div id="aiAssistPanel" class="fixed right-0 top-0 h-screen w-[400px] shadow-md-custom transform translate-x-full transition-transform duration-300 z-50 flex flex-col" role="complementary" aria-label="AI Assistant" style="background-color: var(--background); color: var(--text-primary);">
                 <!-- Panel Header -->
                 <div class="flex-shrink-0 p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between mb-4">
@@ -2207,8 +2126,8 @@
                 <!-- Generate/Edit View -->
                 <div id="generateEditView" class="flex-1 flex flex-col overflow-hidden">
                     <!-- Output Area (now at top) -->
-                    <div id="aiOutput" class="flex-1 bg-gray-50 rounded-lg m-4 p-6 overflow-y-auto">
-                        <p class="text-gray-400 text-sm italic">AI output will appear here...</p>
+                    <div id="aiOutput" class="flex-1 rounded-lg m-4 p-6 overflow-y-auto" style="background-color: var(--project-title-bg); color: var(--text-primary);">
+                        <p class="text-sm italic" style="color: var(--text-secondary);">AI output will appear here...</p>
             </div>
 
                     <!-- Controls (in middle) -->
@@ -2253,8 +2172,8 @@
             </div>
 
             <!-- Editor Content -->
-            <div class="flex-1 overflow-y-auto p-8 bg-white">
-                <div id="editorContent" class="editor-content max-w-3xl mx-auto" contenteditable="true">
+            <div class="flex-1 overflow-y-auto p-8" style="background-color: var(--background);">
+                <div id="editorContent" class="editor-content max-w-3xl mx-auto" contenteditable="true" style="color: var(--text-primary);">
                     <h1 id="chapterTitle" class="text-3xl font-bold mb-6">Loading chapter...</h1>
                     <p class="mb-4 placeholder-text">Select a chapter to start writing, or create a new one.</p>
                 </div>
@@ -2264,7 +2183,7 @@
 
     <!-- AI Preview Modal (Hidden by default) -->
     <div class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center modal" id="aiModal">
-        <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 shadow-md-custom fade-in">
+        <div class="rounded-xl p-6 max-w-2xl w-full mx-4 shadow-md-custom fade-in" style="background-color: var(--background); color: var(--text-primary);">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-primary">AI Suggestion</h2>
                 <button class="text-gray-400 hover:text-gray-600" id="closeModal">
@@ -2312,7 +2231,7 @@
 
     <!-- Context Manager Modal (Hidden by default) -->
     <div class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center modal" id="contextModal">
-        <div class="bg-white rounded-xl p-6 max-w-4xl w-full mx-4 shadow-md-custom fade-in overflow-y-auto max-h-[90vh]">
+        <div class="rounded-xl p-6 max-w-4xl w-full mx-4 shadow-md-custom fade-in overflow-y-auto max-h-[90vh]" style="background-color: var(--background); color: var(--text-primary);">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-primary">Manage Story Context</h2>
                 <button class="text-gray-400 hover:text-gray-600" id="closeContextModal">
@@ -4218,46 +4137,5 @@
             }
         }
     </style>
-    
-    <!-- Dark Mode Script -->
-    <script>
-        // Dark Mode Functionality
-        document.addEventListener('DOMContentLoaded', () => {
-            const themeToggle = document.getElementById('themeToggle');
-            
-            // Function to set theme
-            const setTheme = (isDark) => {
-                if (isDark) {
-                    document.documentElement.setAttribute('data-theme', 'dark');
-                    localStorage.setItem('kalligram-theme', 'dark');
-                } else {
-                    document.documentElement.removeAttribute('data-theme');
-                    localStorage.setItem('kalligram-theme', 'light');
-                }
-            };
-            
-            // Check for saved theme preference or respect OS theme setting
-            const savedTheme = localStorage.getItem('kalligram-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
-            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-                setTheme(true);
-                if (themeToggle) themeToggle.checked = true;
-            }
-            
-            // Toggle theme when the switch is clicked
-            themeToggle?.addEventListener('change', () => {
-                setTheme(themeToggle.checked);
-            });
-            
-            // Listen for OS theme changes
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (!localStorage.getItem('kalligram-theme')) {
-                    setTheme(e.matches);
-                    if (themeToggle) themeToggle.checked = e.matches;
-                }
-            });
-        });
-    </script>
 </body>
 </html> 
