@@ -5318,20 +5318,20 @@
                             <span>Settings</span>
                         </div>
                     </a>
-                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
-                        <div class="flex items-center">
+                    <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between touch-manipulation" id="darkModeToggleContainer">
+                        <div class="flex items-center flex-1">
                             <i class="fas fa-moon text-primary mr-2"></i>
                             <span>Dark Mode</span>
                         </div>
-                        <div class="relative inline-block w-10 h-5 transition duration-200 ease-in-out rounded-full">
-                            <input type="checkbox" id="darkModeToggle" class="absolute w-5 h-5 opacity-0 z-10 cursor-pointer peer" />
+                        <div class="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full">
+                            <input type="checkbox" id="darkModeToggle" class="absolute w-6 h-6 opacity-0 z-10 cursor-pointer peer" />
                             <label for="darkModeToggle" class="
-                                block w-10 h-5 overflow-hidden rounded-full 
+                                block w-12 h-6 overflow-hidden rounded-full 
                                 bg-gray-300 cursor-pointer peer-checked:bg-primary
                                 after:content-[''] after:absolute after:z-[2] after:block 
-                                after:w-4 after:h-4 after:rounded-full after:left-0.5 after:top-0.5 
+                                after:w-5 after:h-5 after:rounded-full after:left-0.5 after:top-0.5 
                                 after:bg-white after:transition-all after:duration-300 
-                                peer-checked:after:translate-x-5"></label>
+                                peer-checked:after:translate-x-6"></label>
                         </div>
                     </div>
                     <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
@@ -5340,15 +5340,28 @@
                     </div>
                 `;
                 
-                // Add to document body (not as child of any other element)
-                document.body.appendChild(dropdown);
-                
-                // Handle dark mode
-                if (document.documentElement.classList.contains('dark')) {
-                    dropdown.style.backgroundColor = '#1f2937';
-                    dropdown.style.color = 'white';
-                    dropdown.style.borderColor = '#374151';
-                }
+                                 // Add to document body (not as child of any other element)
+                 document.body.appendChild(dropdown);
+                 
+                 // Handle dark mode
+                 if (document.documentElement.classList.contains('dark')) {
+                     dropdown.style.backgroundColor = '#1f2937';
+                     dropdown.style.color = 'white';
+                     dropdown.style.borderColor = '#374151';
+                 }
+                 
+                 // Mobile optimization - improve hit targets and visibility
+                 if (window.innerWidth <= 768) {
+                     dropdown.style.width = '280px';
+                     dropdown.style.padding = '8px';
+                     
+                     // Make all interactive elements inside bigger for mobile
+                     const interactiveElements = dropdown.querySelectorAll('.p-2');
+                     interactiveElements.forEach(el => {
+                         el.style.padding = '12px';
+                         el.style.marginBottom = '4px';
+                     });
+                 }
                 
                 // Remove old event listeners by cloning
                 const newButton = userProfileBtn.cloneNode(true);
@@ -5407,12 +5420,17 @@
                                  // Set up dark mode toggle
                  setTimeout(() => {
                      const darkModeToggle = document.getElementById('darkModeToggle');
+                     const darkModeToggleContainer = document.getElementById('darkModeToggleContainer');
+                     
                      if (darkModeToggle) {
                          // Set initial state based on current mode
                          darkModeToggle.checked = document.documentElement.classList.contains('dark');
                          
-                         // Add toggle event
-                         darkModeToggle.addEventListener('change', function() {
+                         // Function to handle dark mode toggle
+                         const toggleDarkMode = () => {
+                             // Toggle the checkbox state first
+                             darkModeToggle.checked = !darkModeToggle.checked;
+                             
                              // Toggle dark mode
                              document.documentElement.classList.toggle('dark');
                              
@@ -5423,7 +5441,52 @@
                              document.dispatchEvent(new CustomEvent('darkModeChanged', {
                                  detail: { enabled: darkModeToggle.checked }
                              }));
+                             
+                             // Force update all buttons for dark mode
+                             forceDarkModeButtonStyling();
+                             
+                             console.log('Dark mode toggled to:', darkModeToggle.checked);
+                         };
+                         
+                         // Add toggle event for checkbox (standard desktops)
+                         darkModeToggle.addEventListener('change', function(e) {
+                             e.stopPropagation();
+                             // The checkbox state is already changed by the browser
+                             // so we just need to apply the dark mode without flipping the checkbox
+                             document.documentElement.classList.toggle('dark');
+                             localStorage.setItem('darkMode', darkModeToggle.checked ? 'enabled' : 'disabled');
+                             document.dispatchEvent(new CustomEvent('darkModeChanged', {
+                                 detail: { enabled: darkModeToggle.checked }
+                             }));
+                             forceDarkModeButtonStyling();
+                             console.log('Dark mode changed via checkbox to:', darkModeToggle.checked);
                          });
+                         
+                         // Add click event for the entire container (better for mobile)
+                         if (darkModeToggleContainer) {
+                             darkModeToggleContainer.addEventListener('click', function(e) {
+                                 // If we clicked directly on the checkbox, let the change event handle it
+                                 if (e.target === darkModeToggle) return;
+                                 
+                                 // Otherwise, manually toggle
+                                 e.preventDefault();
+                                 e.stopPropagation();
+                                 toggleDarkMode();
+                                 console.log('Dark mode toggled via container click');
+                             });
+                             
+                             // Add explicit touch event for mobile
+                             darkModeToggleContainer.addEventListener('touchend', function(e) {
+                                 // If we touched directly on the checkbox, let the change event handle it
+                                 if (e.target === darkModeToggle) return;
+                                 
+                                 // Otherwise, manually toggle
+                                 e.preventDefault();
+                                 e.stopPropagation();
+                                 toggleDarkMode();
+                                 console.log('Dark mode toggled via container touch');
+                             });
+                         }
                      }
                      
                      // Set up sign out handler
