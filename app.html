@@ -1535,6 +1535,150 @@
         .dark #mobileMenuBtn .header-btn-icon {
             color: white !important;
         }
+
+        /* Fix Logo Display Consistently */
+        .logo-container {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 40px !important;
+            height: 40px !important;
+            background-color: #4B5EAA !important;
+            border-radius: 6px !important;
+            min-width: 40px !important;
+        }
+
+        .logo-container i {
+            color: white !important;
+            font-size: 1.25rem !important;
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        /* Enhanced Header Button Styling */
+        .header-btn {
+            position: relative !important;
+            min-width: 40px !important;
+            height: 40px !important;
+            border-radius: 6px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 10px !important;
+            background-color: white !important;
+            border: 1px solid #e5e7eb !important;
+            color: #333 !important;
+            margin: 0 4px !important;
+            transition: all 0.2s !important;
+        }
+
+        .header-btn i {
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            font-size: 1.25rem !important;
+            margin: 0 !important;
+            color: #4B5EAA !important;
+        }
+
+        .header-btn:hover {
+            background-color: #f3f4f6 !important;
+            border-color: #d1d5db !important;
+        }
+
+        /* Dark mode overrides for header buttons */
+        .dark .header-btn {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: white !important;
+        }
+
+        .dark .header-btn i {
+            color: white !important;
+        }
+
+        .dark .header-btn:hover {
+            background-color: #374151 !important;
+        }
+
+        /* Mobile Specific Fixes */
+        @media (max-width: 768px) {
+            /* Fix header layout */
+            header {
+                padding: 0 8px !important;
+                height: 56px !important;
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                z-index: 50 !important;
+            }
+
+            /* Add spacing for fixed header */
+            main {
+                margin-top: 56px !important;
+            }
+
+            /* Make header buttons square on mobile */
+            .header-btn {
+                min-width: 40px !important;
+                width: 40px !important;
+                padding: 0 !important;
+            }
+
+            /* Hide text on mobile */
+            .header-btn span {
+                display: none !important;
+            }
+
+            /* Ensure proper toolbar spacing */
+            .editor-toolbar {
+                position: fixed !important;
+                top: 56px !important;
+                left: 0 !important;
+                right: 0 !important;
+                z-index: 49 !important;
+                padding: 8px !important;
+                height: 56px !important;
+            }
+
+            /* Adjust main content with fixed toolbar */
+            main {
+                margin-top: 112px !important;
+                padding-bottom: 20px !important;
+            }
+
+            /* Improve mobile sidebar */
+            .sidebar {
+                position: fixed !important;
+                left: -250px !important;
+                top: 112px !important;
+                bottom: 0 !important;
+                width: 250px !important;
+                z-index: 48 !important;
+                transition: transform 0.3s ease !important;
+                transform: translateX(0) !important;
+            }
+
+            .sidebar.active {
+                transform: translateX(250px) !important;
+            }
+
+            /* Sidebar overlay */
+            #sidebarOverlay {
+                display: none !important;
+                position: fixed !important;
+                inset: 0 !important;
+                background: rgba(0,0,0,0.5) !important;
+                z-index: 47 !important;
+            }
+
+            #sidebarOverlay.active {
+                display: block !important;
+            }
+        }
     </style>
 </head>
 <body class="h-screen flex flex-col">
@@ -2805,60 +2949,36 @@
     <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 shadow-sm-custom">
         <div class="flex items-center space-x-2">
             <!-- Mobile Menu Button -->
-            <button id="mobileMenuBtn" class="mobile-icon-btn cursor-pointer header-icon-btn" data-shadcn="button" data-variant="ghost" data-size="icon">
-                <i class="fas fa-bars header-btn-icon"></i>
+            <button id="mobileMenuBtn" class="header-btn cursor-pointer" title="Menu">
+                <i class="fas fa-bars"></i>
             </button>
-            <div class="mobile-icon-btn logo-container bg-primary text-white rounded-md flex items-center justify-center">
-                <i class="fas fa-feather-alt header-btn-icon"></i>
+            <div class="logo-container">
+                <i class="fas fa-feather-alt"></i>
             </div>
             <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
         </div>
         <div class="flex items-center space-x-2">
-            <button id="saveBtn" class="mobile-icon-btn bg-primary-light header-icon-btn" data-shadcn="button" data-variant="monochrome" title="Save">
-                <i class="fas fa-save header-btn-icon"></i>
+            <button id="saveBtn" class="header-btn" title="Save">
+                <i class="fas fa-save"></i>
                 <span class="ml-1 hidden md:inline">Save</span>
             </button>
-            <button id="loadProjectBtn" class="mobile-icon-btn bg-primary-light header-icon-btn" data-shadcn="button" data-variant="monochrome" title="Load Project">
-                <i class="fas fa-folder-open header-btn-icon"></i>
+            <button id="loadProjectBtn" class="header-btn" title="Load Project">
+                <i class="fas fa-folder-open"></i>
                 <span class="ml-1 hidden md:inline">Load Project</span>
             </button>
-            <button id="newProjectBtn" class="mobile-icon-btn bg-success header-icon-btn" data-shadcn="button" data-variant="monochrome" title="New Project">
-                <i class="fas fa-plus header-btn-icon"></i>
+            <button id="newProjectBtn" class="header-btn" title="New Project">
+                <i class="fas fa-plus"></i>
                 <span class="ml-1 hidden md:inline">New Project</span>
             </button>
-            <button id="userProfileBtn" class="mobile-icon-btn bg-primary header-icon-btn">
-                <span class="text-lg font-bold text-white header-btn-icon">R</span>
-                <span class="ml-1 hidden md:inline mobile-hidden">Profile</span>
+            <button id="userProfileBtn" class="header-btn">
+                <span class="text-lg font-bold">R</span>
+                <span class="ml-1 hidden md:inline">Profile</span>
             </button>
-            <div class="relative group hidden" id="profileDropdownContainer">
-                <img id="userAvatar" src="https://ui-avatars.com/api/?name=Guest&background=4B5EAA&color=fff" 
-                     alt="User Avatar" 
-                     class="w-9 h-9 rounded-full cursor-pointer border-2 border-white hover:border-primary transition-colors">
-                <div class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown">
-                    <a href="/profile.html" class="block">
-                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                            <i class="fas fa-user-circle text-primary mr-2"></i>
-                            <span id="userDisplayName">Guest User</span>
-                        </div>
-                    </a>
-                    <a href="/profile.html#preferences" class="block">
-                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                            <i class="fas fa-cog text-secondary mr-2"></i>
-                            <span>Settings</span>
-                        </div>
-                    </a>
-                    <!-- Dark mode toggle switch will be inserted here by initializeDarkModeSwitch() -->
-                    <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                        <i class="fas fa-sign-out-alt mr-2"></i>
-                        <span>Sign Out</span>
-                    </div>
-                </div>
-            </div>
         </div>
     </header>
 
     <!-- Sidebar Overlay (for mobile) -->
-    <div id="sidebarOverlay" class="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+    <div id="sidebarOverlay"></div>
 
     <!-- Load Project Panel -->
     <div id="loadProjectPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
@@ -4985,22 +5105,10 @@
         function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             const overlay = document.getElementById('sidebarOverlay');
-            
-            sidebar.classList.toggle('active');
-            
-            if (sidebar.classList.contains('active')) {
-                overlay.classList.remove('hidden');
-                    setTimeout(() => {
-                    overlay.classList.add('active');
-                }, 10);
-            } else {
-                overlay.classList.remove('active');
-                setTimeout(() => {
-                    overlay.classList.add('hidden');
-                    }, 300);
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
             }
-            
-            console.log('Sidebar toggled', sidebar.classList.contains('active'));
         }
         
         // This DOMContentLoaded listener now ONLY handles sidebarOverlay and userProfileBtn logic.
