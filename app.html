@@ -1609,11 +1609,7 @@
             background-color: #374151 !important;
         }
         
-        /* Save button specific styling */
-        .dark #saveBtn {
-            background-color: #1f2937 !important;
-            border-color: #374151 !important;
-        }
+        /* Remove any special save button styling in dark mode since it should match other buttons */
 
         /* Mobile Specific Fixes */
         @media (max-width: 768px) {
@@ -2977,7 +2973,7 @@
             <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
         </div>
         <div class="flex items-center space-x-2">
-            <button id="saveBtn" class="header-btn" title="Save">
+            <button id="saveBtn" class="header-btn btn-monochrome" title="Save">
                 <i class="fas fa-save"></i>
                 <span class="ml-1 hidden md:inline">Save</span>
             </button>
