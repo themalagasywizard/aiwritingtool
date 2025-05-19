@@ -5292,13 +5292,12 @@
     }
     
     // Remove old dropdown if exists
-    let existingDropdown = document.getElementById('profileDropdownContainer');
-    if (existingDropdown) {
-        existingDropdown.remove();
+    if (profileDropdown) {
+        profileDropdown.remove();
     }
     
     // Remove any old overlays
-    let existingOverlay = document.getElementById('mobileMenuOverlay');
+    let existingOverlay = document.getElementById('profileOverlay');
     if (existingOverlay) {
         existingOverlay.remove();
     }
@@ -5307,273 +5306,96 @@
     const isMobile = window.innerWidth <= 768;
     console.log("Is mobile view:", isMobile);
     
-    // Create completely new approach for mobile
+    // Create a standard dropdown for both mobile and desktop
+    profileDropdown = document.createElement('div');
+    profileDropdown.id = 'profileDropdownContainer';
+    
+    // Position the dropdown differently based on device
     if (isMobile) {
-        // ===== MOBILE IMPLEMENTATION =====
+        // Mobile styling - positioned under the header
+        profileDropdown.className = 'hidden absolute right-0 top-16 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2 mt-1';
+        profileDropdown.style.maxHeight = '80vh';
+        profileDropdown.style.overflowY = 'auto';
+    } else {
+        // Desktop styling - positioned under the profile button
+        profileDropdown.className = 'hidden absolute right-4 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-2';
+    }
+    
+    // Use the same dropdown content for both mobile and desktop as requested
+    profileDropdown.innerHTML = `
+        <a href="/profile.html" class="block">
+          <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+            <i class="fas fa-user-circle text-primary mr-2"></i>
+            <span id="userDisplayName">Guest User</span>
+          </div>
+        </a>
+        <a href="/profile.html#preferences" class="block">
+          <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
+            <i class="fas fa-cog text-secondary mr-2"></i>
+            <span>Settings</span>
+          </div>
+        </a>
+        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
+          <div class="flex items-center">
+            <i class="fas fa-moon text-primary mr-2"></i>
+            <span>Dark Mode</span>
+          </div>
+          <div class="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full">
+            <input type="checkbox" id="darkModeToggle" class="absolute w-6 h-6 opacity-0 z-10 cursor-pointer peer" />
+            <label for="darkModeToggle" class="
+                block w-12 h-6 overflow-hidden rounded-full 
+                bg-gray-300 cursor-pointer peer-checked:bg-primary
+                after:content-[''] after:absolute after:z-[2] after:block 
+                after:w-5 after:h-5 after:rounded-full after:left-0.5 after:top-0.5 
+                after:bg-white after:transition-all after:duration-300 
+                peer-checked:after:translate-x-6"></label>
+          </div>
+        </div>
+        <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
+          <i class="fas fa-sign-out-alt mr-2"></i>
+          <span>Sign Out</span>
+        </div>
+    `;
+    
+    // Add to document body
+    document.body.appendChild(profileDropdown);
+    
+    // Apply dark mode styling if needed
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    if (isDarkMode) {
+        applyDarkModeToDropdown(profileDropdown, isMobile);
+    }
+    
+    // Update the toggle UI to match current state
+    updateDarkModeToggleState(isDarkMode, isMobile);
+    
+    // Remove old event listeners by cloning profile button
+    const newButton = userProfileBtn.cloneNode(true);
+    userProfileBtn.parentNode.replaceChild(newButton, userProfileBtn);
+    userProfileBtn = newButton;
+    
+    // Add click handlers for profile button for both mobile and desktop
+    userProfileBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleDropdown(profileDropdown, isMobile);
+    });
+    
+    // Setup desktop-specific event handlers
+    setupDesktopHandlers(profileDropdown);
+    
+    // Ensure hamburger menu button works for sidebar toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    if (mobileMenuBtn) {
+        const newMobileBtn = mobileMenuBtn.cloneNode(true);
+        mobileMenuBtn.parentNode.replaceChild(newMobileBtn, mobileMenuBtn);
         
-        // Create full-screen overlay for mobile
-        const overlay = document.createElement('div');
-        overlay.id = 'mobileMenuOverlay';
-        overlay.className = 'hidden fixed inset-0 bg-black bg-opacity-50 z-[9998]';
-        document.body.appendChild(overlay);
-        
-        // Create mobile menu container
-        const mobileMenu = document.createElement('div');
-        mobileMenu.id = 'profileDropdownContainer';
-        mobileMenu.className = 'hidden fixed inset-x-0 bottom-0 bg-white rounded-t-xl z-[9999] transform transition-transform duration-300 ease-in-out';
-        mobileMenu.style.boxShadow = '0 -4px 12px rgba(0, 0, 0, 0.15)';
-        mobileMenu.style.maxHeight = '80vh';
-        mobileMenu.style.overflowY = 'auto';
-        mobileMenu.style.transform = 'translateY(100%)';
-        
-        // Add a drag indicator
-        mobileMenu.innerHTML = `
-            <div class="flex justify-center py-2">
-                <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
-            </div>
-            <div class="px-4 pb-6 space-y-4">
-                <h3 class="text-lg font-medium mb-4 border-b pb-2">Account Menu</h3>
-                <!-- Direct Links - Use standard a tags but with touchstart event for mobile -->
-                <a href="/profile.html" class="flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100" onclick="closeMenuAndNavigate('/profile.html', event)" ontouchstart="this.click()">
-                    <i class="fas fa-user-circle text-primary text-xl mr-3"></i>
-                    <span class="text-base font-medium">Your Profile</span>
-                </a>
-                
-                <a href="/profile.html#preferences" class="flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100" onclick="closeMenuAndNavigate('/profile.html#preferences', event)" ontouchstart="this.click()">
-                    <i class="fas fa-cog text-gray-600 text-xl mr-3"></i>
-                    <span class="text-base font-medium">Settings</span>
-                </a>
-                
-                <!-- Dark Mode Toggle - Simplified -->
-                <div id="simpleDarkModeToggle" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg" ontouchstart="this.click()" onclick="toggleDarkMode()">
-                    <div class="flex items-center">
-                        <i class="fas fa-moon text-primary text-xl mr-3"></i>
-                        <span class="text-base font-medium">Dark Mode</span>
-                    </div>
-                    <!-- Simple Toggle Switch -->
-                    <div id="darkModeSwitchOuter" class="w-14 h-8 flex items-center bg-gray-300 rounded-full px-1 cursor-pointer">
-                        <div id="darkModeSwitchInner" class="bg-white w-6 h-6 rounded-full shadow-md transform duration-300"></div>
-                    </div>
-                </div>
-                
-                <!-- Sign Out - Direct button with minimal JS -->
-                <button id="mobileSignOutBtn" class="w-full flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100 text-left text-red-500" ontouchstart="this.click()">
-                    <i class="fas fa-sign-out-alt text-xl mr-3"></i>
-                    <span class="text-base font-medium">Sign Out</span>
-                </button>
-            </div>
-        `;
-        
-        // Add the mobile menu to the document body
-        document.body.appendChild(mobileMenu);
-
-        // Create a function to toggle the mobile menu visibility with animation
-        function toggleMobileMenu(show) {
-            // If show parameter is not provided, toggle based on current state
-            if (show === undefined) {
-                show = mobileMenu.classList.contains('hidden');
-            }
-            
-            if (show) {
-                // Show menu with animation
-                mobileMenu.classList.remove('hidden');
-                overlay.classList.remove('hidden');
-                
-                // Start animation after a small delay for the browser to process
-                setTimeout(() => {
-                    mobileMenu.style.transform = 'translateY(0)';
-                    overlay.style.opacity = '1';
-                    overlay.style.visibility = 'visible';
-                }, 10);
-            } else {
-                // Hide menu with animation
-                mobileMenu.style.transform = 'translateY(100%)';
-                overlay.style.opacity = '0';
-                overlay.style.visibility = 'hidden';
-                
-                // Remove from DOM after animation completes
-                setTimeout(() => {
-                    mobileMenu.classList.add('hidden');
-                    overlay.classList.add('hidden');
-                }, 300);
-            }
-        }
-
-        // Add click listener to the profile button to show the mobile menu
-        userProfileBtn.addEventListener('click', function(e) {
+        newMobileBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            e.stopPropagation();
-            console.log('Profile button clicked on mobile');
-            toggleMobileMenu(true);
+            toggleSidebar();
         });
-        
-        // Add click listener to the overlay to close the mobile menu
-        overlay.addEventListener('click', function() {
-            toggleMobileMenu(false);
-        });
-        
-        // Add click listener to the mobile sign out button
-        const mobileSignOutBtn = document.getElementById('mobileSignOutBtn');
-        if (mobileSignOutBtn) {
-            mobileSignOutBtn.addEventListener('click', async function(e) {
-                e.preventDefault();
-                console.log('Mobile sign out button clicked');
-                
-                // Close the menu with animation
-                toggleMobileMenu(false);
-                
-                // Wait for animation to complete before signing out
-                setTimeout(async () => {
-                    try {
-                        const auth = window.supabaseServices?.auth;
-                        if (auth) {
-                            await auth.signOut();
-                            window.location.href = '/';
-                        } else {
-                            console.error("Auth service not available");
-                            alert('Authentication service unavailable');
-                        }
-                    } catch (error) {
-                        console.error('Error signing out:', error);
-                        alert('Failed to sign out. Please try again.');
-                    }
-                }, 300);
-            });
-        }
-        
-        // Add function to handle navigation with improved touch support
-        window.closeMenuAndNavigate = function(url, event) {
-            event.preventDefault();
-            event.stopPropagation();
-            console.log("Navigating to:", url);
-            
-            // Close menu first using the toggleMobileMenu function
-            toggleMobileMenu(false);
-            
-            // Navigate after the animation completes
-            setTimeout(() => {
-                window.location.href = url;
-            }, 300);
-        };
-        
-        // Add a function for the dark mode toggle click in mobile
-        window.toggleDarkMode = function() {
-            console.log('Mobile dark mode toggle clicked');
-            
-            // Toggle dark mode
-            const isDarkMode = document.documentElement.classList.contains('dark');
-            document.documentElement.classList.toggle('dark');
-            
-            // Store preference
-            localStorage.setItem('darkMode', !isDarkMode ? 'enabled' : 'disabled');
-            
-            // Update toggle switch UI
-            const darkModeSwitchInner = document.getElementById('darkModeSwitchInner');
-            const darkModeSwitchOuter = document.getElementById('darkModeSwitchOuter');
-            
-            if (darkModeSwitchInner) {
-                if (!isDarkMode) {
-                    // Switched to dark mode
-                    darkModeSwitchInner.style.transform = 'translateX(1.5rem)';
-                    darkModeSwitchInner.style.backgroundColor = '#4B5EAA';
-                    if (darkModeSwitchOuter) {
-                        darkModeSwitchOuter.style.backgroundColor = '#6B7280';
-                    }
-                } else {
-                    // Switched to light mode
-                    darkModeSwitchInner.style.transform = 'translateX(0)';
-                    darkModeSwitchInner.style.backgroundColor = 'white';
-                    if (darkModeSwitchOuter) {
-                        darkModeSwitchOuter.style.backgroundColor = '#D1D5DB';
-                    }
-                }
-            }
-            
-            // Dispatch event for other components that might need to respond to dark mode changes
-            document.dispatchEvent(new CustomEvent('darkModeChanged', {
-                detail: { enabled: !isDarkMode }
-            }));
-        };
-        
-        // For desktop dropdown
-        } else {
-                    // Create a dropdown container for desktop
-                    if (profileDropdown) {
-                        profileDropdown.remove();
-                    }
-                    profileDropdown = document.createElement('div');
-                    profileDropdown.id = 'profileDropdownContainer';
-                    
-                    // Desktop dropdown with original implementation
-                    profileDropdown.innerHTML = `
-                        <a href="/profile.html" class="block">
-                            <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                                <i class="fas fa-user-circle text-primary mr-2"></i>
-                                <span id="userDisplayName">Guest User</span>
-                            </div>
-                        </a>
-                        <a href="/profile.html#preferences" class="block">
-                            <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center">
-                                <i class="fas fa-cog text-secondary mr-2"></i>
-                                <span>Settings</span>
-                            </div>
-                        </a>
-                        <div class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center justify-between" id="darkModeToggleContainer">
-                            <div class="flex items-center">
-                                <i class="fas fa-moon text-primary mr-2"></i>
-                                <span>Dark Mode</span>
-                            </div>
-                            <div class="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full">
-                                <input type="checkbox" id="darkModeToggle" class="absolute w-6 h-6 opacity-0 z-10 cursor-pointer peer" />
-                                <label for="darkModeToggle" class="
-                                    block w-12 h-6 overflow-hidden rounded-full 
-                                    bg-gray-300 cursor-pointer peer-checked:bg-primary
-                                    after:content-[''] after:absolute after:z-[2] after:block 
-                                    after:w-5 after:h-5 after:rounded-full after:left-0.5 after:top-0.5 
-                                    after:bg-white after:transition-all after:duration-300 
-                                    peer-checked:after:translate-x-6"></label>
-                            </div>
-                        </div>
-                        <div id="signOutBtn" class="p-2 hover:bg-gray-50 rounded cursor-pointer flex items-center text-error">
-                            <i class="fas fa-sign-out-alt mr-2"></i>
-                            <span>Sign Out</span>
-                        </div>
-                    `;
-                }
-                
-                // Add to document body (not as child of any other element)
-                document.body.appendChild(profileDropdown);
-                
-                // Apply dark mode styling if needed
-                const isDarkMode = document.documentElement.classList.contains('dark');
-                if (isDarkMode) {
-                    applyDarkModeToDropdown(profileDropdown, isMobile);
-                }
-                
-                // Update the toggle UI to match current state
-                updateDarkModeToggleState(isDarkMode, isMobile);
-                
-                // Remove old event listeners by cloning profile button
-                const newButton = userProfileBtn.cloneNode(true);
-                userProfileBtn.parentNode.replaceChild(newButton, userProfileBtn);
-                userProfileBtn = newButton;
-                
-                // Add click handlers for profile button for desktop mode
-                userProfileBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    toggleDropdown(profileDropdown, isMobile);
-                });
-                
-                // For desktop touch events - mobile handles this separately
-                if (isMobile) {
-                    // We don't need this for mobile as we handle it separately
-                    console.log("Mobile handlers already set up");
-                } else {
-                    // Setup desktop-specific event handlers
-                    setupDesktopHandlers(profileDropdown);
-                }
-            };
+    }
+};
             
             // Helper function to toggle dropdown visibility
             function toggleDropdown(dropdown, isMobile) {
@@ -5736,7 +5558,7 @@
                             const auth = window.supabaseServices?.auth;
                             if (auth) {
                                 await auth.signOut();
-                                window.location.href = '/auth/auth.html';
+                                window.location.href = '/';
                             } else {
                                 console.error("Auth service not available");
                                 alert('Authentication service unavailable');
