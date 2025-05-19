@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Menu Test</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Mobile dropdown styling */
+        #profileDropdownContainer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border-top-left-radius: 1rem;
+            border-top-right-radius: 1rem;
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(100%);
+            transition: transform 0.3s ease-in-out;
+            z-index: 9999;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        #profileDropdownContainer.active {
+            transform: translateY(0);
+        }
+        
+        #mobileMenuOverlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9998;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+        }
+        
+        #mobileMenuOverlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Dark mode toggle styling */
+        #darkModeSwitchInner {
+            transition: transform 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .dark #darkModeSwitchOuter {
+            background-color: #4B5EAA !important;
+        }
+        
+        .dark #darkModeSwitchInner {
+            transform: translateX(1.5rem) !important;
+            background-color: white !important;
+        }
+        
+        /* Dark mode styling */
+        .dark {
+            background-color: #1f2937;
+            color: white;
+        }
+        
+        .dark .bg-gray-50 {
+            background-color: #374151 !important;
+            color: white !important;
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="max-w-md mx-auto">
+        <h1 class="text-2xl font-bold mb-6">Mobile Menu Test</h1>
+        <p class="mb-4">This is a test page for the mobile dropdown menu with touch handling improvements.</p>
+        
+        <button id="userProfileBtn" class="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white">
+            <i class="fas fa-user"></i>
+        </button>
+        
+        <!-- Mobile Menu Overlay (hidden by default) -->
+        <div id="mobileMenuOverlay" class="hidden"></div>
+        
+        <!-- Mobile Menu Container (hidden by default) -->
+        <div id="profileDropdownContainer" class="hidden">
+            <div class="flex justify-center py-2">
+                <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
+            </div>
+            <div class="px-4 pb-6 space-y-4">
+                <h3 class="text-lg font-medium mb-4 border-b pb-2">Account Menu</h3>
+                <!-- Direct Links - Use standard a tags but with touchstart event for mobile -->
+                <a href="#profile" class="flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100" onclick="closeMenuAndNavigate('#profile', event)" ontouchstart="this.click()">
+                    <i class="fas fa-user-circle text-primary text-xl mr-3"></i>
+                    <span class="text-base font-medium">Your Profile</span>
+                </a>
+                
+                <a href="#settings" class="flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100" onclick="closeMenuAndNavigate('#settings', event)" ontouchstart="this.click()">
+                    <i class="fas fa-cog text-gray-600 text-xl mr-3"></i>
+                    <span class="text-base font-medium">Settings</span>
+                </a>
+                
+                <!-- Dark Mode Toggle - Simplified -->
+                <div id="simpleDarkModeToggle" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg" ontouchstart="this.click()" onclick="toggleDarkMode()">
+                    <div class="flex items-center">
+                        <i class="fas fa-moon text-primary text-xl mr-3"></i>
+                        <span class="text-base font-medium">Dark Mode</span>
+                    </div>
+                    <!-- Simple Toggle Switch -->
+                    <div id="darkModeSwitchOuter" class="w-14 h-8 flex items-center bg-gray-300 rounded-full px-1 cursor-pointer">
+                        <div id="darkModeSwitchInner" class="bg-white w-6 h-6 rounded-full shadow-md transform duration-300"></div>
+                    </div>
+                </div>
+                
+                <!-- Sign Out - Direct button with minimal JS -->
+                <button id="mobileSignOutBtn" class="w-full flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100 text-left text-red-500" ontouchstart="this.click()">
+                    <i class="fas fa-sign-out-alt text-xl mr-3"></i>
+                    <span class="text-base font-medium">Sign Out</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Setup the mobile menu functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const userProfileBtn = document.getElementById('userProfileBtn');
+            const mobileMenu = document.getElementById('profileDropdownContainer');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            
+            // Add function to handle navigation with improved touch support
+            window.closeMenuAndNavigate = function(url, event) {
+                event.preventDefault();
+                event.stopPropagation();
+                console.log("Navigating to:", url);
+                
+                // Close menu first
+                toggleMenu(false);
+                
+                // Then navigate after animation
+                setTimeout(() => {
+                    // For test purposes, just log the navigation
+                    console.log("Would navigate to:", url);
+                    alert("Navigation to: " + url);
+                }, 300);
+            };
+            
+            // Add a function for the dark mode toggle
+            window.toggleDarkMode = function() {
+                console.log('Dark mode toggle clicked');
+                
+                // Toggle dark mode class on html element
+                document.documentElement.classList.toggle('dark');
+                
+                // Store preference in localStorage
+                const isDarkMode = document.documentElement.classList.contains('dark');
+                localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+                
+                // Update toggle switch UI
+                updateDarkModeToggle(isDarkMode);
+            };
+            
+            // Function to update the dark mode toggle appearance
+            function updateDarkModeToggle(isDarkMode) {
+                const darkModeSwitchInner = document.getElementById('darkModeSwitchInner');
+                if (darkModeSwitchInner) {
+                    if (isDarkMode) {
+                        // Already handled by CSS, but we could add additional styling here
+                    } else {
+                        // Already handled by CSS, but we could add additional styling here
+                    }
+                }
+            }
+            
+            // Toggle the mobile menu
+            function toggleMenu(show) {
+                if (show === undefined) {
+                    show = mobileMenu.classList.contains('hidden');
+                }
+                
+                if (show) {
+                    // Show menu
+                    mobileMenu.classList.remove('hidden');
+                    overlay.classList.remove('hidden');
+                    
+                    // Add active class after a small delay to trigger animation
+                    setTimeout(() => {
+                        mobileMenu.classList.add('active');
+                        overlay.classList.add('active');
+                    }, 10);
+                } else {
+                    // Hide menu with animation
+                    mobileMenu.classList.remove('active');
+                    overlay.classList.remove('active');
+                    
+                    // Remove from DOM after animation completes
+                    setTimeout(() => {
+                        mobileMenu.classList.add('hidden');
+                        overlay.classList.add('hidden');
+                    }, 300);
+                }
+            }
+            
+            // Setup event listeners
+            userProfileBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                toggleMenu(true);
+            });
+            
+            overlay.addEventListener('click', function() {
+                toggleMenu(false);
+            });
+            
+            // Sign out button handling
+            const signOutBtn = document.getElementById('mobileSignOutBtn');
+            signOutBtn.addEventListener('click', function() {
+                console.log('Sign out clicked');
+                alert('Sign out clicked');
+                toggleMenu(false);
+            });
+            
+            // Fix mobile button touch handling
+            function fixMobileMenuButtons() {
+                // Find all interactive elements
+                const buttons = mobileMenu.querySelectorAll('a, button, [role="button"]');
+                
+                // Add touch handlers to ensure they work on all mobile devices
+                buttons.forEach(button => {
+                    // Add touchstart listener that calls click
+                    button.addEventListener('touchstart', function(e) {
+                        // Prevent double-tap zoom on iOS
+                        e.preventDefault();
+                        console.log('Touch on:', this.textContent.trim());
+                    });
+                });
+            }
+            
+            // Call the fix function once the menu exists
+            fixMobileMenuButtons();
+            
+            // Check for stored dark mode preference
+            const storedDarkMode = localStorage.getItem('darkMode');
+            if (storedDarkMode === 'enabled') {
+                document.documentElement.classList.add('dark');
+                updateDarkModeToggle(true);
+            }
+        });
+    </script>
+</body>
+</html> 

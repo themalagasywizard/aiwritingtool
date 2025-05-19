@@ -5278,95 +5278,141 @@
             
             // User Profile Button click handler - MOBILE-FIRST APPROACH
             window.setupProfileDropdown = function() {
-                console.log("Setting up profile dropdown with mobile-first approach");
+    console.log("Setting up profile dropdown with simplified approach");
+    
+    // Get profile button
+    let userProfileBtn = document.getElementById('userProfileBtn');
+    
+    if (!userProfileBtn) {
+        console.log("Profile button not found, cannot setup dropdown");
+        return;
+    }
+    
+    // Remove old dropdown if exists
+    let existingDropdown = document.getElementById('profileDropdownContainer');
+    if (existingDropdown) {
+        existingDropdown.remove();
+    }
+    
+    // Remove any old overlays
+    let existingOverlay = document.getElementById('mobileMenuOverlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+    
+    // Check if mobile view
+    const isMobile = window.innerWidth <= 768;
+    console.log("Is mobile view:", isMobile);
+    
+    // Create completely new approach for mobile
+    if (isMobile) {
+        // ===== MOBILE IMPLEMENTATION =====
+        
+        // Create full-screen overlay for mobile
+        const overlay = document.createElement('div');
+        overlay.id = 'mobileMenuOverlay';
+        overlay.className = 'hidden fixed inset-0 bg-black bg-opacity-50 z-[9998]';
+        document.body.appendChild(overlay);
+        
+        // Create mobile menu container
+        const mobileMenu = document.createElement('div');
+        mobileMenu.id = 'profileDropdownContainer';
+        mobileMenu.className = 'hidden fixed inset-x-0 bottom-0 bg-white rounded-t-xl z-[9999] transform transition-transform duration-300 ease-in-out';
+        mobileMenu.style.boxShadow = '0 -4px 12px rgba(0, 0, 0, 0.15)';
+        mobileMenu.style.maxHeight = '80vh';
+        mobileMenu.style.overflowY = 'auto';
+        mobileMenu.style.transform = 'translateY(100%)';
+        
+        // Add a drag indicator
+        mobileMenu.innerHTML = `
+            <div class="flex justify-center py-2">
+                <div class="w-12 h-1 bg-gray-300 rounded-full"></div>
+            </div>
+            <div class="px-4 pb-6 space-y-4">
+                <h3 class="text-lg font-medium mb-4 border-b pb-2">Account Menu</h3>
+                <!-- Direct Links - Use standard a tags but with touchstart event for mobile -->
+                <a href="/profile.html" class="flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100" onclick="closeMenuAndNavigate('/profile.html', event)" ontouchstart="this.click()">
+                    <i class="fas fa-user-circle text-primary text-xl mr-3"></i>
+                    <span class="text-base font-medium">Your Profile</span>
+                </a>
                 
-                // Get or create new profile button (with forced ID)
-                let userProfileBtn = document.getElementById('userProfileBtn');
+                <a href="/profile.html#preferences" class="flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100" onclick="closeMenuAndNavigate('/profile.html#preferences', event)" ontouchstart="this.click()">
+                    <i class="fas fa-cog text-gray-600 text-xl mr-3"></i>
+                    <span class="text-base font-medium">Settings</span>
+                </a>
                 
-                if (!userProfileBtn) {
-                    console.log("Profile button not found, cannot setup dropdown");
-                    return;
-                }
+                <!-- Dark Mode Toggle - Simplified -->
+                <div id="simpleDarkModeToggle" class="flex items-center justify-between p-4 bg-gray-50 rounded-lg" ontouchstart="this.click()" onclick="toggleDarkMode()">
+                    <div class="flex items-center">
+                        <i class="fas fa-moon text-primary text-xl mr-3"></i>
+                        <span class="text-base font-medium">Dark Mode</span>
+                    </div>
+                    <!-- Simple Toggle Switch -->
+                    <div id="darkModeSwitchOuter" class="w-14 h-8 flex items-center bg-gray-300 rounded-full px-1 cursor-pointer">
+                        <div id="darkModeSwitchInner" class="bg-white w-6 h-6 rounded-full shadow-md transform duration-300"></div>
+                    </div>
+                </div>
                 
-                // Force replace any existing dropdown
-                let existingDropdown = document.getElementById('profileDropdownContainer');
-                if (existingDropdown) {
-                    existingDropdown.remove();
-                }
+                <!-- Sign Out - Direct button with minimal JS -->
+                <button id="mobileSignOutBtn" class="w-full flex items-center p-4 bg-gray-50 rounded-lg active:bg-gray-100 text-left text-red-500" ontouchstart="this.click()">
+                    <i class="fas fa-sign-out-alt text-xl mr-3"></i>
+                    <span class="text-base font-medium">Sign Out</span>
+                </button>
+            </div>
+        `;
+        
+        // Add function to handle navigation with improved touch support
+        window.closeMenuAndNavigate = function(url, event) {
+            event.preventDefault();
+            event.stopPropagation();
+            console.log("Navigating to:", url);
+            
+            // Close menu first
+            const menu = document.getElementById('profileDropdownContainer');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            
+            if (menu) {
+                menu.style.transform = 'translateY(100%)';
+            }
+            
+            // Hide overlay and menu after animation
+            setTimeout(() => {
+                if (menu) menu.classList.add('hidden');
+                if (overlay) overlay.classList.add('hidden');
                 
-                // Check if mobile view
-                const isMobile = window.innerWidth <= 768;
-                console.log("Is mobile view:", isMobile);
-                
-                // Create new dropdown from scratch - with a new approach
-                const dropdown = document.createElement('div');
-                dropdown.id = 'profileDropdownContainer';
-                
-                // Use different styling for mobile vs desktop
-                if (isMobile) {
-                    // Mobile-specific styling - make it full-width and obvious
-                    dropdown.className = 'hidden fixed bg-white rounded-lg shadow-lg profile-dropdown';
-                    dropdown.style.left = '0';
-                    dropdown.style.right = '0';
-                    dropdown.style.top = '60px';
-                    dropdown.style.padding = '12px';
-                    dropdown.style.zIndex = '10000';
-                    dropdown.style.border = '2px solid #4B5EAA';
-                    dropdown.style.margin = '10px';
-                    dropdown.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                // Then navigate
+                window.location.href = url;
+            }, 300);
+        };
+        
+        // Add a function for the dark mode toggle click in mobile
+        window.toggleDarkMode = function() {
+            console.log('Mobile dark mode toggle clicked');
+            
+            // Toggle dark mode
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            document.documentElement.classList.toggle('dark');
+            
+            // Store preference
+            localStorage.setItem('darkMode', !isDarkMode ? 'enabled' : 'disabled');
+            
+            // Update toggle switch UI
+            const darkModeSwitchInner = document.getElementById('darkModeSwitchInner');
+            if (darkModeSwitchInner) {
+                if (!isDarkMode) {
+                    // Switched to dark mode
+                    darkModeSwitchInner.style.transform = 'translateX(1.5rem)';
+                    darkModeSwitchInner.style.backgroundColor = '#4B5EAA';
                 } else {
-                    // Desktop styling
-                    dropdown.className = 'hidden fixed right-4 mt-2 w-48 bg-white rounded-lg shadow-md-custom p-2 profile-dropdown';
-                    dropdown.style.zIndex = '9999';
-                    dropdown.style.top = (userProfileBtn.getBoundingClientRect().bottom + 5) + 'px';
-                    dropdown.style.right = '10px';
+                    // Switched to light mode
+                    darkModeSwitchInner.style.transform = 'translateX(0)';
+                    darkModeSwitchInner.style.backgroundColor = 'white';
                 }
-                
-                // Create the content with simpler implementation for mobile
-                if (isMobile) {
-                    dropdown.innerHTML = `
-                        <div class="flex flex-col space-y-3">
-                            <!-- Profile Link - Using <a> for direct navigation -->
-                            <a href="/profile.html" class="block py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg">
-                                <div class="flex items-center">
-                                    <i class="fas fa-user-circle text-primary mr-3 text-xl"></i>
-                                    <span class="text-base font-medium">Profile</span>
-                                </div>
-                            </a>
-                            
-                            <!-- Settings Link - Using <a> for direct navigation -->
-                            <a href="/profile.html#preferences" class="block py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg">
-                                <div class="flex items-center">
-                                    <i class="fas fa-cog text-secondary mr-3 text-xl"></i>
-                                    <span class="text-base font-medium">Settings</span>
-                                </div>
-                            </a>
-                            
-                            <!-- Dark Mode Toggle - Using real button for better touch handling -->
-                            <button id="darkModeToggleBtn" type="button" class="py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg text-left">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-moon text-primary mr-3 text-xl"></i>
-                                        <span class="text-base font-medium">Dark Mode</span>
-                                    </div>
-                                    <div class="relative inline-block w-16 h-9">
-                                        <div id="darkModeToggleIndicator" class="w-16 h-9 overflow-hidden rounded-full bg-gray-300">
-                                            <div id="darkModeToggleKnob" class="absolute w-7 h-7 rounded-full bg-white shadow-md transform translate-y-1 translate-x-1 transition-transform duration-200"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </button>
-                            
-                            <!-- Sign Out Button - Using real button for better touch handling -->
-                            <button id="signOutBtnMobile" type="button" class="py-4 px-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-lg text-left">
-                                <div class="flex items-center text-error">
-                                    <i class="fas fa-sign-out-alt mr-3 text-xl"></i>
-                                    <span class="text-base font-medium">Sign Out</span>
-                                </div>
-                            </button>
-                        </div>
-                    `;
-                } else {
+            }
+        };
+        
+        // For desktop dropdown
+        } else {
                     // Desktop dropdown with original implementation
                     dropdown.innerHTML = `
                         <a href="/profile.html" class="block">
@@ -6493,6 +6539,90 @@
                     }, 300);
                 }, 3000);
             }
+        });
+    </script>
+
+    <!-- Mobile touch handling fix script -->
+    <script>
+        // Fix for mobile dropdown buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners for mobile dropdowns after they're created
+            function fixMobileMenuButtons() {
+                // Check if we have the mobile dropdown container
+                const mobileMenu = document.getElementById('profileDropdownContainer');
+                if (!mobileMenu) return;
+                
+                // Find all interactive elements
+                const buttons = mobileMenu.querySelectorAll('a, button, [role="button"]');
+                
+                // Add click and touch handlers
+                buttons.forEach(button => {
+                    // Remove any existing listeners by cloning
+                    const newButton = button.cloneNode(true);
+                    button.parentNode.replaceChild(newButton, button);
+                    
+                    // Add proper mobile click handling that works on all devices
+                    newButton.addEventListener('click', function(e) {
+                        console.log('Button clicked:', this.textContent.trim());
+                        
+                        // For links with href
+                        if (this.hasAttribute('href')) {
+                            const href = this.getAttribute('href');
+                            closeMenuAndNavigate(href, e);
+                        }
+                        
+                        // For sign out button
+                        if (this.id === 'mobileSignOutBtn') {
+                            console.log('Sign out clicked');
+                            // Add sign out functionality here
+                            e.preventDefault();
+                            if (window.supabaseServices && window.supabaseServices.auth) {
+                                window.supabaseServices.auth.signOut();
+                                window.location.href = '/';
+                            }
+                        }
+                    });
+                    
+                    // Add touch events for mobile
+                    newButton.addEventListener('touchstart', function(e) {
+                        // Prevent default to avoid double-tap zoom issues on iOS
+                        e.preventDefault();
+                        this.click();
+                    });
+                });
+                
+                // Fix the dark mode toggle specifically
+                const darkModeToggle = document.getElementById('simpleDarkModeToggle');
+                if (darkModeToggle) {
+                    // Remove any existing listeners by cloning
+                    const newToggle = darkModeToggle.cloneNode(true);
+                    darkModeToggle.parentNode.replaceChild(newToggle, darkModeToggle);
+                    
+                    // Add proper mobile click handling
+                    newToggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        toggleDarkMode();
+                    });
+                    
+                    // Add touch event
+                    newToggle.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        this.click();
+                    });
+                }
+            }
+            
+            // Run immediately and also when the profile button is clicked
+            const userProfileBtn = document.getElementById('userProfileBtn');
+            if (userProfileBtn) {
+                userProfileBtn.addEventListener('click', function() {
+                    // Wait a moment for the dropdown to be created
+                    setTimeout(fixMobileMenuButtons, 100);
+                });
+            }
+            
+            // Also run periodically to catch any dynamically created elements
+            setInterval(fixMobileMenuButtons, 1000);
         });
     </script>
 </body>
