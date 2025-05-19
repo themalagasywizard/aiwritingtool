@@ -1,7 +1,8 @@
 [build]
   functions = "./functions"
   publish = "."
-  command = "echo 'No build needed'"
+  command = "npm install && node scripts/process-templates.js"
+  node_version = "18"
 
 [dev]
   framework = "#static"
