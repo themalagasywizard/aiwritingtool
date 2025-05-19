@@ -1609,7 +1609,21 @@
             background-color: #374151 !important;
         }
         
-        /* Remove any special save button styling in dark mode since it should match other buttons */
+        /* Save button specific styling in dark mode - with higher specificity */
+        .dark #saveBtn,
+        .dark button#saveBtn.header-btn,
+        .dark button#saveBtn[class*="header-btn"] {
+            background-color: #1f2937 !important;
+            border-color: #374151 !important;
+            color: white !important;
+        }
+        
+        /* Make sure save button icon is white in dark mode */
+        .dark #saveBtn i,
+        .dark button#saveBtn i.fas,
+        .dark button#saveBtn i.fa-save {
+            color: white !important;
+        }
 
         /* Mobile Specific Fixes */
         @media (max-width: 768px) {
@@ -2973,10 +2987,10 @@
             <h1 class="text-xl font-semibold text-black dark:text-white hidden md:block">Kalligram</h1>
         </div>
         <div class="flex items-center space-x-2">
-            <button id="saveBtn" class="header-btn btn-monochrome" title="Save">
-                <i class="fas fa-save"></i>
-                <span class="ml-1 hidden md:inline">Save</span>
-            </button>
+            <button id="saveBtn" class="header-btn" title="Save">
+            <i class="fas fa-save"></i>
+            <span class="ml-1 hidden md:inline">Save</span>
+        </button>
             <button id="loadProjectBtn" class="header-btn" title="Load Project">
                 <i class="fas fa-folder-open"></i>
                 <span class="ml-1 hidden md:inline">Load Project</span>
