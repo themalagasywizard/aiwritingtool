@@ -1,0 +1,28 @@
+<!-- lib/shared-head.html -->
+<!-- Common meta tags -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Supabase Configuration -->
+<meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
+<meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
+
+<!-- Environment Variables Script -->
+<script>
+    window.ENV = {
+        SUPABASE_URL: '<%= process.env.SUPABASE_URL %>',
+        SUPABASE_ANON_KEY: '<%= process.env.SUPABASE_ANON_KEY %>'
+    };
+</script>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Shared Configuration -->
+<script src="/lib/shared-config.js"></script> 

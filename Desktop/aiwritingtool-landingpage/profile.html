@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalligram - Profile & Settings</title>
+    <!-- Supabase Configuration -->
+    <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
+    <meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
+    <!-- Environment Variables Script -->
+    <script>
+        window.ENV = {
+            SUPABASE_URL: '<%= process.env.SUPABASE_URL %>',
+            SUPABASE_ANON_KEY: '<%= process.env.SUPABASE_ANON_KEY %>'
+        };
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4B5EAA',
+                        primaryLight: '#E6E9F0',
+                        secondary: '#6B7280',
+                        accent: '#F472B6',
+                        background: '#F9FAFB',
+                        textPrimary: '#1F2937',
+                        textSecondary: '#9CA3AF',
+                        success: '#34D399',
+                        error: '#EF4444',
+                        warning: '#FBBF24',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+        }
+    </style>
+</head>
+<body class="bg-background">
+    <!-- Top Bar -->
+    <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 shadow-sm">
+        <div class="flex items-center space-x-4">
+            <a href="/app.html" class="text-gray-500 hover:text-primary">
+                <i class="fas fa-arrow-left"></i>
+                <span class="ml-2">Back to App</span>
+            </a>
+            <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white text-xl">
+                <i class="fas fa-feather-alt"></i>
+            </div>
+            <h1 class="text-xl font-semibold text-primary hidden md:block">Profile & Settings</h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="saveChangesBtn" class="btn bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors hidden">
+                <i class="fas fa-save"></i>
+                <span class="ml-2">Save Changes</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <!-- Left Sidebar - Navigation -->
+            <div class="md:col-span-1">
+                <div class="bg-white rounded-lg shadow-sm p-4">
+                    <nav class="space-y-2">
+                        <a href="#profile" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-primary bg-primaryLight">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Profile</span>
+                        </a>
+                        <a href="#subscription" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-primaryLight hover:text-primary">
+                            <i class="fas fa-crown"></i>
+                            <span>Subscription</span>
+                        </a>
+                        <a href="#preferences" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-primaryLight hover:text-primary">
+                            <i class="fas fa-cog"></i>
+                            <span>Preferences</span>
+                        </a>
+                        <a href="#security" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-primaryLight hover:text-primary">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Security</span>
+                        </a>
+                        <a href="#notifications" class="nav-link flex items-center space-x-2 p-2 rounded-lg text-gray-600 hover:bg-primaryLight hover:text-primary">
+                            <i class="fas fa-bell"></i>
+                            <span>Notifications</span>
+                        </a>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Right Content Area -->
+            <div class="md:col-span-3">
+                <!-- Profile Section -->
+                <div id="profile" class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-6">Profile Information</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Profile Picture -->
+                        <div class="md:col-span-2 flex items-center space-x-4">
+                            <div class="relative">
+                                <img id="profilePicture" src="https://ui-avatars.com/api/?name=User&background=4B5EAA&color=fff" 
+                                     alt="Profile Picture" 
+                                     class="w-20 h-20 rounded-full">
+                                <button id="uploadPictureBtn" class="absolute bottom-0 right-0 bg-primary text-white rounded-full p-2 shadow-lg hover:bg-opacity-90">
+                                    <i class="fas fa-camera"></i>
+                                </button>
+                                <input type="file" id="pictureInput" accept="image/*" class="hidden">
+                            </div>
+                            <div>
+                                <h3 class="font-medium" id="userDisplayName">Loading...</h3>
+                                <p class="text-sm text-gray-500" id="userEmail">Loading...</p>
+                            </div>
+                        </div>
+
+                        <!-- Name Fields -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                            <input type="text" id="firstName" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                            <input type="text" id="lastName" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+
+                        <!-- Bio -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                            <textarea id="userBio" rows="4" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                                      placeholder="Tell us about yourself..."></textarea>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                            <input type="text" id="location" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                                   placeholder="City, Country">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Section -->
+                <div id="subscription" class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-6">Subscription Plan</h2>
+                    <div class="bg-primaryLight rounded-lg p-4 mb-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-medium text-primary">Current Plan: <span id="currentPlan">Free</span></h3>
+                                <p class="text-sm text-gray-600">Next billing date: <span id="nextBillingDate">N/A</span></p>
+                            </div>
+                            <div class="space-x-2">
+                                <button id="upgradeToStarter" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                    Starter Plan
+                                </button>
+                                <button id="upgradeToPro" class="bg-accent text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                    Upgrade to Pro
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="font-medium mb-4">Available Plans</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Free Plan -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h4 class="font-semibold text-lg mb-2">Free</h4>
+                                <p class="text-gray-600 text-sm mb-4">Get started with basic features</p>
+                                <ul class="space-y-2 mb-4">
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        1,000 words/month
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Basic AI tools
+                                    </li>
+                                </ul>
+                                <p class="font-medium">$0/month</p>
+                            </div>
+                            
+                            <!-- Starter Plan -->
+                            <div class="border border-primary rounded-lg p-4 bg-primaryLight">
+                                <h4 class="font-semibold text-lg mb-2">Starter</h4>
+                                <p class="text-gray-600 text-sm mb-4">Perfect for beginners</p>
+                                <ul class="space-y-2 mb-4">
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        10,000 words/month
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Advanced AI tools
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Email support
+                                    </li>
+                                </ul>
+                                <p class="font-medium">$9/month</p>
+                            </div>
+                            
+                            <!-- Pro Plan -->
+                            <div class="border border-accent rounded-lg p-4 bg-accent bg-opacity-10">
+                                <h4 class="font-semibold text-lg mb-2">Pro</h4>
+                                <p class="text-gray-600 text-sm mb-4">For serious writers</p>
+                                <ul class="space-y-2 mb-4">
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Unlimited words
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        All AI features
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Priority support
+                                    </li>
+                                    <li class="flex items-center text-sm text-gray-600">
+                                        <i class="fas fa-check text-success mr-2"></i>
+                                        Collaboration tools
+                                    </li>
+                                </ul>
+                                <p class="font-medium">$29/month</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preferences Section -->
+                <div id="preferences" class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-6">Preferences</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded">
+                                <span>Enable dark mode</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded" checked>
+                                <span>Auto-save every 5 minutes</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Default Writing Font</label>
+                            <select class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option>Merriweather</option>
+                                <option>Inter</option>
+                                <option>Times New Roman</option>
+                                <option>Arial</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Section -->
+                <div id="security" class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-6">Security</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="font-medium mb-4">Change Password</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                                    <input type="password" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                                    <input type="password" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                                    <input type="password" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                    Update Password
+                                </button>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-200 pt-6">
+                            <h3 class="font-medium mb-4">Two-Factor Authentication</h3>
+                            <p class="text-sm text-gray-600 mb-4">Add an extra layer of security to your account</p>
+                            <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors">
+                                Enable 2FA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications Section -->
+                <div id="notifications" class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-xl font-semibold mb-6">Notifications</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded" checked>
+                                <span>Email notifications for updates</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded" checked>
+                                <span>Email notifications for comments</span>
+                            </label>
+                        </div>
+                        <div>
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-primary rounded">
+                                <span>Marketing emails</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-success text-white p-3 rounded-lg shadow-md hidden transform transition-transform duration-300">
+        <p class="text-sm"></p>
+    </div>
+
+    <script type="module">
+        import { auth, profiles } from './lib/supabase.js';
+
+        // DOM Elements
+        const saveChangesBtn = document.getElementById('saveChangesBtn');
+        const toast = document.getElementById('toast');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const userDisplayName = document.getElementById('userDisplayName');
+        const userEmail = document.getElementById('userEmail');
+        const profilePicture = document.getElementById('profilePicture');
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            toast.querySelector('p').textContent = message;
+            toast.classList.remove('hidden');
+            toast.classList.add('transform', 'translate-y-0');
+            
+            if (type === 'success') {
+                toast.classList.add('bg-success');
+                toast.classList.remove('bg-error', 'bg-warning');
+            } else if (type === 'error') {
+                toast.classList.add('bg-error');
+                toast.classList.remove('bg-success', 'bg-warning');
+            } else if (type === 'warning') {
+                toast.classList.add('bg-warning');
+                toast.classList.remove('bg-success', 'bg-error');
+            }
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-full');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                    toast.classList.remove('translate-y-full', 'bg-success', 'bg-error', 'bg-warning');
+                }, 300);
+            }, 3000);
+        }
+
+        // Handle navigation
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                // Remove active class from all links
+                navLinks.forEach(l => {
+                    l.classList.remove('bg-primaryLight', 'text-primary');
+                    l.classList.add('text-gray-600');
+                });
+                
+                // Add active class to clicked link
+                link.classList.add('bg-primaryLight', 'text-primary');
+                link.classList.remove('text-gray-600');
+            });
+        });
+
+        // Check if we're using mock client
+        async function checkMockClient() {
+            try {
+                // Capture console logs to check for mock client message
+                const originalConsoleLog = console.log;
+                let logCaptured = '';
+                
+                console.log = function(message) {
+                    if (message && typeof message === 'string' && message.includes('mock')) {
+                        logCaptured = message;
+                    }
+                    originalConsoleLog.apply(console, arguments);
+                };
+                
+                // Try auth call which will trigger mock client message if using mock
+                await auth.getUser();
+                
+                // Restore console.log
+                console.log = originalConsoleLog;
+                
+                return logCaptured.includes('mock');
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // Load user data
+        async function loadUserData() {
+            try {
+                const isMockClient = await checkMockClient();
+                const { data: { user }, error: userError } = await auth.getUser();
+                
+                if (userError) throw userError;
+                
+                if (!user && !isMockClient) {
+                    // Only redirect if we're not using a mock client
+                    window.location.href = '/auth/auth.html';
+                    return;
+                }
+                
+                // Regular user data loading
+                userEmail.textContent = user ? user.email : 'Loading...';
+                userDisplayName.textContent = user ? user.email.split('@')[0] : 'Loading...'; // Temporary display name
+                
+                // If using mock client and no user, populate with sample data
+                if (!user && isMockClient) {
+                    userEmail.textContent = 'demo@example.com';
+                    userDisplayName.textContent = 'Demo User';
+                    profilePicture.src = `https://ui-avatars.com/api/?name=DU&background=4B5EAA&color=fff`;
+                    document.getElementById('firstName').value = 'Demo';
+                    document.getElementById('lastName').value = 'User';
+                    document.getElementById('userBio').value = 'This is a demo account for showcasing the platform.';
+                    document.getElementById('location').value = 'Demo City, USA';
+                    
+                    // Add a notice about mock mode
+                    showToast('Using demo mode with mock data', 'warning');
+                    return;
+                }
+
+                try {
+                    // Load profile data from Supabase
+                    const { data: profile, error: profileError } = await profiles.get();
+                    
+                    if (profileError) {
+                        console.error('Error fetching profile:', profileError);
+                        showToast('Error loading profile data', 'error');
+                        return;
+                    }
+                    
+                    console.log('Fetched profile data:', profile);
+                    
+                    // If we have a profile, populate the form fields
+                    if (profile) {
+                        if (profile.first_name) document.getElementById('firstName').value = profile.first_name;
+                        if (profile.last_name) document.getElementById('lastName').value = profile.last_name;
+                        if (profile.bio) document.getElementById('userBio').value = profile.bio;
+                        if (profile.location) document.getElementById('location').value = profile.location;
+                        
+                        // Update display name if we have first and last name
+                        if (profile.first_name && profile.last_name) {
+                            userDisplayName.textContent = `${profile.first_name} ${profile.last_name}`;
+                        }
+                        
+                        // Update profile picture if available
+                        if (profile.profile_picture_url) {
+                            profilePicture.src = profile.profile_picture_url;
+                        } else {
+                            // Use default avatar with first letter of email
+                            profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
+                        }
+                        
+                        // Update subscription info if available
+                        if (profile.subscription_plan) {
+                            const planElement = document.getElementById('currentPlan');
+                            if (planElement) {
+                                planElement.textContent = profile.subscription_plan.charAt(0).toUpperCase() + profile.subscription_plan.slice(1);
+                            }
+                            
+                            // Update expiration date if available
+                            if (profile.subscription_expires_at) {
+                                const expirationElement = document.getElementById('nextBillingDate');
+                                if (expirationElement) {
+                                    const expirationDate = new Date(profile.subscription_expires_at);
+                                    expirationElement.textContent = formatDate(expirationDate);
+                                }
+                            }
+                        }
+                    } else {
+                        // No profile exists yet, create one with basic info
+                        const { error: createError } = await profiles.upsert({
+                            id: user.id,
+                            email: user.email,
+                            first_name: '',
+                            last_name: '',
+                            subscription_plan: 'free'
+                        });
+                        
+                        if (createError) {
+                            console.error('Error creating initial profile:', createError);
+                            showToast('Error creating profile', 'error');
+                        }
+                        
+                        // Set default avatar
+                        profilePicture.src = `https://ui-avatars.com/api/?name=${user.email.charAt(0)}&background=4B5EAA&color=fff`;
+                    }
+                } catch (profileError) {
+                    console.error('Error in profile operations:', profileError);
+                    showToast('Error loading profile data', 'error');
+                }
+            } catch (error) {
+                console.error('Error in loadUserData:', error);
+                showToast('Error loading user data', 'error');
+                
+                // Fall back to demo data
+                userEmail.textContent = 'demo@example.com';
+                userDisplayName.textContent = 'Demo User';
+                profilePicture.src = `https://ui-avatars.com/api/?name=DU&background=4B5EAA&color=fff`;
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
+        });
+
+        // Save changes
+        saveChangesBtn.addEventListener('click', async () => {
+            try {
+                // Get form field values
+                const firstName = document.getElementById('firstName').value;
+                const lastName = document.getElementById('lastName').value;
+                const bio = document.getElementById('userBio').value;
+                const location = document.getElementById('location').value;
+                
+                // Create profile data object
+                const profileData = {
+                    first_name: firstName,
+                    last_name: lastName,
+                    bio,
+                    location
+                };
+                
+                // Update profile
+                const { error } = await profiles.upsert(profileData);
+                
+                if (error) throw error;
+                
+                // Hide save button
+                saveChangesBtn.classList.add('hidden');
+                
+                // Update display name if we have first and last name
+                if (firstName && lastName) {
+                    userDisplayName.textContent = `${firstName} ${lastName}`;
+                }
+                
+                showToast('Profile updated successfully');
+            } catch (error) {
+                console.error('Error saving changes:', error);
+                showToast('Error saving changes', 'error');
+            }
+        });
+
+        // Show/hide save button when changes are made
+        const inputs = document.querySelectorAll('input, textarea, select');
+        inputs.forEach(input => {
+            input.addEventListener('change', () => {
+                saveChangesBtn.classList.remove('hidden');
+            });
+            input.addEventListener('input', () => {
+                saveChangesBtn.classList.remove('hidden');
+            });
+        });
+
+        // Add this for handling profile picture uploads
+        document.getElementById('uploadPictureBtn').addEventListener('click', () => {
+            document.getElementById('pictureInput').click();
+        });
+
+        document.getElementById('pictureInput').addEventListener('change', async (e) => {
+            if (e.target.files.length === 0) return;
+            
+            const file = e.target.files[0];
+            
+            // Only accept images
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select an image file', 'error');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                profilePicture.classList.add('opacity-50');
+                document.getElementById('uploadPictureBtn').disabled = true;
+                
+                // Upload the file
+                const { publicUrl, error } = await profiles.uploadProfilePicture(file);
+                
+                if (error) throw error;
+                
+                // Update profile picture
+                profilePicture.src = publicUrl;
+                
+                showToast('Profile picture updated');
+            } catch (error) {
+                console.error('Error uploading profile picture:', error);
+                showToast('Error uploading profile picture', 'error');
+            } finally {
+                // Reset loading state
+                profilePicture.classList.remove('opacity-50');
+                document.getElementById('uploadPictureBtn').disabled = false;
+            }
+        });
+
+        // Helper function to format dates
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        }
+
+        // Update subscription plan
+        async function updateSubscription(plan) {
+            try {
+                // Show loading state
+                const button = plan === 'pro' ? document.getElementById('upgradeToPro') : document.getElementById('upgradeToStarter');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+                button.disabled = true;
+                
+                // In a real app, this would integrate with Stripe or another payment provider
+                // For now, just update the Supabase profile
+                const expirationDate = new Date();
+                expirationDate.setFullYear(expirationDate.getFullYear() + 1); // 1 year subscription
+                
+                const { error } = await profiles.upsert({
+                    subscription_plan: plan,
+                    subscription_expires_at: expirationDate.toISOString()
+                });
+                
+                if (error) throw error;
+                
+                // Update the UI
+                document.getElementById('currentPlan').textContent = plan.charAt(0).toUpperCase() + plan.slice(1);
+                document.getElementById('nextBillingDate').textContent = formatDate(expirationDate);
+                
+                showToast(`Successfully upgraded to ${plan} plan`);
+            } catch (error) {
+                console.error('Error updating subscription:', error);
+                showToast('Error updating subscription', 'error');
+            } finally {
+                // Reset button state
+                const button = plan === 'pro' ? document.getElementById('upgradeToPro') : document.getElementById('upgradeToStarter');
+                button.innerHTML = plan === 'pro' ? 'Upgrade to Pro' : 'Starter Plan';
+                button.disabled = false;
+            }
+        }
+
+        // Add event listeners for plan buttons (only if they exist)
+        const upgradeToProBtn = document.getElementById('upgradeToPro');
+        const upgradeToStarterBtn = document.getElementById('upgradeToStarter');
+        
+        if (upgradeToProBtn) {
+            upgradeToProBtn.addEventListener('click', () => updateSubscription('pro'));
+        }
+        
+        if (upgradeToStarterBtn) {
+            upgradeToStarterBtn.addEventListener('click', () => updateSubscription('starter'));
+        }
+    </script>
+</body>
+</html> 
