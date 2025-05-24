@@ -21,15 +21,6 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Dark Mode CSS -->
-    <link rel="stylesheet" href="/lib/dark-mode.css">
-
-    <!-- Theme Controller -->
-    <script src="/lib/theme-controller.js"></script>
-
-    <!-- Theme Toggle Component -->
-    <script src="/lib/theme-toggle.js"></script>
-
     <script>
         tailwind.config = {
             theme: {
@@ -1806,16 +1797,6 @@
             <button id="newProjectBtn" class="btn btn-success">
                 <i class="fas fa-plus"></i>
                 <span class="ml-1">New Project</span>
-            </button>
-            
-            <!-- Dark Mode Toggle -->
-            <button id="darkModeToggle" class="dark-mode-btn" title="Toggle dark mode" style="padding: 12px; border-radius: 8px; background-color: #f3f4f6; border: 2px solid #4B5EAA; color: #4B5EAA; transition: all 0.3s ease;">
-                <svg class="sun-icon w-5 h-5" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                <svg class="moon-icon w-5 h-5 hidden" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
             </button>
             
             <div class="relative group">
@@ -4110,141 +4091,6 @@
         }
     </style>
 
-    <script>
-        // Dark Mode Toggle Functionality - Enhanced Version
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🌙 Dark mode script loading...');
-            
-            // Make button immediately visible
-            const style = document.createElement('style');
-            style.textContent = `
-                #darkModeToggle {
-                    background-color: #f3f4f6 !important;
-                    border: 2px solid #4B5EAA !important;
-                    color: #4B5EAA !important;
-                    padding: 12px !important;
-                    border-radius: 8px !important;
-                    transition: all 0.3s ease !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    cursor: pointer !important;
-                    z-index: 999 !important;
-                }
-                #darkModeToggle:hover {
-                    background-color: #4B5EAA !important;
-                    color: white !important;
-                    transform: scale(1.05) !important;
-                }
-            `;
-            document.head.appendChild(style);
-            
-            const darkModeToggle = document.getElementById('darkModeToggle');
-            
-            if (!darkModeToggle) {
-                console.error('❌ Dark mode toggle button not found!');
-                alert('Dark mode button not found! Check console for details.');
-                return;
-            }
-            
-            console.log('✅ Dark mode toggle button found:', darkModeToggle);
-            
-            const html = document.documentElement;
-            const sunIcon = darkModeToggle.querySelector('.sun-icon');
-            const moonIcon = darkModeToggle.querySelector('.moon-icon');
-            
-            if (!sunIcon || !moonIcon) {
-                console.error('❌ Dark mode icons not found!', { sunIcon, moonIcon });
-                return;
-            }
-            
-            console.log('✅ Dark mode icons found:', { sunIcon, moonIcon });
-            
-            // Check for saved theme or system preference
-            const savedTheme = localStorage.getItem('theme-preference');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const currentTheme = savedTheme || (prefersDark ? 'dark' : 'light');
-            
-            console.log('🎨 Theme settings:', { savedTheme, prefersDark, currentTheme });
-            
-            // Apply initial theme
-            if (currentTheme === 'dark') {
-                html.classList.add('dark');
-                sunIcon.classList.add('hidden');
-                moonIcon.classList.remove('hidden');
-                console.log('🌙 Applied dark theme on load');
-            } else {
-                html.classList.remove('dark');
-                sunIcon.classList.remove('hidden');
-                moonIcon.classList.add('hidden');
-                console.log('☀️ Applied light theme on load');
-            }
-            
-            // Toggle function
-            darkModeToggle.addEventListener('click', function() {
-                console.log('🔘 Dark mode toggle clicked!');
-                
-                // Immediate visual feedback
-                this.style.transform = 'scale(0.9)';
-                setTimeout(() => {
-                    this.style.transform = 'scale(1)';
-                }, 100);
-                
-                const isDarkMode = html.classList.contains('dark');
-                console.log('🔍 Current mode before toggle:', isDarkMode ? 'dark' : 'light');
-                
-                if (isDarkMode) {
-                    // Switch to light mode
-                    html.classList.remove('dark');
-                    sunIcon.classList.remove('hidden');
-                    moonIcon.classList.add('hidden');
-                    localStorage.setItem('theme-preference', 'light');
-                    console.log('☀️ Switched to light mode');
-                    alert('Switched to light mode!'); // Temporary alert for testing
-                } else {
-                    // Switch to dark mode
-                    html.classList.add('dark');
-                    sunIcon.classList.add('hidden');
-                    moonIcon.classList.remove('hidden');
-                    localStorage.setItem('theme-preference', 'dark');
-                    console.log('🌙 Switched to dark mode');
-                    alert('Switched to dark mode!'); // Temporary alert for testing
-                }
-                
-                // Verify the change
-                console.log('📝 HTML classes after toggle:', html.classList.toString());
-            });
-            
-            // Listen for system theme changes
-            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (!localStorage.getItem('theme-preference')) {
-                    if (e.matches) {
-                        html.classList.add('dark');
-                        sunIcon.classList.add('hidden');
-                        moonIcon.classList.remove('hidden');
-                        console.log('🌙 System preference changed to dark');
-                    } else {
-                        html.classList.remove('dark');
-                        sunIcon.classList.remove('hidden');
-                        moonIcon.classList.add('hidden');
-                        console.log('☀️ System preference changed to light');
-                    }
-                }
-            });
-            
-            console.log('✅ Dark mode script fully loaded and configured');
-            
-            // Test button visibility
-            setTimeout(() => {
-                const rect = darkModeToggle.getBoundingClientRect();
-                console.log('📏 Button position:', rect);
-                if (rect.width === 0 || rect.height === 0) {
-                    console.error('❌ Button has zero dimensions!');
-                } else {
-                    console.log('✅ Button is visible with dimensions:', rect.width, 'x', rect.height);
-                }
-            }, 1000);
-        });
-    </script>
+    <!-- Dark mode scripts removed -->
 </body>
 </html> 
