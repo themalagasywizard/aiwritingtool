@@ -1,4 +1,4 @@
-# AIStoryCraft
+# Kalligram.ai
 
 A browser-based writing tool with AI assistance powered by both Hugging Face and DeepSeek language models.
 
