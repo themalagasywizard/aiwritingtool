@@ -20,6 +20,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Simple Dark Mode CSS -->
+    <link rel="stylesheet" href="/lib/simple-dark-mode.css">
 
     <script>
         tailwind.config = {
@@ -1797,6 +1800,11 @@
             <button id="newProjectBtn" class="btn btn-success">
                 <i class="fas fa-plus"></i>
                 <span class="ml-1">New Project</span>
+            </button>
+            
+            <!-- Simple Dark Mode Toggle -->
+            <button id="darkModeToggle" title="Toggle Dark Mode">
+                <i class="fas fa-moon"></i>
             </button>
             
             <div class="relative group">
@@ -4091,6 +4099,42 @@
         }
     </style>
 
-    <!-- Dark mode scripts removed -->
+    <!-- Simple Dark Mode Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const html = document.documentElement;
+            const icon = darkModeToggle.querySelector('i');
+            
+            // Check for saved theme preference or default to light mode
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            
+            // Apply saved theme
+            if (savedTheme === 'dark') {
+                html.classList.add('dark');
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            }
+            
+            // Toggle function
+            darkModeToggle.addEventListener('click', function() {
+                const isDark = html.classList.contains('dark');
+                
+                if (isDark) {
+                    // Switch to light mode
+                    html.classList.remove('dark');
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    // Switch to dark mode
+                    html.classList.add('dark');
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+        });
+    </script>
 </body>
 </html> 

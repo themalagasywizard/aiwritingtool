@@ -1,0 +1,98 @@
+/* Simple Dark Mode CSS */
+
+/* Light theme (default) */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --border-color: #e5e7eb;
+  --primary-color: #4B5EAA;
+  --primary-light: #E6E9F0;
+}
+
+/* Dark theme */
+.dark {
+  --bg-primary: #1f2937;
+  --bg-secondary: #111827;
+  --text-primary: #f9fafb;
+  --text-secondary: #d1d5db;
+  --border-color: #374151;
+  --primary-color: #6366f1;
+  --primary-light: #312e81;
+}
+
+/* Apply theme variables to elements */
+body {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Header */
+header {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Sidebar */
+.sidebar {
+  background-color: var(--primary-light) !important;
+  border-color: var(--border-color) !important;
+}
+
+/* Cards and panels */
+.bg-white {
+  background-color: var(--bg-primary) !important;
+}
+
+.bg-gray-50 {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Text colors */
+.text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+.text-gray-600 {
+  color: var(--text-secondary) !important;
+}
+
+.text-gray-700 {
+  color: var(--text-primary) !important;
+}
+
+/* Borders */
+.border-gray-200 {
+  border-color: var(--border-color) !important;
+}
+
+.border-gray-100 {
+  border-color: var(--border-color) !important;
+}
+
+/* Dark mode toggle button */
+#darkModeToggle {
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#darkModeToggle:hover {
+  background-color: var(--primary-color);
+  color: var(--bg-primary);
+  transform: scale(1.05);
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+} 
