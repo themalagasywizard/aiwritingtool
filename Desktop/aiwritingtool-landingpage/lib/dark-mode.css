@@ -1,0 +1,274 @@
+/* lib/dark-mode.css */
+/* Shadcn-style dark mode implementation */
+
+/* Dark mode CSS variables */
+:root {
+  --background: #ffffff;
+  --foreground: #020817;
+  --card: #ffffff;
+  --card-foreground: #020817;
+  --popover: #ffffff;
+  --popover-foreground: #020817;
+  --primary: #4B5EAA;
+  --primary-foreground: #f8fafc;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
+  --destructive: #dc2626;
+  --destructive-foreground: #f8fafc;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #94a3b8;
+  
+  /* App-specific colors */
+  --primary-light: #E6E9F0;
+  --text-primary: #1F2937;
+  --text-secondary: #9CA3AF;
+  --bg-white: #ffffff;
+  --bg-gray-50: #f9fafb;
+  --bg-gray-100: #f3f4f6;
+  --border-gray-200: #e5e7eb;
+  --border-gray-300: #d1d5db;
+}
+
+.dark {
+  --background: #020817;
+  --foreground: #f8fafc;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #f8fafc;
+  --primary-foreground: #0f172a;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #dc2626;
+  --destructive-foreground: #f8fafc;
+  --border: #334155;
+  --input: #334155;
+  --ring: #94a3b8;
+  
+  /* App-specific dark colors */
+  --primary-light: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --bg-white: #0f172a;
+  --bg-gray-50: #1e293b;
+  --bg-gray-100: #334155;
+  --border-gray-200: #334155;
+  --border-gray-300: #475569;
+}
+
+/* Base styles using CSS variables */
+* {
+  transition: background-color 0.2s ease-in-out, 
+              border-color 0.2s ease-in-out, 
+              color 0.2s ease-in-out;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Dark mode overrides for existing classes */
+.dark .bg-white {
+  background-color: var(--bg-white) !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: var(--bg-gray-50) !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: var(--bg-gray-100) !important;
+}
+
+.dark .bg-primaryLight {
+  background-color: var(--primary-light) !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark .text-gray-900 {
+  color: var(--text-primary) !important;
+}
+
+.dark .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .border-gray-200 {
+  border-color: var(--border-gray-200) !important;
+}
+
+.dark .border-gray-300 {
+  border-color: var(--border-gray-300) !important;
+}
+
+/* Form elements */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: var(--bg-gray-100);
+  border-color: var(--border-gray-300);
+  color: var(--text-primary);
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  background-color: var(--bg-gray-50);
+  border-color: var(--primary);
+}
+
+/* Buttons */
+.dark .bg-primary {
+  background-color: #4B5EAA !important;
+}
+
+.dark .hover\:bg-primaryLight:hover {
+  background-color: var(--primary-light) !important;
+}
+
+/* Shadows */
+.dark .shadow,
+.dark .shadow-sm,
+.dark .shadow-md,
+.dark .shadow-lg {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Scrollbars */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--bg-gray-100);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--border-gray-300);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Theme toggle button styles */
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background-color: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.theme-toggle:hover {
+  background-color: var(--muted);
+}
+
+.theme-toggle:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: var(--ring);
+}
+
+.theme-toggle svg {
+  width: 20px;
+  height: 20px;
+  transition: all 0.2s ease-in-out;
+}
+
+.theme-toggle .sun-icon {
+  display: block;
+}
+
+.theme-toggle .moon-icon {
+  display: none;
+}
+
+.dark .theme-toggle .sun-icon {
+  display: none;
+}
+
+.dark .theme-toggle .moon-icon {
+  display: block;
+}
+
+/* Animation for theme transitions */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Specific component overrides */
+.dark .modal-content {
+  background-color: var(--card);
+  border-color: var(--border);
+}
+
+.dark .dropdown-menu {
+  background-color: var(--popover);
+  border-color: var(--border);
+}
+
+.dark .toast {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border-color: var(--border);
+}
+
+/* Code blocks and pre elements */
+.dark pre,
+.dark code {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+/* Tables */
+.dark table {
+  background-color: var(--card);
+}
+
+.dark table th {
+  background-color: var(--muted);
+  color: var(--muted-foreground);
+}
+
+.dark table td {
+  border-color: var(--border);
+}
+
+/* Navigation specific styles */
+.dark .nav-link {
+  color: var(--muted-foreground);
+}
+
+.dark .nav-link:hover {
+  background-color: var(--muted);
+  color: var(--foreground);
+}
+
+.dark .nav-link.active {
+  background-color: var(--primary-light);
+  color: var(--foreground);
+} 

@@ -46,6 +46,12 @@
             background-color: var(--background);
         }
     </style>
+    <!-- Dark Mode CSS -->
+    <link rel="stylesheet" href="/lib/dark-mode.css">
+    <!-- Theme Controller -->
+    <script src="/lib/theme-controller.js"></script>
+    <!-- Theme Toggle Component -->
+    <script src="/lib/theme-toggle.js"></script>
 </head>
 <body class="bg-background">
     <!-- Top Bar -->
@@ -240,11 +246,14 @@
                 <div id="preferences" class="bg-white rounded-lg shadow-sm p-6 mb-8">
                     <h2 class="text-xl font-semibold mb-6">Preferences</h2>
                     <div class="space-y-4">
-                        <div>
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" class="form-checkbox text-primary rounded">
-                                <span>Enable dark mode</span>
-                            </label>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-medium text-gray-900">Theme</h3>
+                                <p class="text-sm text-gray-600">Choose your preferred theme</p>
+                            </div>
+                            <div id="theme-toggle-container" class="flex items-center space-x-2">
+                                <!-- Theme toggle will be inserted here -->
+                            </div>
                         </div>
                         <div>
                             <label class="flex items-center space-x-2 cursor-pointer">
@@ -526,6 +535,16 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             loadUserData();
+            
+            // Initialize theme toggle in the preferences section
+            if (window.createThemeToggle) {
+                window.createThemeToggle({
+                    containerSelector: '#theme-toggle-container',
+                    position: 'static',
+                    className: 'theme-toggle-preferences',
+                    showLabel: true
+                });
+            }
         });
 
         // Save changes
