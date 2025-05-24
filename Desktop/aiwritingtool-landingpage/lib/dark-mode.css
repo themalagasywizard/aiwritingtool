@@ -1,274 +1,418 @@
 /* lib/dark-mode.css */
-/* Shadcn-style dark mode implementation */
+/* Comprehensive Dark Mode Implementation for Kalligram */
+
+/* Light mode CSS variables (default) */
+:root {
+  /* Core colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f9fafb;
+  --bg-tertiary: #f3f4f6;
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  
+  /* Brand colors */
+  --primary: #4B5EAA;
+  --primary-light: #E6E9F0;
+  --accent: #F472B6;
+  --success: #34D399;
+  --error: #EF4444;
+  --warning: #FBBF24;
+  
+  /* Border and input colors */
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  
+  /* Shadow colors */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
 
 /* Dark mode CSS variables */
-:root {
-  --background: #ffffff;
-  --foreground: #020817;
-  --card: #ffffff;
-  --card-foreground: #020817;
-  --popover: #ffffff;
-  --popover-foreground: #020817;
-  --primary: #4B5EAA;
-  --primary-foreground: #f8fafc;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #0f172a;
-  --destructive: #dc2626;
-  --destructive-foreground: #f8fafc;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #94a3b8;
-  
-  /* App-specific colors */
-  --primary-light: #E6E9F0;
-  --text-primary: #1F2937;
-  --text-secondary: #9CA3AF;
-  --bg-white: #ffffff;
-  --bg-gray-50: #f9fafb;
-  --bg-gray-100: #f3f4f6;
-  --border-gray-200: #e5e7eb;
-  --border-gray-300: #d1d5db;
-}
-
 .dark {
-  --background: #020817;
-  --foreground: #f8fafc;
-  --card: #0f172a;
-  --card-foreground: #f8fafc;
-  --popover: #0f172a;
-  --popover-foreground: #f8fafc;
-  --primary: #f8fafc;
-  --primary-foreground: #0f172a;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-  --destructive: #dc2626;
-  --destructive-foreground: #f8fafc;
-  --border: #334155;
-  --input: #334155;
-  --ring: #94a3b8;
-  
-  /* App-specific dark colors */
-  --primary-light: #1e293b;
+  /* Core colors */
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --bg-white: #0f172a;
-  --bg-gray-50: #1e293b;
-  --bg-gray-100: #334155;
-  --border-gray-200: #334155;
-  --border-gray-300: #475569;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  
+  /* Brand colors (keep primary brand color, adjust others) */
+  --primary: #6366f1;
+  --primary-light: #1e293b;
+  --accent: #ec4899;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  
+  /* Border and input colors */
+  --border-primary: #334155;
+  --border-secondary: #475569;
+  --input-bg: #1e293b;
+  --input-border: #475569;
+  
+  /* Shadow colors */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
 }
 
-/* Base styles using CSS variables */
-* {
+/* Global transition for smooth theme switching */
+*,
+*::before,
+*::after {
   transition: background-color 0.2s ease-in-out, 
               border-color 0.2s ease-in-out, 
-              color 0.2s ease-in-out;
+              color 0.2s ease-in-out,
+              box-shadow 0.2s ease-in-out !important;
 }
 
+/* Base body styles */
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
-/* Dark mode overrides for existing classes */
-.dark .bg-white {
-  background-color: var(--bg-white) !important;
-}
+/* Background color overrides */
+.dark .bg-white { background-color: var(--bg-primary) !important; }
+.dark .bg-gray-50 { background-color: var(--bg-secondary) !important; }
+.dark .bg-gray-100 { background-color: var(--bg-tertiary) !important; }
+.dark .bg-gray-200 { background-color: var(--bg-tertiary) !important; }
+.dark .bg-primaryLight { background-color: var(--primary-light) !important; }
+.dark .bg-background { background-color: var(--bg-secondary) !important; }
 
-.dark .bg-gray-50 {
-  background-color: var(--bg-gray-50) !important;
-}
-
-.dark .bg-gray-100 {
-  background-color: var(--bg-gray-100) !important;
-}
-
-.dark .bg-primaryLight {
-  background-color: var(--primary-light) !important;
-}
+/* Text color overrides */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-textPrimary { color: var(--text-primary) !important; }
 
 .dark .text-gray-600,
-.dark .text-gray-700,
-.dark .text-gray-800,
-.dark .text-gray-900 {
-  color: var(--text-primary) !important;
-}
+.dark .text-gray-500,
+.dark .text-textSecondary { color: var(--text-secondary) !important; }
 
-.dark .text-gray-500 {
-  color: var(--text-secondary) !important;
-}
+.dark .text-gray-400 { color: var(--text-tertiary) !important; }
 
-.dark .border-gray-200 {
-  border-color: var(--border-gray-200) !important;
-}
+.dark .text-primary { color: var(--primary) !important; }
 
-.dark .border-gray-300 {
-  border-color: var(--border-gray-300) !important;
-}
+/* Border color overrides */
+.dark .border-gray-100,
+.dark .border-gray-200 { border-color: var(--border-primary) !important; }
+.dark .border-gray-300 { border-color: var(--border-secondary) !important; }
 
 /* Form elements */
 .dark input,
 .dark select,
 .dark textarea {
-  background-color: var(--bg-gray-100);
-  border-color: var(--border-gray-300);
-  color: var(--text-primary);
+  background-color: var(--input-bg) !important;
+  border-color: var(--input-border) !important;
+  color: var(--text-primary) !important;
 }
 
 .dark input:focus,
 .dark select:focus,
 .dark textarea:focus {
-  background-color: var(--bg-gray-50);
-  border-color: var(--primary);
+  background-color: var(--bg-primary) !important;
+  border-color: var(--primary) !important;
 }
 
-/* Buttons */
-.dark .bg-primary {
-  background-color: #4B5EAA !important;
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: var(--text-tertiary) !important;
+}
+
+/* Button overrides */
+.dark .btn-primary {
+  background-color: var(--primary) !important;
+  color: white !important;
+}
+
+.dark .btn-primary:hover {
+  background-color: #5b21b6 !important;
 }
 
 .dark .hover\:bg-primaryLight:hover {
   background-color: var(--primary-light) !important;
 }
 
-/* Shadows */
-.dark .shadow,
-.dark .shadow-sm,
-.dark .shadow-md,
-.dark .shadow-lg {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+.dark .hover\:bg-gray-50:hover {
+  background-color: var(--bg-tertiary) !important;
 }
 
-/* Scrollbars */
+/* Shadow overrides */
+.dark .shadow-sm,
+.dark .shadow-sm-custom {
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.dark .shadow,
+.dark .shadow-md,
+.dark .shadow-md-custom {
+  box-shadow: var(--shadow-md) !important;
+}
+
+.dark .shadow-lg {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+/* Sidebar styles */
+.dark .sidebar {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+/* Header styles */
+.dark header {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+/* Editor content area */
+.dark .editor-content {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark main {
+  background-color: var(--bg-primary) !important;
+}
+
+/* Chapter items */
+.dark .chapter-item {
+  color: var(--text-primary) !important;
+}
+
+.dark .chapter-item:hover {
+  background-color: var(--bg-secondary) !important;
+}
+
+.dark .chapter-item.active {
+  background-color: var(--bg-secondary) !important;
+  color: var(--primary) !important;
+}
+
+/* Context items */
+.dark .context-item {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Toolbar styles */
+.dark .toolbar-btn {
+  color: var(--text-secondary) !important;
+}
+
+.dark .toolbar-btn:hover {
+  background-color: var(--primary-light) !important;
+  color: var(--primary) !important;
+}
+
+/* Modal styles */
+.dark .modal,
+.dark .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.dark .modal-container,
+.dark .modal .bg-white {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* AI Assistant Panel */
+.dark #aiAssistPanel {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+.dark .ai-mode-btn {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .ai-mode-btn.active {
+  background-color: var(--primary) !important;
+  color: white !important;
+}
+
+.dark .chat-message.user {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.dark .chat-message.ai {
+  background-color: var(--primary-light) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Scrollbar styles */
 .dark ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: var(--bg-gray-100);
+  background: var(--bg-secondary);
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: var(--border-gray-300);
+  background: var(--border-secondary);
   border-radius: 4px;
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--text-tertiary);
 }
 
-/* Theme toggle button styles */
-.theme-toggle {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background-color: transparent;
-  color: var(--foreground);
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
+/* Character tree and network styles */
+.dark .character-node {
+  background-color: var(--primary-light) !important;
+  border-color: var(--primary) !important;
+  color: var(--text-primary) !important;
 }
 
-.theme-toggle:hover {
-  background-color: var(--muted);
+.dark .character-tooltip {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
-.theme-toggle:focus {
-  outline: none;
-  ring: 2px;
-  ring-color: var(--ring);
+/* Timeline styles */
+.dark .timeline-grid table {
+  background-color: var(--bg-primary) !important;
 }
 
-.theme-toggle svg {
-  width: 20px;
-  height: 20px;
-  transition: all 0.2s ease-in-out;
+.dark .timeline-grid th,
+.dark .timeline-grid td {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
 }
 
-.theme-toggle .sun-icon {
-  display: block;
+/* Toast notifications */
+.dark .toast,
+.dark #aiToast {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
-.theme-toggle .moon-icon {
-  display: none;
-}
-
-.dark .theme-toggle .sun-icon {
-  display: none;
-}
-
-.dark .theme-toggle .moon-icon {
-  display: block;
-}
-
-/* Animation for theme transitions */
-@media (prefers-reduced-motion: no-preference) {
-  .theme-transition {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-}
-
-/* Specific component overrides */
-.dark .modal-content {
-  background-color: var(--card);
-  border-color: var(--border);
-}
-
-.dark .dropdown-menu {
-  background-color: var(--popover);
-  border-color: var(--border);
-}
-
-.dark .toast {
-  background-color: var(--card);
-  color: var(--card-foreground);
-  border-color: var(--border);
-}
-
-/* Code blocks and pre elements */
-.dark pre,
-.dark code {
-  background-color: var(--muted);
-  color: var(--muted-foreground);
-}
-
-/* Tables */
-.dark table {
-  background-color: var(--card);
-}
-
-.dark table th {
-  background-color: var(--muted);
-  color: var(--muted-foreground);
-}
-
-.dark table td {
-  border-color: var(--border);
-}
-
-/* Navigation specific styles */
+/* Profile page styles */
 .dark .nav-link {
-  color: var(--muted-foreground);
+  color: var(--text-secondary) !important;
 }
 
-.dark .nav-link:hover {
-  background-color: var(--muted);
-  color: var(--foreground);
-}
-
+.dark .nav-link:hover,
 .dark .nav-link.active {
-  background-color: var(--primary-light);
-  color: var(--foreground);
+  background-color: var(--primary-light) !important;
+  color: var(--primary) !important;
+}
+
+/* Context manager page */
+.dark .tab-btn {
+  color: var(--text-secondary) !important;
+  border-color: transparent !important;
+}
+
+.dark .tab-btn:hover {
+  color: var(--primary) !important;
+}
+
+.dark .tab-btn.active {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+/* Waitlist page */
+.dark .max-w-md {
+  color: var(--text-primary) !important;
+}
+
+/* Loading overlay */
+.dark .loading-overlay,
+.dark #loadingOverlay {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+}
+
+.dark #loadingOverlay .bg-white {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Ensure all text is readable */
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: var(--text-primary) !important;
+}
+
+.dark p, .dark span, .dark div {
+  color: inherit;
+}
+
+/* Special handling for specific brand colors that should remain */
+.dark .text-primary {
+  color: var(--primary) !important;
+}
+
+.dark .text-success {
+  color: var(--success) !important;
+}
+
+.dark .text-error {
+  color: var(--error) !important;
+}
+
+.dark .text-warning {
+  color: var(--warning) !important;
+}
+
+/* Theme toggle button enhancement */
+.dark .theme-toggle,
+.dark #darkModeToggle {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-secondary) !important;
+}
+
+.dark .theme-toggle:hover,
+.dark #darkModeToggle:hover {
+  background-color: var(--primary) !important;
+  color: white !important;
+  transform: scale(1.05);
+}
+
+/* Light mode button styling */
+#darkModeToggle {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#darkModeToggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Ensure button is always visible */
+#darkModeToggle {
+  position: relative;
+  z-index: 10;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+/* Animation for icon transitions */
+#darkModeToggle svg {
+  transition: all 0.3s ease-in-out;
+}
+
+#darkModeToggle:active {
+  transform: scale(0.95);
+}
+
+/* Debug visibility - this should make the button very obvious */
+#darkModeToggle {
+  outline: 2px solid rgba(255, 0, 0, 0.3) !important; /* Temporary red outline for debugging */
 } 
