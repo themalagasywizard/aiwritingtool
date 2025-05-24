@@ -388,11 +388,16 @@ body {
 /* Light mode button styling */
 #darkModeToggle {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #f3f4f6 !important;
+  border: 2px solid #4B5EAA !important;
+  color: #4B5EAA !important;
 }
 
 #darkModeToggle:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  background-color: #4B5EAA !important;
+  color: white !important;
 }
 
 /* Ensure button is always visible */
@@ -401,6 +406,9 @@ body {
   z-index: 10;
   min-width: 44px;
   min-height: 44px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Animation for icon transitions */
@@ -410,9 +418,4 @@ body {
 
 #darkModeToggle:active {
   transform: scale(0.95);
-}
-
-/* Debug visibility - this should make the button very obvious */
-#darkModeToggle {
-  outline: 2px solid rgba(255, 0, 0, 0.3) !important; /* Temporary red outline for debugging */
 } 

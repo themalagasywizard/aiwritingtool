@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Mode Test</title>
+    <style>
+        /* Simple dark mode styles */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --primary-color: #4B5EAA;
+        }
+        
+        .dark {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --primary-color: #6366f1;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: Arial, sans-serif;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+        
+        #darkModeToggle {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 20px 0;
+            display: block;
+        }
+        
+        #darkModeToggle:hover {
+            opacity: 0.8;
+            transform: scale(1.05);
+        }
+        
+        .card {
+            background-color: var(--bg-color);
+            border: 1px solid var(--text-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dark Mode Test</h1>
+    <p>This is a simple test page to verify dark mode functionality.</p>
+    
+    <button id="darkModeToggle">🌙 Toggle Dark Mode</button>
+    
+    <div class="card">
+        <h2>Test Card</h2>
+        <p>This card should change colors when you toggle dark mode.</p>
+    </div>
+    
+    <script>
+        document.getElementById('darkModeToggle').addEventListener('click', function() {
+            const html = document.documentElement;
+            const isDark = html.classList.contains('dark');
+            
+            if (isDark) {
+                html.classList.remove('dark');
+                this.textContent = '🌙 Toggle Dark Mode';
+                console.log('Switched to light mode');
+            } else {
+                html.classList.add('dark');
+                this.textContent = '☀️ Toggle Light Mode';
+                console.log('Switched to dark mode');
+            }
+        });
+    </script>
+</body>
+</html> 
