@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Mode Test</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Dark Mode CSS -->
+    <link rel="stylesheet" href="./lib/dark-mode.css">
+    
+    <style>
+        .manual-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #4B5EAA;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .manual-toggle:hover {
+            background: #3d4c8a;
+        }
+    </style>
+</head>
+<body class="min-h-screen transition-colors duration-300">
+    <!-- Manual Dark Mode Toggle Button -->
+    <button id="manualToggle" class="manual-toggle">
+        🌙 Toggle Dark Mode
+    </button>
+    
+    <!-- Test Content -->
+    <div class="container mx-auto p-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Dark Mode Test Page
+            </h1>
+            <p class="text-gray-700 dark:text-gray-300 mb-6">
+                This page tests the dark mode implementation. Click the toggle button in the top right to switch between light and dark themes.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Card Example</h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        This card should have a light background in light mode and a dark background in dark mode.
+                    </p>
+                </div>
+                
+                <div class="bg-primaryLight dark:bg-gray-600 p-4 rounded-lg">
+                    <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Primary Light Background</h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        This uses the primaryLight background color that should adapt to dark mode.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 mr-4">
+                    Primary Button
+                </button>
+                <button class="bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-white px-4 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">
+                    Secondary Button
+                </button>
+            </div>
+            
+            <div class="mt-6">
+                <input type="text" placeholder="Test input field" 
+                       class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                Current Theme Info
+            </h2>
+            <div id="themeInfo" class="text-gray-700 dark:text-gray-300">
+                Loading theme information...
+            </div>
+        </div>
+    </div>
+    
+    <!-- Theme Controller -->
+    <script src="./lib/theme-controller.js"></script>
+    
+    <script>
+        // Manual toggle functionality
+        document.getElementById('manualToggle').addEventListener('click', function() {
+            if (window.themeController) {
+                const newTheme = window.themeController.toggle();
+                updateThemeInfo();
+                
+                // Update button text
+                this.textContent = newTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+            } else {
+                // Fallback manual toggle
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                this.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+                localStorage.setItem('theme-preference', isDark ? 'dark' : 'light');
+            }
+        });
+        
+        // Update theme info display
+        function updateThemeInfo() {
+            const themeInfo = document.getElementById('themeInfo');
+            if (window.themeController) {
+                const currentTheme = window.themeController.getTheme();
+                const isDark = window.themeController.isDark();
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                
+                themeInfo.innerHTML = `
+                    <p><strong>Current Theme:</strong> ${currentTheme}</p>
+                    <p><strong>Is Dark Mode:</strong> ${isDark}</p>
+                    <p><strong>System Prefers Dark:</strong> ${prefersDark}</p>
+                    <p><strong>Theme Controller:</strong> ✅ Available</p>
+                `;
+            } else {
+                themeInfo.innerHTML = `
+                    <p><strong>Theme Controller:</strong> ❌ Not available</p>
+                    <p><strong>Manual Toggle:</strong> Available as fallback</p>
+                `;
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateThemeInfo();
+            
+            // Set initial button text
+            const toggle = document.getElementById('manualToggle');
+            const isDark = document.documentElement.classList.contains('dark') || 
+                          (window.themeController && window.themeController.isDark());
+            toggle.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
+        });
+        
+        // Listen for theme changes
+        window.addEventListener('theme-changed', updateThemeInfo);
+    </script>
+</body>
+</html> 
