@@ -1,0 +1,85 @@
+[build]
+  functions = "./functions"
+  publish = "."
+  command = "npm install && node scripts/process-templates.js"
+  node_version = "18"
+
+[dev]
+  framework = "#static"
+  targetPort = 8888
+  port = 8888
+  functionsPort = 9999
+  functionsSiteTimeout = 120
+  
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+  included_files = ["functions/config.js", "lib/supabase.js"]
+  external_node_modules = ["node-fetch", "@supabase/supabase-js"]
+
+[functions.generate-text]
+  included_files = ["functions/config.js"]
+  memory = 1024
+  # Set timeout to 120 seconds for production deployment
+  timeout = 120
+
+# Handle API redirects
+[[redirects]]
+  from = "/api/functions/*"
+  to = "/api/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/api/:splat"
+  status = 200
+
+# Handle authentication redirects
+[[redirects]]
+  from = "/auth/callback"
+  to = "/auth/callback.html"
+  status = 200
+
+[[redirects]]
+  from = "/auth/*"
+  to = "/auth/:splat"
+  status = 200
+
+# Auth route - needs to come before the default redirect
+[[redirects]]
+  from = "/auth"
+  to = "/auth/auth.html"
+  status = 200
+
+# Make sure index.html is accessible directly
+[[redirects]]
+  from = "/index.html"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Default redirect to index.html for authenticated users
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# Add CORS headers
+[[headers]]
+  for = "/*"
+    [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Environment variable validation
+[context.production]
+  environment = { NODE_VERSION = "18", SITE_URL = "https://aiwritingtool.netlify.app" }
+  # Add your environment variables in the Netlify dashboard
+  # SUPABASE_URL, SUPABASE_ANON_KEY, OPENROUTER_API_KEY
+
+[context.deploy-preview]
+  environment = { NODE_VERSION = "18", SITE_URL = "https://deploy-preview-aiwritingtool.netlify.app" }
+  # Add your environment variables in the Netlify dashboard
+  # SUPABASE_URL, SUPABASE_ANON_KEY, OPENROUTER_API_KEY 

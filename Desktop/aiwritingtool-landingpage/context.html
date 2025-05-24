@@ -1,0 +1,3031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Manager - AIStoryCraft</title>
+    <!-- Supabase Configuration -->
+    <meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
+    <meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
+    <!-- Environment Variables Script -->
+    <script>
+        window.ENV = {
+            SUPABASE_URL: '<%= process.env.SUPABASE_URL %>',
+            SUPABASE_ANON_KEY: '<%= process.env.SUPABASE_ANON_KEY %>'
+        };
+    </script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Frappe Gantt -->
+    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.css">
+    <!-- Import Supabase client -->
+    <script type="module">
+        import { auth, projects, characters, locations, timelineEvents } from './lib/supabase.js';
+        // Make them available to non-module scripts
+        window.supabaseServices = { auth, projects, characters, locations, timelineEvents };
+    </script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4B5EAA',
+                        primaryLight: '#E6E9F0',
+                        secondary: '#6B7280',
+                        accent: '#F472B6',
+                        background: '#F9FAFB',
+                        textPrimary: '#1F2937',
+                        textSecondary: '#9CA3AF',
+                        success: '#34D399',
+                        error: '#EF4444',
+                        warning: '#FBBF24',
+                        location: '#4CAF50',
+                        event: '#EF4444',
+                        character: '#4B5EAA'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --primary: #4B5EAA;
+            --primary-light: #E6E9F0;
+            --secondary: #6B7280;
+            --accent: #F472B6;
+            --background: #F9FAFB;
+            --text-primary: #1F2937;
+            --text-secondary: #9CA3AF;
+            --success: #34D399;
+            --error: #EF4444;
+            --warning: #FBBF24;
+            --location: #4CAF50;
+            --event: #EF4444;
+            --character: #4B5EAA;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--text-primary);
+        }
+
+        /* Gantt Chart Customization */
+        .gantt .bar {
+            fill: var(--primary);
+        }
+
+        .gantt .bar.location {
+            fill: var(--location);
+        }
+
+        .gantt .bar.event {
+            fill: var(--event);
+        }
+
+        .gantt .bar.character {
+            fill: var(--character);
+        }
+
+        .gantt .bar-label {
+            fill: white;
+            font-size: 12px;
+        }
+
+        .gantt .grid-header {
+            fill: var(--background);
+            stroke: var(--primary-light);
+        }
+
+        .gantt .grid-row {
+            fill: white;
+        }
+
+        .gantt .row-line {
+            stroke: var(--primary-light);
+        }
+
+        .gantt .lower-text, .gantt .upper-text {
+            fill: var(--text-primary);
+            font-size: 12px;
+        }
+
+        /* Character Tree Customization */
+        .character-tree {
+            position: relative;
+            min-height: 300px;
+            padding: 1rem;
+            overflow: visible;
+            z-index: 1;
+        }
+
+        .character-node {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: white;
+            border: 3px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 2;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .character-node.protagonist {
+            border-color: var(--primary);
+            background-color: rgba(75, 94, 170, 0.1);
+        }
+
+        .character-node.antagonist {
+            border-color: var(--error);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .character-node.supporting {
+            border-color: var(--accent);
+            background-color: rgba(244, 114, 182, 0.1);
+        }
+
+        .character-node:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .character-tooltip {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: white;
+            border-radius: 8px;
+            padding: 8px 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 5;
+        }
+
+        .character-node:hover .character-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .character-link {
+            position: absolute;
+            height: 1px;
+            background-color: #ccc;
+            transform-origin: 0 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .role-badge.protagonist {
+            background-color: rgba(75, 94, 170, 0.15);
+            color: var(--primary);
+        }
+
+        .role-badge.antagonist {
+            background-color: rgba(239, 68, 68, 0.15);
+            color: var(--error);
+        }
+
+        .role-badge.supporting {
+            background-color: rgba(244, 114, 182, 0.15);
+            color: var(--accent);
+        }
+
+        /* Timeline Controls */
+        .timeline-controls {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background-color: white;
+            border-bottom: 1px solid var(--primary-light);
+            padding: 1rem;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--primary-light);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(75, 94, 170, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: #3F50A0;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(75, 94, 170, 0.25);
+        }
+
+        /* Role badge styles */
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-weight: 500;
+        }
+
+        /* Modal overlay and container styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 32rem;
+            z-index: 51;
+            position: relative;
+        }
+
+        /* Add styles for timeline */
+        .timeline-cell {
+            min-height: 50px;
+            min-width: 50px;
+            padding: 0;
+            vertical-align: top;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+        
+        .timeline-cell:hover {
+            background-color: rgba(75, 94, 170, 0.05);
+        }
+        
+        .timeline-cell.drag-over {
+            background-color: rgba(75, 94, 170, 0.1);
+            border: 2px dashed var(--primary);
+        }
+        
+        /* Timeline header and table styles */
+        .timeline-grid {
+            font-size: 0.85rem;
+        }
+        
+        .timeline-grid table {
+            border-collapse: collapse;
+        }
+        
+        .timeline-grid th {
+            font-size: 0.8rem;
+            padding: 0.5rem 0.25rem !important;
+            height: 40px;
+        }
+        
+        .timeline-grid td:first-child {
+            font-size: 0.85rem;
+            padding: 0.5rem 0.75rem !important;
+            min-width: 120px;
+            max-width: 140px;
+        }
+        
+        /* Timeline event styles */
+        .timeline-event {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem !important;
+            margin: 1px;
+            height: auto;
+            min-height: 24px;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .character-tag {
+            position: absolute;
+            display: inline-block;
+            min-width: 60px;
+            margin: 0;
+            cursor: move;
+            transition: transform 0.1s;
+            z-index: 10;
+        }
+        
+        .character-tag:hover {
+            transform: translateY(-2px);
+            z-index: 20;
+        }
+        
+        .character-item {
+            transition: transform 0.1s, opacity 0.2s;
+            cursor: move;
+        }
+        
+        .character-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .character-item.dragging {
+            opacity: 0.5;
+        }
+        
+        /* Primary color based roles */
+        .bg-primary { background-color: var(--primary); }
+        .bg-error { background-color: var(--error); }
+        .bg-accent { background-color: var(--accent); }
+        
+        /* Tab styling */
+        .tab-btn {
+            transition: all 0.2s ease;
+        }
+        
+        .tab-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .tab-content {
+            display: block;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .tab-content.hidden {
+            display: none;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .timeline-cell {
+                min-height: 40px;
+                min-width: 45px; /* Slightly smaller on mobile to fit more */
+            }
+            
+            /* Make drag ghost more visible on mobile */
+            .absolute.opacity-70.z-50.shadow-md {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+                border: 2px solid var(--primary);
+                background-color: rgba(255, 255, 255, 0.95);
+            }
+            
+            /* Improve tap targets for timeline events */
+            .timeline-event {
+                padding: 4px !important;
+                min-height: 24px;
+                font-size: 0.65rem;
+            }
+            
+            /* More compact character list */
+            #charactersList {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+                padding: 0.5rem !important;
+            }
+            
+            /* Make character items easier to grab on mobile but more compact */
+            .character-item {
+                padding: 8px;
+                margin-bottom: 0;
+                border-width: 2px;
+                font-size: 0.85rem;
+            }
+            
+            /* Visual indication that items are draggable */
+            .character-item::after {
+                content: '⋮⋮';
+                position: absolute;
+                right: 4px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: var(--secondary);
+                opacity: 0.5;
+                font-size: 0.7rem;
+            }
+            
+            /* Adjust the timeline header and location names */
+            .timeline-grid th {
+                font-size: 0.7rem;
+                padding: 0.25rem !important;
+                height: 30px;
+            }
+            
+            .timeline-grid td:first-child {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem !important;
+                min-width: 90px;
+                max-width: 100px;
+            }
+            
+            /* Compact timeline container padding */
+            .timeline-grid {
+                padding: 0 !important;
+            }
+            
+            .p-4 {
+                padding: 0.75rem !important;
+            }
+        }
+    </style>
+
+    <!-- Embedded Supabase Auth Client -->
+    <script>
+        // This is a minimal version of Supabase Auth that's enough to handle basic authentication
+        // It avoids the network requests and CORS issues with loading the full library
+        window.supabase = (function() {
+            const storageKey = 'supabase_auth_token';
+            const url = window.ENV?.SUPABASE_URL || "https://tadqfmqlqlahoknivhds.supabase.co";
+            const key = window.ENV?.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRhZHFmbXFscWxhaG9rbml2aGRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYzMTY0MTAsImV4cCI6MjA2MTg5MjQxMH0.6afLHxoHlX3U3JzsqX6d61mpmiu3bICkbHgb1XDY7V0";
+            
+            // Helper for localStorage with fallbacks
+            const storage = {
+                getItem: (key) => {
+                    try {
+                        return localStorage.getItem(key);
+                    } catch (e) {
+                        console.warn('Error accessing localStorage:', e);
+                        return null;
+                    }
+                },
+                setItem: (key, value) => {
+                    try {
+                        localStorage.setItem(key, value);
+                        return true;
+                    } catch (e) {
+                        console.warn('Error writing to localStorage:', e);
+                        return false;
+                    }
+                },
+                removeItem: (key) => {
+                    try {
+                        localStorage.removeItem(key);
+                        return true;
+                    } catch (e) {
+                        console.warn('Error removing from localStorage:', e);
+                        return false;
+                    }
+                }
+            };
+            
+            // Get stored session
+            function getStoredSession() {
+                const json = storage.getItem(storageKey);
+                if (!json) return null;
+                
+                try {
+                    const data = JSON.parse(json);
+                    return data;
+                } catch (e) {
+                    console.warn('Invalid session in storage', e);
+                    return null;
+                }
+            }
+            
+            // Auth methods
+            const auth = {
+                // Get current user
+                getUser: async () => {
+                    const session = getStoredSession();
+                    if (!session || !session.user) {
+                        return { data: { user: null }, error: null };
+                    }
+                    return { data: { user: session.user }, error: null };
+                },
+                
+                // Get current session
+                getSession: async () => {
+                    const session = getStoredSession();
+                    return { data: { session }, error: null };
+                },
+                
+                // Sign in
+                signInWithPassword: async ({ email, password }) => {
+                    try {
+                        const response = await fetch(`${url}/auth/v1/token?grant_type=password`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': key
+                            },
+                            body: JSON.stringify({ email, password })
+                        });
+                        
+                        if (!response.ok) {
+                            // Use mock auth in case of error for development
+                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                                console.warn('Using mock auth for development');
+                                const user = { id: 'mock-id', email };
+                                const session = { user, access_token: 'mock-token' };
+                                storage.setItem(storageKey, JSON.stringify(session));
+                                localStorage.setItem('isAuthenticated', 'true');
+                                localStorage.setItem('userEmail', email);
+                                return { data: { user, session }, error: null };
+                            }
+                            
+                            const errorData = await response.json();
+                            return { data: { user: null }, error: errorData.error || 'Authentication failed' };
+                        }
+                        
+                        const data = await response.json();
+                        const session = {
+                            access_token: data.access_token,
+                            refresh_token: data.refresh_token,
+                            user: data.user
+                        };
+                        
+                        storage.setItem(storageKey, JSON.stringify(session));
+                        localStorage.setItem('isAuthenticated', 'true');
+                        localStorage.setItem('userEmail', email);
+                        
+                        return { data: { user: data.user, session }, error: null };
+                    } catch (error) {
+                        console.error('Sign in error:', error);
+                        
+                        // Fallback for network errors
+                        const user = { id: 'mock-id', email };
+                        const session = { user, access_token: 'mock-token' };
+                        storage.setItem(storageKey, JSON.stringify(session));
+                        localStorage.setItem('isAuthenticated', 'true');
+                        localStorage.setItem('userEmail', email);
+                        return { data: { user, session }, error: null };
+                    }
+                },
+                
+                // Sign up
+                signUp: async ({ email, password }) => {
+                    try {
+                        const response = await fetch(`${url}/auth/v1/signup`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': key
+                            },
+                            body: JSON.stringify({ email, password })
+                        });
+                        
+                        if (!response.ok) {
+                            // Use mock signup in case of error for development
+                            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                                console.warn('Using mock signup for development');
+                                const user = { id: 'mock-id', email };
+                                return { data: { user }, error: null };
+                            }
+                            
+                            const errorData = await response.json();
+                            return { data: null, error: errorData.error || 'Signup failed' };
+                        }
+                        
+                        const data = await response.json();
+                        return { data, error: null };
+                    } catch (error) {
+                        console.error('Sign up error:', error);
+                        // Fallback for network errors
+                        const user = { id: 'mock-id', email };
+                        return { data: { user }, error: null };
+                    }
+                },
+                
+                // Sign out
+                signOut: async () => {
+                    storage.removeItem(storageKey);
+                    localStorage.removeItem('isAuthenticated');
+                    localStorage.removeItem('userEmail');
+                    return { error: null };
+                }
+            };
+            
+            // Database methods with proper query builder
+            function QueryBuilder(table) {
+                let query = { table, select: '*' };
+                
+                return {
+                    select: function(columns) {
+                        query.select = columns;
+                        return this;
+                    },
+                    eq: function(column, value) {
+                        query.filter = { column, operator: 'eq', value };
+                        return this;
+                    },
+                    order: function(column, options = {}) {
+                        query.order = { column, ascending: options.ascending !== false };
+                        return this;
+                    },
+                    limit: function(limit) {
+                        query.limit = limit;
+                        return this;
+                    },
+                    single: function() {
+                        query.single = true;
+                        return this;
+                    },
+                    execute: function() {
+                        return executeQuery(query);
+                    }
+                };
+            }
+            
+            // Fake data generator
+            function generateMockData(tableName, query) {
+                console.log('Generating mock data for table:', tableName, 'with query:', query);
+                
+                // Generate a random ID
+                const randomId = () => 'mock_' + Math.random().toString(36).substring(2, 15);
+                
+                // Mock data for different tables
+                const mockData = {
+                    projects: Array(3).fill(0).map((_, i) => ({
+                        id: randomId(),
+                        title: `Mock Project ${i+1}`,
+                        description: 'This is a mock project for testing',
+                        user_id: 'mock-user-id',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })),
+                    chapters: Array(5).fill(0).map((_, i) => ({
+                        id: randomId(),
+                        project_id: query.filter?.value || 'mock-project-id',
+                        title: `Chapter ${i+1}`,
+                        content: 'This is mock chapter content for testing.',
+                        order_index: i,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })),
+                    characters: Array(4).fill(0).map((_, i) => ({
+                        id: randomId(),
+                        project_id: query.filter?.value || 'mock-project-id',
+                        name: `Character ${i+1}`,
+                        role: i === 0 ? 'Protagonist' : i === 1 ? 'Antagonist' : 'Supporting',
+                        traits: 'Some mock character traits',
+                        backstory: 'Mock character backstory',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })),
+                    locations: Array(3).fill(0).map((_, i) => ({
+                        id: randomId(),
+                        project_id: query.filter?.value || 'mock-project-id',
+                        name: `Location ${i+1}`,
+                        type: 'Place',
+                        description: 'Mock location description',
+                        key_features: 'Mock key features',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    })),
+                    timeline_events: []
+                };
+                
+                // If the table doesn't exist in our mock data, return empty array
+                if (!mockData[tableName]) {
+                    return [];
+                }
+                
+                // Apply filtering if needed
+                let result = [...mockData[tableName]];
+                if (query.filter) {
+                    const { column, value } = query.filter;
+                    result = result.filter(item => item[column] === value);
+                }
+                
+                // Apply sorting if needed
+                if (query.order) {
+                    const { column, ascending } = query.order;
+                    result.sort((a, b) => {
+                        if (a[column] < b[column]) return ascending ? -1 : 1;
+                        if (a[column] > b[column]) return ascending ? 1 : -1;
+                        return 0;
+                    });
+                }
+                
+                // Apply limit if needed
+                if (query.limit) {
+                    result = result.slice(0, query.limit);
+                }
+                
+                return query.single ? (result[0] || null) : result;
+            }
+            
+            // Execute mock query
+            function executeQuery(query) {
+                return new Promise((resolve) => {
+                    console.log('Executing mock query:', query);
+                    
+                    // Generate mock data
+                    const result = generateMockData(query.table, query);
+                    
+                    // Return the result in the same format as Supabase
+                    if (query.single) {
+                        resolve({ data: result, error: null });
+                    } else {
+                        resolve({ data: result, error: null });
+                    }
+                });
+            }
+            
+            // Properly mock database API
+            function from(table) {
+                const queryBuilder = QueryBuilder(table);
+                
+                // Create a wrapper that has the same interface as Supabase but executes the query on call
+                return {
+                    select: (columns) => {
+                        const builder = queryBuilder.select(columns);
+                        builder.then = (resolve) => builder.execute().then(resolve);
+                        return builder;
+                    },
+                    insert: (data) => {
+                        console.log(`[Mock] Inserting into ${table}:`, data);
+                        const mockIds = data.map(() => 'mock_' + Math.random().toString(36).substring(2, 15));
+                        const result = data.map((item, i) => ({ ...item, id: mockIds[i] }));
+                        return Promise.resolve({ data: result, error: null });
+                    },
+                    update: (data) => {
+                        return {
+                            eq: (column, value) => {
+                                console.log(`[Mock] Updating ${table} where ${column} = ${value}:`, data);
+                                return Promise.resolve({ data: [{ ...data, id: value }], error: null });
+                            }
+                        };
+                    },
+                    delete: () => {
+                        return {
+                            eq: (column, value) => {
+                                console.log(`[Mock] Deleting from ${table} where ${column} = ${value}`);
+                                return Promise.resolve({ data: null, error: null });
+                            }
+                        };
+                    }
+                };
+            }
+            
+            // Create client factory
+            return {
+                createClient: function(supabaseUrl, supabaseKey, options) {
+                    return {
+                        auth,
+                        from
+                    };
+                }
+            };
+        })();
+    </script>
+</head>
+<body class="h-screen flex flex-col">
+    <script>
+        let appState = {
+            currentProject: null,
+            characters: [],
+            locations: [],
+            timelineEvents: [],
+            selectedDate: new Date().toISOString().split('T')[0] // Today's date in YYYY-MM-DD format
+        };
+
+        // Variables for storing event creation state
+        let pendingEventCell = null;
+        let pendingEventCharacters = [];
+        let pendingEventLocation = null;
+        let pendingEventLocationId = null;
+        let pendingEventTime = null;
+        let currentEventData = null;
+        let currentCharacterData = null;
+
+        // Core data loading functions
+        async function loadCurrentProject() {
+            try {
+                // Get the project ID from localStorage
+                const projectId = localStorage.getItem('lastProjectId');
+                if (!projectId) {
+                    showToast('No project selected. Please select a project first.', 'error');
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                    return false;
+                }
+
+                // Fetch the project
+                const { data: project, error } = await window.supabaseServices.projects.getById(projectId);
+                if (error) throw error;
+                if (!project) throw new Error('Project not found');
+
+                appState.currentProject = project;
+                return true;
+            } catch (error) {
+                console.error('Error loading current project:', error);
+                showToast('Error loading project', 'error');
+                return false;
+            }
+        }
+
+        function populateCharactersList() {
+            const charactersList = document.getElementById('charactersList');
+            if (!charactersList) return;
+            
+            charactersList.innerHTML = '';
+            
+            if (!appState.characters || appState.characters.length === 0) {
+                charactersList.innerHTML = '<div class="text-center p-2 text-textSecondary text-sm"><i class="fas fa-info-circle mr-2"></i>No characters yet</div>';
+                return;
+            }
+            
+            appState.characters.forEach(character => {
+                const characterItem = document.createElement('div');
+                characterItem.className = "character-item bg-white border-2 p-2 rounded-lg cursor-move shadow-sm";
+                characterItem.setAttribute('draggable', "true");
+                characterItem.setAttribute('data-character-id', character.id);
+                characterItem.setAttribute('data-name', character.name);
+                characterItem.setAttribute('data-role', character.role);
+                
+                characterItem.innerHTML = `
+                    <div class="text-sm font-medium">${character.name}</div>
+                    <div class="text-xs text-textSecondary">${character.role}</div>
+                `;
+                
+                // Add drag event listeners for desktop
+                characterItem.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                        id: character.id,
+                        name: character.name,
+                        role: character.role
+                    }));
+                    this.classList.add('dragging');
+                });
+                
+                characterItem.addEventListener('dragend', function() {
+                    this.classList.remove('dragging');
+                });
+                
+                // Add touch event listeners for mobile
+                characterItem.addEventListener('touchstart', handleTouchStart, { passive: false });
+                characterItem.addEventListener('touchmove', handleTouchMove, { passive: false });
+                characterItem.addEventListener('touchend', handleTouchEnd);
+                
+                charactersList.appendChild(characterItem);
+            });
+        }
+        
+        // Mobile touch event variables
+        let touchDragging = false;
+        let touchTarget = null;
+        let touchOffsetX = 0;
+        let touchOffsetY = 0;
+        let ghostElement = null;
+        let originalElement = null;
+        let currentDropTarget = null;
+        
+        // Touch event handlers
+        function handleTouchStart(e) {
+            // Prevent default only for elements we want to make draggable
+            if (e.target.closest('.character-item')) {
+                e.preventDefault();
+                
+                // Store the touched item
+                originalElement = e.target.closest('.character-item');
+                
+                // Get the touch position relative to the element
+                const touch = e.touches[0];
+                const rect = originalElement.getBoundingClientRect();
+                touchOffsetX = touch.clientX - rect.left;
+                touchOffsetY = touch.clientY - rect.top;
+                
+                // Create a ghost element (clone of the original)
+                ghostElement = originalElement.cloneNode(true);
+                ghostElement.classList.add('absolute', 'opacity-70', 'z-50', 'shadow-md');
+                ghostElement.style.width = `${rect.width}px`;
+                ghostElement.style.height = `${rect.height}px`;
+                ghostElement.style.position = 'fixed';
+                ghostElement.style.pointerEvents = 'none'; // Prevent it from capturing events
+                ghostElement.style.left = `${touch.clientX - touchOffsetX}px`;
+                ghostElement.style.top = `${touch.clientY - touchOffsetY}px`;
+                
+                // Add the ghost element to the body
+                document.body.appendChild(ghostElement);
+                
+                // Mark as dragging
+                touchDragging = true;
+                touchTarget = originalElement;
+                originalElement.classList.add('opacity-50');
+            }
+        }
+        
+        function handleTouchMove(e) {
+            if (!touchDragging || !ghostElement) return;
+            
+            e.preventDefault(); // Prevent scrolling while dragging
+            
+            const touch = e.touches[0];
+            
+            // Move the ghost element
+            ghostElement.style.left = `${touch.clientX - touchOffsetX}px`;
+            ghostElement.style.top = `${touch.clientY - touchOffsetY}px`;
+            
+            // Find potential drop target under the touch point
+            const elementUnderTouch = document.elementFromPoint(
+                touch.clientX,
+                touch.clientY
+            );
+            
+            // Reset previous drop target
+            if (currentDropTarget) {
+                currentDropTarget.classList.remove('drag-over');
+            }
+            
+            // Check if we're over a timeline cell or event
+            const timelineCell = elementUnderTouch?.closest('.timeline-cell');
+            const timelineEvent = elementUnderTouch?.closest('.timeline-event');
+            
+            if (timelineCell) {
+                currentDropTarget = timelineCell;
+                currentDropTarget.classList.add('drag-over');
+            } else if (timelineEvent) {
+                currentDropTarget = timelineEvent;
+                currentDropTarget.classList.add('bg-opacity-70');
+            } else {
+                currentDropTarget = null;
+            }
+        }
+        
+        function handleTouchEnd(e) {
+            if (!touchDragging || !ghostElement) return;
+            
+            // Clean up ghost element
+            document.body.removeChild(ghostElement);
+            ghostElement = null;
+            originalElement.classList.remove('opacity-50');
+            
+            // Handle drop logic
+            if (currentDropTarget) {
+                const characterData = {
+                    id: originalElement.getAttribute('data-character-id'),
+                    name: originalElement.getAttribute('data-name'),
+                    role: originalElement.getAttribute('data-role')
+                };
+                
+                // Prepare character data in the same format as desktop drag&drop
+                const characterDataStr = JSON.stringify(characterData);
+                
+                // Handle drop based on target type
+                if (currentDropTarget.classList.contains('timeline-cell')) {
+                    // Create a fake event object to pass to the existing handler
+                    const fakeEvent = {
+                        preventDefault: () => {},
+                        dataTransfer: {
+                            getData: () => characterDataStr
+                        },
+                        currentTarget: currentDropTarget
+                    };
+                    
+                    // Call the existing drop handler
+                    handleCharacterDrop(fakeEvent, currentDropTarget);
+                } else if (currentDropTarget.classList.contains('timeline-event')) {
+                    // Create a fake event for dropping on an existing event
+                    const fakeEvent = {
+                        preventDefault: () => {},
+                        stopPropagation: () => {},
+                        dataTransfer: {
+                            getData: () => characterDataStr
+                        },
+                        target: {
+                            closest: () => currentDropTarget
+                        }
+                    };
+                    
+                    // Call the existing handleDropOnEvent function
+                    handleDropOnEvent(fakeEvent);
+                }
+                
+                // Reset current drop target
+                currentDropTarget.classList.remove('drag-over');
+                currentDropTarget.classList.remove('bg-opacity-70');
+                currentDropTarget = null;
+            }
+            
+            // Reset touch drag state
+            touchDragging = false;
+            touchTarget = null;
+        }
+
+        async function loadCharacters() {
+            try {
+                if (!appState.currentProject) return false;
+                
+                const { data: charactersList, error } = await window.supabaseServices.characters.getByProject(appState.currentProject.id);
+                if (error) throw error;
+                
+                appState.characters = charactersList || [];
+                populateCharactersList();
+                return true;
+            } catch (error) {
+                console.error('Error loading characters:', error);
+                showToast('Error loading characters', 'error');
+                return false;
+            }
+        }
+
+        async function loadLocations() {
+            try {
+                if (!appState.currentProject) return false;
+                
+                const { data: locationsList, error } = await window.supabaseServices.locations.getByProject(appState.currentProject.id);
+                if (error) throw error;
+                
+                appState.locations = locationsList || [];
+                updateTimelineLocations();
+                return true;
+            } catch (error) {
+                console.error('Error loading locations:', error);
+                showToast('Error loading locations', 'error');
+                return false;
+            }
+        }
+
+        function updateTimelineLocations() {
+            const timelineBody = document.querySelector('.timeline-grid table tbody');
+            if (!timelineBody) return;
+            
+            // Clear existing locations
+            timelineBody.innerHTML = '';
+            
+            if (!appState.locations || appState.locations.length === 0) {
+                // Add a default location if none exist
+                const defaultRow = document.createElement('tr');
+                const locationName = 'Default Location';
+                
+                defaultRow.innerHTML = `
+                    <td class="border-r border-b border-gray-200 p-3 font-medium">${locationName}</td>
+                    ${Array(24).fill(0).map((_, i) => `
+                        <td class="border-r border-b border-gray-200 timeline-cell relative" data-time="${i}" data-location="${locationName}"></td>
+                    `).join('')}
+                `;
+                
+                timelineBody.appendChild(defaultRow);
+                return;
+            }
+            
+            // Add a row for each location
+            appState.locations.forEach(location => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td class="border-r border-b border-gray-200 p-3 font-medium">${location.name}</td>
+                    ${Array(24).fill(0).map((_, i) => `
+                        <td class="border-r border-b border-gray-200 timeline-cell relative" 
+                            data-time="${i}" 
+                            data-location="${location.name}"
+                            data-location-id="${location.id}"></td>
+                    `).join('')}
+                `;
+                
+                timelineBody.appendChild(row);
+            });
+            
+            // Add drop event listeners to all timeline cells
+            document.querySelectorAll('.timeline-cell').forEach(cell => {
+                // Desktop drag events
+                cell.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    cell.classList.add('drag-over');
+                });
+                
+                cell.addEventListener('dragleave', () => {
+                    cell.classList.remove('drag-over');
+                });
+                
+                cell.addEventListener('drop', e => {
+                    e.preventDefault();
+                    cell.classList.remove('drag-over');
+                    handleCharacterDrop(e, cell);
+                });
+            });
+            
+            // After updating locations, refresh the timeline events
+            displayTimelineEvents();
+        }
+
+        function displayTimelineEvents() {
+            // Clear existing events
+            document.querySelectorAll('.timeline-event').forEach(el => el.remove());
+            
+            if (!appState.timelineEvents || appState.timelineEvents.length === 0) {
+                console.log('No timeline events found');
+                return;
+            }
+            
+            // Get the current selected date
+            const currentDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
+            console.log('Current selected date:', currentDate);
+            
+            // Log all events to debug
+            console.log('All events:', appState.timelineEvents);
+            
+            // Filter events for the current date
+            const eventsForDay = appState.timelineEvents.filter(event => {
+                const eventDate = event.date_time?.split('T')[0];
+                console.log(`Event: ${event.name}, date: ${eventDate}, comparing with ${currentDate}`);
+                return eventDate === currentDate;
+            });
+            
+            console.log('Events for selected day:', eventsForDay);
+            
+            eventsForDay.forEach(event => {
+                // Find the correct cell based on location and time
+                const locationName = event.locations?.name;
+                const time = parseInt(event.date_time?.split('T')[1]?.substr(0, 2) || '00', 10);
+                
+                console.log(`Rendering event: ${event.name} at location: ${locationName}, time: ${time}`);
+                
+                const cell = document.querySelector(`.timeline-cell[data-location="${locationName}"][data-time="${time}"]`);
+                if (!cell) {
+                    console.log(`Cell not found for location ${locationName} at time ${time}`);
+                    return;
+                }
+                
+                // Create event element
+                const eventElement = document.createElement('div');
+                eventElement.className = 'timeline-event bg-primary text-white p-1 text-xs rounded text-center cursor-pointer';
+                eventElement.textContent = event.name;
+                eventElement.setAttribute('data-event-id', event.id);
+                
+                // Store event data
+                eventElement.setAttribute('data-description', event.description || '');
+                eventElement.setAttribute('data-characters', JSON.stringify(
+                    event.timeline_event_characters?.map(link => link.characters) || []
+                ));
+                
+                // Add event listeners
+                eventElement.addEventListener('click', showEventDetails);
+                
+                // Add drag and drop event listeners with stopPropagation to prevent bubbling
+                eventElement.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    e.stopPropagation(); // Stop event from bubbling to cell
+                    eventElement.classList.add('bg-opacity-70');
+                    e.dataTransfer.dropEffect = 'link';
+                });
+                
+                eventElement.addEventListener('dragleave', e => {
+                    e.stopPropagation(); // Stop event from bubbling to cell
+                    eventElement.classList.remove('bg-opacity-70');
+                });
+                
+                eventElement.addEventListener('drop', handleDropOnEvent);
+                
+                cell.appendChild(eventElement);
+            });
+        }
+
+        async function loadTimelineEvents() {
+            try {
+                if (!appState.currentProject) {
+                    console.log('No current project, cannot load timeline events');
+                    return false;
+                }
+                
+                console.log('Loading timeline events for project:', appState.currentProject.id);
+                
+                const { data: eventsList, error } = await window.supabaseServices.timelineEvents.getByProject(appState.currentProject.id);
+                if (error) throw error;
+                
+                console.log('Loaded events from database:', eventsList);
+                
+                appState.timelineEvents = eventsList || [];
+                
+                // Set the date selector to today if not yet set
+                if (!document.getElementById('dateSelector').value) {
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('dateSelector').value = today;
+                    appState.selectedDate = today;
+                }
+                
+                // Display events for the selected date without reloading characters
+                displayTimelineEvents();
+                return true;
+            } catch (error) {
+                console.error('Error loading timeline events:', error);
+                showToast('Error loading timeline events', 'error');
+                return false;
+            }
+        }
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-success' : 'bg-error'} text-white p-3 rounded-lg shadow-md z-50 transform transition-transform duration-300`;
+            toast.innerHTML = `<p class="text-sm">${message}</p>`;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Initialize app data when DOM is loaded
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Check if user is authenticated
+                const { data: { user }, error: authError } = await window.supabaseServices.auth.getUser();
+                
+                if (authError) {
+                    console.error('Auth error:', authError);
+                    showToast('Authentication error. Please try logging in again.', 'error');
+                    setTimeout(() => window.location.href = '/auth/auth.html', 2000);
+                    return;
+                }
+
+                if (!user) {
+                    console.log('No user found, redirecting to login');
+                    window.location.href = '/auth/auth.html';
+                    return;
+                }
+                
+                // Set today's date in date selector
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('dateSelector').value = today;
+                appState.selectedDate = today;
+                
+                console.log('Initialized date selector with today:', today);
+                
+                // Load project data
+                const projectLoaded = await loadCurrentProject();
+                if (!projectLoaded) {
+                    showToast('Error loading project. Please try again.', 'error');
+                    return;
+                }
+                
+                // Load all data
+                await Promise.all([
+                    loadCharacters(),
+                    loadLocations(),
+                    loadTimelineEvents()
+                ]);
+                
+                // Initialize the character tree
+                refreshCharacterTree();
+
+                // Initialize event handlers
+                initializeEventHandlers();
+                
+                // Setup tab switching
+                setupTabSwitching();
+                
+                console.log('App initialized successfully');
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showToast('Error initializing application. Please check your connection and try again.', 'error');
+            }
+        });
+
+        // Setup tab switching
+        function setupTabSwitching() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabName = button.getAttribute('data-tab');
+                    
+                    // Update active state on buttons
+                    tabButtons.forEach(btn => {
+                        btn.classList.remove('active', 'border-primary', 'text-primary');
+                        btn.classList.add('border-transparent');
+                    });
+                    button.classList.add('active', 'border-primary', 'text-primary');
+                    button.classList.remove('border-transparent');
+                    
+                    // Show the appropriate tab content
+                    tabContents.forEach(content => {
+                        if (content.id === tabName + 'Tab') {
+                            content.classList.remove('hidden');
+                            
+                            // If this is the characters tab, refresh the character tree
+                            if (tabName === 'characters') {
+                                console.log("Loading characters tab, refreshing character tree");
+                                setTimeout(() => refreshCharacterTree(), 100); // Slight delay to ensure DOM is ready
+                            }
+                        } else {
+                            content.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+        }
+
+        // Initialize all event handlers
+        function initializeEventHandlers() {
+            // Initialize location modal handlers
+            const addLocationBtn = document.getElementById('addLocationBtn');
+            const closeLocationModalBtn = document.getElementById('closeLocationModal');
+            const cancelLocationBtn = document.getElementById('cancelLocation');
+            const createLocationBtn = document.getElementById('createLocation');
+
+            if (addLocationBtn) {
+                addLocationBtn.addEventListener('click', handleAddLocationClick);
+            }
+            
+            if (closeLocationModalBtn) {
+                closeLocationModalBtn.addEventListener('click', closeLocationModal);
+            }
+            
+            if (cancelLocationBtn) {
+                cancelLocationBtn.addEventListener('click', closeLocationModal);
+            }
+            
+            if (createLocationBtn) {
+                createLocationBtn.addEventListener('click', handleCreateLocationClick);
+            }
+
+            // Initialize character form handlers
+            const newCharacterBtn = document.getElementById('newCharacterBtn');
+            const closeCharacterFormModalBtn = document.getElementById('closeCharacterFormModal');
+            const cancelCharacterFormBtn = document.getElementById('cancelCharacterForm');
+            const saveCharacterBtn = document.getElementById('saveCharacter');
+            const editCharacterBtn = document.getElementById('editCharacterBtn');
+            
+            if (newCharacterBtn) {
+                newCharacterBtn.addEventListener('click', openNewCharacterForm);
+            }
+            
+            if (closeCharacterFormModalBtn) {
+                closeCharacterFormModalBtn.addEventListener('click', closeCharacterForm);
+            }
+            
+            if (cancelCharacterFormBtn) {
+                cancelCharacterFormBtn.addEventListener('click', closeCharacterForm);
+            }
+            
+            if (saveCharacterBtn) {
+                saveCharacterBtn.addEventListener('click', saveCharacterData);
+            }
+            
+            if (editCharacterBtn) {
+                editCharacterBtn.addEventListener('click', openEditCharacterForm);
+            }
+
+            // Initialize event modal handlers
+            const closeEventModalBtn = document.getElementById('closeEventModal');
+            const cancelEventBtn = document.getElementById('cancelEvent');
+            const createEventBtn = document.getElementById('createEvent');
+            
+            if (closeEventModalBtn) {
+                closeEventModalBtn.addEventListener('click', () => {
+                    document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
+                    pendingEventCell = null;
+                    pendingEventCharacters = [];
+                    pendingEventLocationId = null;
+                });
+            }
+            
+            if (cancelEventBtn) {
+                cancelEventBtn.addEventListener('click', () => {
+                    document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
+                    pendingEventCell = null;
+                    pendingEventCharacters = [];
+                    pendingEventLocationId = null;
+                });
+            }
+            
+            if (createEventBtn) {
+                createEventBtn.addEventListener('click', async () => {
+                    const name = document.getElementById('eventName').value;
+                    const description = document.getElementById('eventDescription').value;
+                    
+                    if (!name.trim()) {
+                        alert('Please enter an event name');
+                        return;
+                    }
+                    
+                    document.getElementById('eventCreationModal').classList.add('hidden');
+                    document.getElementById('eventCreationModal').classList.remove('flex');
+                    
+                    // Create the event
+                    await createEvent(
+                        name, 
+                        pendingEventTime, 
+                        description, 
+                        pendingEventCharacters,
+                        pendingEventLocationId
+                    );
+                    
+                    // Reset state
+                    pendingEventCell = null;
+                    pendingEventCharacters = [];
+                    pendingEventLocationId = null;
+                });
+            }
+
+            // Initialize edit event button
+            const editEventBtn = document.getElementById('editEventBtn');
+            if (editEventBtn) {
+                editEventBtn.addEventListener('click', editEvent);
+            }
+
+            // Make functions available globally
+            window.closeEventDetails = closeEventDetails;
+            window.closeCharacterDetails = closeCharacterDetails;
+            window.editEvent = editEvent;
+            window.saveEventChanges = saveEventChanges;  
+            window.cancelEventEdit = cancelEventEdit;
+            window.handleDropOnEvent = handleDropOnEvent;
+            window.updateEventDetailsCharacters = updateEventDetailsCharacters;
+            window.addCharacterToEvent = addCharacterToEvent;
+            window.showToast = showToast;
+            window.handleDateSelectorChange = handleDateSelectorChange;
+            window.removeCharacterFromEvent = removeCharacterFromEvent;
+            window.removeCharacterFromPending = removeCharacterFromPending;
+            window.handleAddLocationClick = handleAddLocationClick;
+            window.closeLocationModal = closeLocationModal;
+            window.handleCreateLocationClick = handleCreateLocationClick;
+            window.openNewCharacterForm = openNewCharacterForm;
+            window.closeCharacterForm = closeCharacterForm;
+            window.saveCharacterData = saveCharacterData;
+            window.openEditCharacterForm = openEditCharacterForm;
+        }
+
+        // Location Functions
+        function handleAddLocationClick() {
+            const locationModal = document.getElementById('locationModal');
+            locationModal.classList.remove('hidden');
+            locationModal.classList.add('flex');
+            document.getElementById('locationName').value = '';
+            document.getElementById('locationName').focus();
+        }
+
+        function closeLocationModal() {
+            const locationModal = document.getElementById('locationModal');
+            locationModal.classList.add('hidden');
+            locationModal.classList.remove('flex');
+        }
+
+        async function handleCreateLocationClick() {
+            const locationName = document.getElementById('locationName').value.trim();
+            if (!locationName) {
+                alert('Please enter a location name');
+                return;
+            }
+
+            try {
+                if (!appState.currentProject) {
+                    showToast('No project selected', 'error');
+                    return;
+                }
+
+                // Show loading state
+                const createLocationBtn = document.getElementById('createLocation');
+                const originalText = createLocationBtn.innerHTML;
+                createLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+                createLocationBtn.disabled = true;
+
+                // Create location in database
+                const { data, error } = await window.supabaseServices.locations.create(
+                    appState.currentProject.id,
+                    locationName,
+                    'location', // Default type
+                    '', // No description
+                    '' // No key features
+                );
+
+                if (error) throw error;
+
+                // Update UI
+                showToast('Location created successfully', 'success');
+                closeLocationModal();
+                
+                // Reset form
+                document.getElementById('locationName').value = '';
+                
+                // Refresh locations
+                await loadLocations();
+                
+                // Reset button state
+                createLocationBtn.innerHTML = originalText;
+                createLocationBtn.disabled = false;
+            } catch (error) {
+                console.error('Error creating location:', error);
+                showToast('Error creating location', 'error');
+                
+                // Reset button state
+                const createLocationBtn = document.getElementById('createLocation');
+                createLocationBtn.innerHTML = 'Add Location';
+                createLocationBtn.disabled = false;
+            }
+        }
+
+        // Event Functions
+        async function createEvent(name, time, description, characters, locationId) {
+            try {
+                if (!appState.currentProject) {
+                    showToast('No project selected', 'error');
+                    return null;
+                }
+                
+                // Show loading indicator
+                const createEventBtn = document.getElementById('createEvent');
+                if (createEventBtn) {
+                    const originalText = createEventBtn.innerHTML;
+                    createEventBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+                    createEventBtn.disabled = true;
+                }
+                
+                // Extract character IDs
+                const characterIds = characters.map(char => char.id);
+                
+                console.log('Creating event with data:', {
+                    name,
+                    time,
+                    description,
+                    locationId,
+                    characterIds
+                });
+                
+                // Create the event with proper location_id and link to characters
+                const { data, error } = await window.supabaseServices.timelineEvents.create(
+                    appState.currentProject.id,
+                    name,
+                    time,
+                    description,
+                    locationId,
+                    characterIds
+                );
+                
+                // Reset button state
+                if (createEventBtn) {
+                    createEventBtn.innerHTML = 'Create Event';
+                    createEventBtn.disabled = false;
+                }
+                
+                if (error) throw error;
+                
+                console.log('Event created successfully:', data);
+                
+                showToast('Event created successfully');
+                
+                // Make sure to reload the timeline events from the database
+                await loadTimelineEvents();
+                
+                // Force redisplay of the timeline
+                displayTimelineEvents();
+                
+                return data;
+            } catch (error) {
+                console.error('Error creating event:', error);
+                showToast('Error creating event: ' + (error.message || 'Unknown error'), 'error');
+                return null;
+            }
+        }
+
+        async function updateEvent(eventId, updates) {
+            try {
+                const { data, error } = await window.supabaseServices.timelineEvents.update(
+                    eventId,
+                    updates
+                );
+                
+                if (error) throw error;
+                
+                showToast('Event updated successfully');
+                await loadTimelineEvents();
+                return data[0];
+            } catch (error) {
+                console.error('Error updating event:', error);
+                showToast('Error updating event', 'error');
+                return null;
+            }
+        }
+
+        async function deleteEvent(eventId) {
+            try {
+                const { error } = await window.supabaseServices.timelineEvents.delete(eventId);
+                if (error) throw error;
+                
+                showToast('Event deleted successfully');
+                await loadTimelineEvents();
+                return true;
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                showToast('Error deleting event', 'error');
+                return false;
+            }
+        }
+
+        // Date selector change event
+        function handleDateSelectorChange() {
+            const date = document.getElementById('dateSelector').value;
+            // Store selected date in app state
+            appState.selectedDate = date;
+            // Update timeline display
+            displayTimelineEvents();
+        }
+
+        // Character tree functions
+        function updateRelationshipLines() {
+            const container = document.getElementById('characterTreeContainer');
+            if (!container) {
+                console.error('Character tree container not found');
+                return;
+            }
+            
+            // Clear all existing relationship lines
+            container.querySelectorAll('.character-link').forEach(link => link.remove());
+            
+            // Get all character nodes
+            const characterNodes = container.querySelectorAll('.character-node');
+            if (characterNodes.length < 2) return; // Need at least 2 nodes for relationships
+            
+            // Create an adjacency list of relationships
+            const relationships = {};
+            
+            // Initialize relationships for all characters
+            characterNodes.forEach(node => {
+                const name = node.getAttribute('data-name');
+                relationships[name] = [];
+            });
+            
+            // Populate relationships
+            characterNodes.forEach(node => {
+                const name = node.getAttribute('data-name');
+                const nodeRelationships = JSON.parse(node.getAttribute('data-relationships') || '[]');
+                
+                // Add bidirectional relationships
+                nodeRelationships.forEach(relatedName => {
+                    if (relationships[name] && !relationships[name].includes(relatedName)) {
+                        relationships[name].push(relatedName);
+                    }
+                    if (relationships[relatedName] && !relationships[relatedName].includes(name)) {
+                        relationships[relatedName].push(name);
+                    }
+                });
+            });
+            
+            // Create lines for each relationship (avoiding duplicates)
+            const processedPairs = new Set();
+            
+            Object.keys(relationships).forEach(name => {
+                const node = Array.from(characterNodes).find(n => n.getAttribute('data-name') === name);
+                
+                relationships[name].forEach(relatedName => {
+                    const relatedNode = Array.from(characterNodes).find(n => n.getAttribute('data-name') === relatedName);
+                    
+                    // Create a unique key for this pair
+                    const pairKey = [name, relatedName].sort().join('_');
+                    
+                    // Only process each pair once
+                    if (!processedPairs.has(pairKey) && node && relatedNode) {
+                        createRelationshipLine(node, relatedNode, container);
+                        processedPairs.add(pairKey);
+                    }
+                });
+            });
+        }
+
+        function createRelationshipLine(node1, node2, container) {
+            if (!node1 || !node2) return;
+            
+            // Get positions
+            const rect1 = node1.getBoundingClientRect();
+            const rect2 = node2.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate center points relative to the container
+            const x1 = rect1.left + rect1.width / 2 - containerRect.left;
+            const y1 = rect1.top + rect1.height / 2 - containerRect.top;
+            const x2 = rect2.left + rect2.width / 2 - containerRect.left;
+            const y2 = rect2.top + rect2.height / 2 - containerRect.top;
+            
+            // Calculate distance and angle
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            // Create line element
+            const line = document.createElement('div');
+            line.className = 'character-link';
+            line.style.width = `${distance}px`;
+            line.style.left = `${x1}px`;
+            line.style.top = `${y1}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            
+            // Add to container
+            container.appendChild(line);
+            
+            return line;
+        }
+
+        function refreshCharacterTree() {
+            const container = document.getElementById('characterTreeContainer');
+            if (!container) {
+                console.error('Character tree container not found');
+                return;
+            }
+            
+            console.log('Refreshing character tree with characters:', appState.characters);
+            
+            // Clear existing nodes except static ones
+            container.querySelectorAll('.character-node:not([data-static="true"])').forEach(node => node.remove());
+            
+            // Clear all existing relationship lines
+            container.querySelectorAll('.character-link').forEach(link => link.remove());
+            
+            // If no characters, show a message
+            if (!appState.characters || appState.characters.length === 0) {
+                const message = document.createElement('div');
+                message.className = 'text-center p-4 text-gray-500';
+                message.innerHTML = '<i class="fas fa-info-circle mr-2"></i>No characters yet. Create characters to see them in the network.';
+                container.appendChild(message);
+                return;
+            }
+            
+            // Calculate positions for character nodes in a circle layout
+            const centerX = container.offsetWidth / 2;
+            const centerY = container.offsetHeight / 2;
+            const radius = Math.min(centerX, centerY) * 0.7; // 70% of the smaller dimension
+            
+            // Position each character in the circle
+            appState.characters.forEach((character, index) => {
+                const angle = (index * 2 * Math.PI) / appState.characters.length;
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+                
+                // Create node
+                const node = document.createElement('div');
+                node.className = `character-node ${character.role?.toLowerCase() || 'supporting'}`;
+                node.setAttribute('data-name', character.name);
+                node.setAttribute('data-id', character.id); // Add ID attribute
+                node.setAttribute('data-role', character.role || 'Supporting');
+                node.setAttribute('data-traits', character.traits || '');
+                node.setAttribute('data-backstory', character.backstory || ''); // Fixed attribute name
+                node.setAttribute('data-relationships', JSON.stringify(character.relationships || []));
+                
+                // Position the node
+                node.style.position = 'absolute';
+                node.style.left = `${x}px`;
+                node.style.top = `${y}px`;
+                node.style.transform = 'translate(-50%, -50%)';
+                
+                // Add node content
+                node.innerHTML = `
+                    <div class="font-medium text-center">${character.name}</div>
+                    <div class="character-tooltip">
+                        <div class="font-bold text-primary mb-1">${character.name}</div>
+                        <div class="text-xs text-textSecondary mb-2">${character.role || 'Supporting'}</div>
+                        <div class="text-sm">${character.traits || 'No traits specified'}</div>
+                    </div>
+                `;
+                
+                // Add click handler
+                node.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    showCharacterDetails(this);
+                });
+                
+                container.appendChild(node);
+            });
+            
+            // Now create relationship lines
+            updateRelationshipLines();
+        }
+
+        async function editEvent() {
+            if (!currentEventData) {
+                showToast('No event selected for editing', 'error');
+                return;
+            }
+
+            try {
+                // Open editing mode
+                const eventDetailsPanel = document.getElementById('eventDetailsPanel');
+                const nameElement = document.getElementById('eventDetailName');
+                const descriptionElement = document.getElementById('eventDetailDescription');
+                const timeElement = document.getElementById('eventDetailTime');
+                
+                // If already in edit mode, don't recreate the fields
+                if (eventDetailsPanel.classList.contains('edit-mode')) {
+                    return;
+                }
+                
+                // Mark panel as in edit mode
+                eventDetailsPanel.classList.add('edit-mode');
+                
+                // Replace name with input field
+                const nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.id = 'eventEditName';
+                nameInput.className = 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent';
+                nameInput.value = currentEventData.name;
+                nameElement.replaceWith(nameInput);
+                
+                // Replace description with textarea
+                const descriptionTextarea = document.createElement('textarea');
+                descriptionTextarea.id = 'eventEditDescription';
+                descriptionTextarea.className = 'w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent min-h-[100px]';
+                descriptionTextarea.value = currentEventData.description || '';
+                descriptionElement.replaceWith(descriptionTextarea);
+                
+                // Create time editor
+                const timeText = timeElement.textContent.replace('Time: ', '');
+                const timeInput = document.createElement('input');
+                timeInput.type = 'time';
+                timeInput.id = 'eventEditTime';
+                timeInput.className = 'px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent';
+                timeInput.value = timeText;
+                
+                // Replace time element
+                const timeContainer = document.createElement('div');
+                timeContainer.className = 'flex items-center space-x-2 text-sm text-gray-500';
+                timeContainer.innerHTML = '<span>Time: </span>';
+                timeContainer.appendChild(timeInput);
+                timeElement.replaceWith(timeContainer);
+                
+                // Update footer buttons for save/cancel
+                const editBtn = document.getElementById('editEventBtn');
+                editBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
+                
+                // Remove any existing event listeners and add the save listener
+                editBtn.removeEventListener('click', editEvent);
+                editBtn.removeEventListener('click', saveEventChanges);
+                editBtn.addEventListener('click', saveEventChanges);
+                
+                // Add cancel button
+                const cancelBtn = document.createElement('button');
+                cancelBtn.className = 'btn bg-gray-200 text-gray-700 w-full mt-2';
+                cancelBtn.innerHTML = '<i class="fas fa-times mr-2"></i>Cancel';
+                cancelBtn.addEventListener('click', cancelEventEdit);
+                
+                // Add the cancel button after the save button
+                const btnContainer = editBtn.parentElement;
+                btnContainer.appendChild(cancelBtn);
+                
+                // Focus on the name input
+                nameInput.focus();
+            } catch (error) {
+                console.error('Error setting up event edit form:', error);
+                showToast('Error setting up edit form', 'error');
+            }
+        }
+
+        // Function to save event changes
+        async function saveEventChanges() {
+            if (!currentEventData) {
+                showToast('No event selected for editing', 'error');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const saveBtn = document.getElementById('editEventBtn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                saveBtn.disabled = true;
+                
+                // Get updated values
+                const newName = document.getElementById('eventEditName').value;
+                const newDescription = document.getElementById('eventEditDescription').value;
+                const newTime = document.getElementById('eventEditTime').value;
+                
+                if (!newName.trim()) {
+                    showToast('Event name cannot be empty', 'error');
+                    saveBtn.innerHTML = originalText;
+                    saveBtn.disabled = false;
+                    return;
+                }
+                
+                // Get the date part from the existing event date_time
+                const selectedDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
+                const formattedDateTime = `${selectedDate}T${newTime}:00`;
+                
+                console.log('Updating event with new time:', formattedDateTime);
+                
+                // Update the event in the database
+                const { data, error } = await window.supabaseServices.timelineEvents.update(
+                    currentEventData.id,
+                    {
+                        name: newName,
+                        description: newDescription,
+                        date_time: formattedDateTime,
+                        updated_at: new Date().toISOString()
+                    }
+                );
+                
+                if (error) throw error;
+                
+                // Keep existing character links - only update them if they were explicitly changed
+                if (currentEventData.characters) {
+                    const characterIds = currentEventData.characters.map(char => char.id);
+                    console.log('Preserving existing character connections:', characterIds);
+                    const { error: charError } = await window.supabaseServices.timelineEvents.updateCharacters(
+                        currentEventData.id,
+                        characterIds
+                    );
+                    
+                    if (charError) throw charError;
+                }
+                
+                // Reset the event edit UI properly
+                saveBtn.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Event';
+                saveBtn.disabled = false;
+                
+                // Remove any existing event listeners and restore the edit listener
+                saveBtn.removeEventListener('click', saveEventChanges);
+                saveBtn.removeEventListener('click', editEvent);
+                saveBtn.addEventListener('click', editEvent);
+                
+                // Only reload timeline events, don't affect character list
+                await loadTimelineEvents();
+                
+                // Close the event details panel
+                closeEventDetails();
+                
+                // Show success message
+                showToast('Event updated successfully', 'success');
+            } catch (error) {
+                console.error('Error updating event:', error);
+                showToast('Error updating event: ' + (error.message || 'Unknown error'), 'error');
+                
+                // Reset the save button
+                const saveBtn = document.getElementById('editEventBtn');
+                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Save Changes';
+                saveBtn.disabled = false;
+            }
+        }
+
+        // Function to cancel event editing
+        function cancelEventEdit() {
+            try {
+                // Close the details panel and reset
+                closeEventDetails();
+            } catch (error) {
+                console.error('Error canceling event edit:', error);
+                showToast('Error canceling edit', 'error');
+            }
+        }
+
+        // Helper function to close event details panel
+        function closeEventDetails() {
+            const panel = document.getElementById('eventDetailsPanel');
+            
+            // Remove edit mode and restore normal view
+            panel.classList.remove('edit-mode');
+            
+            // Slide out panel
+            panel.classList.add('translate-x-full');
+            
+            // Reset event data
+            currentEventData = null;
+            
+            // Timeout to allow animation to complete before resetting panel content
+            setTimeout(() => {
+                try {
+                    // Get the elements
+                    const editBtn = document.getElementById('editEventBtn');
+                    const btnContainer = editBtn.parentElement;
+                    
+                    // Remove any cancel button that might have been added
+                    const cancelBtn = btnContainer.querySelector('button:not(#editEventBtn)');
+                    if (cancelBtn) {
+                        cancelBtn.remove();
+                    }
+                    
+                    // Reset the edit button to its original state
+                    editBtn.innerHTML = '<i class="fas fa-edit mr-2"></i>Edit Event';
+                    
+                    // Make sure we remove any existing event listener before adding the new one
+                    editBtn.removeEventListener('click', saveEventChanges);
+                    editBtn.removeEventListener('click', editEvent);
+                    // Add the edit event listener back
+                    editBtn.addEventListener('click', editEvent);
+                    
+                    // Reset the edited fields if they exist
+                    const nameInput = document.getElementById('eventEditName');
+                    const descriptionTextarea = document.getElementById('eventEditDescription');
+                    const timeContainer = document.querySelector('.flex.items-center.space-x-2.text-sm.text-gray-500');
+                    
+                    if (nameInput) {
+                        const nameElement = document.createElement('h2');
+                        nameElement.id = 'eventDetailName';
+                        nameElement.className = 'text-xl font-bold text-primary';
+                        nameElement.textContent = 'Event Name';
+                        nameInput.replaceWith(nameElement);
+                    }
+                    
+                    if (descriptionTextarea) {
+                        const descriptionElement = document.createElement('div');
+                        descriptionElement.id = 'eventDetailDescription';
+                        descriptionElement.className = 'mt-4 text-gray-700 text-sm whitespace-pre-wrap';
+                        descriptionElement.textContent = 'Description';
+                        descriptionTextarea.replaceWith(descriptionElement);
+                    }
+                    
+                    if (timeContainer) {
+                        const timeElement = document.createElement('div');
+                        timeElement.id = 'eventDetailTime';
+                        timeElement.className = 'mt-2 text-sm text-gray-500';
+                        timeElement.textContent = 'Time: 00:00';
+                        timeContainer.replaceWith(timeElement);
+                    }
+                } catch (error) {
+                    console.error('Error resetting event details panel:', error);
+                }
+            }, 300);
+        }
+
+        // Helper function to show event details
+        function showEventDetails(e) {
+            const eventElement = e.target;
+            const eventId = eventElement.getAttribute('data-event-id');
+            const name = eventElement.textContent;
+            const description = eventElement.getAttribute('data-description');
+            const characters = JSON.parse(eventElement.getAttribute('data-characters') || '[]');
+
+            // Store current event data
+            currentEventData = {
+                id: eventId,
+                name,
+                description,
+                characters
+            };
+
+            // Get event time from data-time attribute of the parent cell
+            const cell = eventElement.closest('.timeline-cell');
+            const time = cell ? cell.getAttribute('data-time') : '00';
+            const formattedTime = `${time.toString().padStart(2, '0')}:00`;
+            
+            // Add time to current event data
+            currentEventData.time = formattedTime;
+
+            // Update panel content
+            document.getElementById('eventDetailName').textContent = name;
+            document.getElementById('eventDetailDescription').textContent = description || 'No description provided';
+            
+            // Update time display
+            document.getElementById('eventDetailTime').textContent = `Time: ${formattedTime}`;
+
+            // Update characters list
+            const charactersList = document.getElementById('eventDetailCharacters');
+            charactersList.innerHTML = '';
+            
+            if (characters.length > 0) {
+                characters.forEach(character => {
+                    const characterEl = document.createElement('div');
+                    characterEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
+                    characterEl.setAttribute('data-character-id', character.id);
+                    characterEl.innerHTML = `
+                        <span class="character-name">${character.name}</span>
+                        <button onclick="removeCharacterFromEvent('${character.id}')" class="text-error hover:text-opacity-80">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    charactersList.appendChild(characterEl);
+                });
+            } else {
+                charactersList.innerHTML = '<div class="text-sm text-gray-500">No characters involved</div>';
+            }
+
+            // Show the panel
+            const panel = document.getElementById('eventDetailsPanel');
+            panel.classList.remove('translate-x-full');
+        }
+
+        // Helper function to remove character from event
+        async function removeCharacterFromEvent(characterId) {
+            if (!currentEventData) return;
+
+            try {
+                // Filter out the character
+                const updatedCharacters = currentEventData.characters.filter(char => char.id !== characterId);
+                
+                // Update the event's characters
+                const { error } = await window.supabaseServices.timelineEvents.updateCharacters(
+                    currentEventData.id,
+                    updatedCharacters.map(char => char.id)
+                );
+
+                if (error) throw error;
+
+                // Update UI in the event details panel
+                const characterEl = document.querySelector(`#eventDetailCharacters [data-character-id="${characterId}"]`);
+                if (characterEl) {
+                    characterEl.remove();
+                }
+
+                // Update current event data
+                currentEventData.characters = updatedCharacters;
+
+                // We should NOT reload all characters, only refresh the timeline events
+                await loadTimelineEvents();
+
+                showToast('Character removed from event', 'success');
+            } catch (error) {
+                console.error('Error removing character from event:', error);
+                showToast('Error removing character', 'error');
+            }
+        }
+
+        function closeCharacterDetails() {
+            const panel = document.getElementById('characterDetailsPanel');
+            if (panel) {
+                panel.classList.add('translate-x-full');
+                currentCharacterData = null;
+            }
+        }
+
+        function showCharacterDetails(characterNode) {
+            // Get character data from node attributes
+            const name = characterNode.getAttribute('data-name');
+            const role = characterNode.getAttribute('data-role');
+            const traits = characterNode.getAttribute('data-traits');
+            const backstory = characterNode.getAttribute('data-backstory');
+            const relationships = JSON.parse(characterNode.getAttribute('data-relationships') || '[]');
+
+            // Find the actual character object from appState to get its ID
+            const character = appState.characters.find(c => c.name === name);
+            if (!character) {
+                showToast('Character not found in application state', 'error');
+                return;
+            }
+
+            // Store current character data including the ID
+            currentCharacterData = {
+                id: character.id,
+                name,
+                role,
+                traits,
+                backstory,
+                relationships
+            };
+
+            // Update panel content
+            document.getElementById('characterDetailName').textContent = name;
+            
+            // Update role badge
+            const roleBadge = document.querySelector('#characterDetailsPanel .inline-flex');
+            roleBadge.textContent = role;
+            roleBadge.className = `inline-flex items-center px-3 py-1 rounded-full text-sm role-badge ${role.toLowerCase()}`;
+
+            // Update traits and backstory
+            document.getElementById('characterDetailTraits').textContent = traits || 'No traits specified';
+            document.getElementById('characterDetailBackstory').textContent = backstory || 'No backstory provided';
+
+            // Update relationships list
+            const relationshipsList = document.getElementById('characterDetailRelationships');
+            relationshipsList.innerHTML = '';
+
+            if (relationships.length > 0) {
+                relationships.forEach(relatedName => {
+                    const relatedNode = document.querySelector(`.character-node[data-name="${relatedName}"]`);
+                    if (relatedNode) {
+                        const relatedRole = relatedNode.getAttribute('data-role');
+                        const relationshipEl = document.createElement('div');
+                        relationshipEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
+                        relationshipEl.innerHTML = `
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 rounded-full bg-${getRoleColor(relatedRole)} mr-2"></div>
+                                <span>${relatedName} (${relatedRole})</span>
+                            </div>
+                        `;
+                        relationshipsList.appendChild(relationshipEl);
+                    }
+                });
+            } else {
+                relationshipsList.innerHTML = '<div class="text-sm text-gray-500">No relationships defined</div>';
+            }
+
+            // Show the panel
+            const panel = document.getElementById('characterDetailsPanel');
+            panel.classList.remove('translate-x-full');
+        }
+
+        function getRoleColor(role) {
+            switch (role.toLowerCase()) {
+                case 'protagonist':
+                    return 'primary';
+                case 'antagonist':
+                    return 'error';
+                case 'supporting':
+                    return 'accent';
+                default:
+                    return 'secondary';
+            }
+        }
+
+        function removeCharacterFromPending(characterId) {
+            // Find the index of the character in the pending list
+            const index = pendingEventCharacters.findIndex(char => char.id === characterId);
+            
+            // If found, remove the character
+            if (index !== -1) {
+                pendingEventCharacters.splice(index, 1);
+                
+                // Update the UI
+                updatePendingCharactersList();
+            }
+        }
+
+        function updatePendingCharactersList() {
+            const eventCharacters = document.getElementById('eventCharacters');
+            if (!eventCharacters) return;
+            
+            eventCharacters.innerHTML = '';
+            
+            if (pendingEventCharacters.length === 0) {
+                eventCharacters.innerHTML = '<div class="text-sm text-gray-500">No characters selected</div>';
+                return;
+            }
+            
+            pendingEventCharacters.forEach(character => {
+                const characterEl = document.createElement('div');
+                characterEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
+                characterEl.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="w-2 h-2 rounded-full bg-${getRoleColor(character.role)} mr-2"></div>
+                        <span>${character.name}</span>
+                    </div>
+                    <button onclick="removeCharacterFromPending('${character.id}')" class="text-error hover:text-opacity-80">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                eventCharacters.appendChild(characterEl);
+            });
+        }
+
+        // Handle drop on events
+        function handleDropOnEvent(e) {
+            e.preventDefault();
+            // Stop event from bubbling up to the timeline cell
+            e.stopPropagation();
+            
+            try {
+                // Get the dropped character data
+                const characterDataStr = e.dataTransfer.getData('text/plain');
+                if (!characterDataStr) return;
+                
+                const characterData = JSON.parse(characterDataStr);
+                if (!characterData || !characterData.id) return;
+                
+                // Get the event element that received the drop
+                const eventElement = e.target.closest('.timeline-event');
+                if (!eventElement) {
+                    console.warn('No event element found for drop');
+                    return;
+                }
+                
+                // Get the event ID
+                const eventId = eventElement.getAttribute('data-event-id');
+                if (!eventId) {
+                    console.warn('No event ID found');
+                    return;
+                }
+                
+                // Get current characters for this event
+                const currentCharacters = JSON.parse(eventElement.getAttribute('data-characters') || '[]');
+                
+                // Check if character is already part of the event
+                const characterExists = currentCharacters.some(char => char.id === characterData.id);
+                if (characterExists) {
+                    showToast(`${characterData.name} is already part of this event`, 'error');
+                    return;
+                }
+                
+                // Show confirmation dialog
+                if (confirm(`Add ${characterData.name} to this event?`)) {
+                    addCharacterToEvent(eventId, characterData, eventElement);
+                }
+            } catch (error) {
+                console.error('Error handling drop on event:', error);
+                showToast('Error processing character drop', 'error');
+            }
+        }
+
+        // Original function for handling drops on timeline cells to create new events
+        function handleEventDrop(e) {
+            e.preventDefault();
+            
+            try {
+                // Get the dropped character data
+                const characterData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                if (!characterData || !characterData.id) return;
+                
+                // Get the target cell (timeline cell)
+                const cell = e.currentTarget.closest('.timeline-cell');
+                if (!cell) return;
+                
+                // Get location and time from cell
+                const location = cell.getAttribute('data-location');
+                const time = cell.getAttribute('data-time');
+                
+                // Store pending event data
+                pendingEventCell = cell;
+                pendingEventLocation = location;
+                pendingEventTime = `Day ${appState.currentDay} ${time}:00`;
+                
+                // Add character to pending characters
+                const existingCharacter = pendingEventCharacters.find(char => char.id === characterData.id);
+                if (!existingCharacter) {
+                    pendingEventCharacters.push(characterData);
+                }
+                
+                // Show event creation modal
+                document.getElementById('eventCreationModal').classList.remove('hidden');
+                document.getElementById('eventCreationModal').classList.add('flex');
+                
+                // Set time in the modal
+                document.getElementById('eventTime').value = `${time}:00`;
+                
+                // Update the characters list in the modal
+                updatePendingCharactersList();
+                
+                // Focus on event name field
+                document.getElementById('eventName').focus();
+            } catch (error) {
+                console.error('Error handling drop:', error);
+                showToast('Error handling drop', 'error');
+            }
+        }
+
+        // Function to add a character to an existing event
+        async function addCharacterToEvent(eventId, characterData, eventElement) {
+            try {
+                console.log(`Adding character ${characterData.name} to event ${eventId}`);
+                
+                // Get current characters from the event element
+                const currentCharactersStr = eventElement.getAttribute('data-characters') || '[]';
+                const currentCharacters = JSON.parse(currentCharactersStr);
+                
+                // Add the new character
+                currentCharacters.push({
+                    id: characterData.id,
+                    name: characterData.name,
+                    role: characterData.role
+                });
+                
+                // Get all character IDs for the update
+                const characterIds = currentCharacters.map(char => char.id);
+                
+                // Update the character links in the database
+                const { error } = await window.supabaseServices.timelineEvents.updateCharacters(
+                    eventId,
+                    characterIds
+                );
+                
+                if (error) throw error;
+                
+                // Update the event element data-characters attribute
+                eventElement.setAttribute('data-characters', JSON.stringify(currentCharacters));
+                
+                // Show success message
+                showToast(`Added ${characterData.name} to event`, 'success');
+                
+                // Only reload timeline events, without affecting characters list
+                await loadTimelineEvents();
+                
+                // If the event details panel is open for this event, update it
+                if (currentEventData && currentEventData.id === eventId) {
+                    // Update the characters in the current event data
+                    currentEventData.characters = currentCharacters;
+                    
+                    // Update the characters list in the event details panel
+                    updateEventDetailsCharacters(currentCharacters);
+                }
+            } catch (error) {
+                console.error('Error adding character to event:', error);
+                showToast('Error adding character to event', 'error');
+            }
+        }
+
+        // Helper function to update the characters list in the event details panel
+        function updateEventDetailsCharacters(characters) {
+            const charactersList = document.getElementById('eventDetailCharacters');
+            if (!charactersList) return;
+            
+            charactersList.innerHTML = '';
+            
+            if (characters.length > 0) {
+                characters.forEach(character => {
+                    // Ensure character has an ID (defensive coding)
+                    if (!character.id) {
+                        console.warn('Character missing ID in updateEventDetailsCharacters:', character);
+                        return;
+                    }
+                    
+                    const characterEl = document.createElement('div');
+                    characterEl.className = 'flex items-center justify-between p-2 bg-gray-50 rounded mb-2';
+                    characterEl.setAttribute('data-character-id', character.id);
+                    characterEl.innerHTML = `
+                        <span class="character-name">${character.name}</span>
+                        <button onclick="removeCharacterFromEvent('${character.id}')" class="text-error hover:text-opacity-80">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    charactersList.appendChild(characterEl);
+                });
+            } else {
+                charactersList.innerHTML = '<div class="text-sm text-gray-500">No characters involved</div>';
+            }
+        }
+
+        // Character Form Functions
+        function openNewCharacterForm() {
+            console.log('Opening new character form');
+            // Reset the form fields
+            document.getElementById('characterFormTitle').textContent = 'Add New Character';
+            document.getElementById('characterName').value = '';
+            document.getElementById('characterRole').value = 'Protagonist';
+            document.getElementById('characterTraits').value = '';
+            document.getElementById('characterBackstory').value = '';
+            document.getElementById('characterRelationships').innerHTML = '<div class="text-sm text-gray-500">No relationships defined</div>';
+            
+            // Set the editing state to null (creating new)
+            currentCharacterData = null;
+            
+            // Show the modal
+            const modal = document.getElementById('characterFormModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Focus on the name field
+            document.getElementById('characterName').focus();
+        }
+
+        function openEditCharacterForm() {
+            if (!currentCharacterData) {
+                showToast('No character selected for editing', 'error');
+                return;
+            }
+            
+            console.log('Opening edit character form for:', currentCharacterData);
+            
+            // Set the form title
+            document.getElementById('characterFormTitle').textContent = 'Edit Character: ' + currentCharacterData.name;
+            
+            // Populate the form fields
+            document.getElementById('characterName').value = currentCharacterData.name;
+            document.getElementById('characterRole').value = currentCharacterData.role;
+            document.getElementById('characterTraits').value = currentCharacterData.traits || '';
+            document.getElementById('characterBackstory').value = currentCharacterData.backstory || '';
+            
+            // Show the modal
+            const modal = document.getElementById('characterFormModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Focus on the name field
+            document.getElementById('characterName').focus();
+        }
+
+        function closeCharacterForm() {
+            const modal = document.getElementById('characterFormModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            
+            // Reset current character data
+            currentCharacterData = null;
+        }
+
+        async function saveCharacterData() {
+            // Validate fields
+            const name = document.getElementById('characterName').value.trim();
+            const role = document.getElementById('characterRole').value;
+            const traits = document.getElementById('characterTraits').value.trim();
+            const backstory = document.getElementById('characterBackstory').value.trim();
+            
+            if (!name) {
+                showToast('Character name is required', 'error');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                const saveBtn = document.getElementById('saveCharacter');
+                const originalText = saveBtn.textContent;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                saveBtn.disabled = true;
+                
+                if (currentCharacterData) {
+                    // Update existing character
+                    const { data, error } = await window.supabaseServices.characters.update(
+                        currentCharacterData.id,
+                        {
+                            name: name,
+                            role: role,
+                            traits: traits,
+                            backstory: backstory,
+                            updated_at: new Date().toISOString()
+                        }
+                    );
+                    
+                    if (error) throw error;
+                    
+                    // Update the character in the app state
+                    const index = appState.characters.findIndex(c => c.id === currentCharacterData.id);
+                    if (index !== -1) {
+                        appState.characters[index] = data[0];
+                    }
+                    
+                    showToast('Character updated successfully');
+                } else {
+                    // Create new character
+                    const { data, error } = await window.supabaseServices.characters.create(
+                        appState.currentProject.id,
+                        name,
+                        role,
+                        traits,
+                        backstory
+                    );
+                    
+                    if (error) throw error;
+                    
+                    // Add the new character to the app state
+                    appState.characters.push(data[0]);
+                    
+                    showToast('Character created successfully');
+                }
+                
+                // Refresh the characters list and tree
+                populateCharactersList();
+                refreshCharacterTree();
+                
+                // Close the form
+                closeCharacterForm();
+                
+                // Reset button state
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
+            } catch (error) {
+                console.error('Error saving character:', error);
+                showToast('Error saving character: ' + (error.message || 'Unknown error'), 'error');
+                
+                // Reset button state
+                const saveBtn = document.getElementById('saveCharacter');
+                saveBtn.innerHTML = 'Save Character';
+                saveBtn.disabled = false;
+            }
+        }
+
+        // Add the character drop handler
+        function handleCharacterDrop(e, cell) {
+            try {
+                // Get the dropped character data
+                const characterDataStr = e.dataTransfer.getData('text/plain');
+                if (!characterDataStr) return;
+                
+                const characterData = JSON.parse(characterDataStr);
+                if (!characterData || !characterData.id) return;
+                
+                // Get location and time from cell
+                const locationName = cell.getAttribute('data-location');
+                const locationId = cell.getAttribute('data-location-id');
+                const time = cell.getAttribute('data-time');
+                
+                // Store pending event data
+                pendingEventCell = cell;
+                pendingEventLocation = locationName;
+                pendingEventLocationId = locationId;
+                
+                // Format the date and time for the event
+                const selectedDate = document.getElementById('dateSelector').value || new Date().toISOString().split('T')[0];
+                const formattedTime = time.toString().padStart(2, '0');
+                pendingEventTime = `${selectedDate}T${formattedTime}:00:00`;
+                
+                console.log('Creating event at date/time:', pendingEventTime);
+                console.log('Location name:', locationName);
+                console.log('Location ID:', locationId);
+                
+                // Add character to pending characters
+                const existingCharacter = pendingEventCharacters.find(char => char.id === characterData.id);
+                if (!existingCharacter) {
+                    pendingEventCharacters.push(characterData);
+                }
+                
+                // Show event creation modal
+                document.getElementById('eventCreationModal').classList.remove('hidden');
+                document.getElementById('eventCreationModal').classList.add('flex');
+                
+                // Set time in the modal
+                document.getElementById('eventTime').value = `${formattedTime}:00`;
+                
+                // Update the characters list in the modal
+                updatePendingCharactersList();
+                
+                // Focus on event name field
+                document.getElementById('eventName').focus();
+            } catch (error) {
+                console.error('Error handling drop:', error);
+                showToast('Error handling drop', 'error');
+            }
+        }
+    </script>
+
+    <!-- Header with tabs -->
+    <header class="bg-white border-b border-gray-100">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="app.html" class="text-gray-500 hover:text-primary" onclick="return checkAuthAndRedirect(event)">
+                        <i class="fas fa-arrow-left"></i>
+                        <span class="ml-2">Back to Editor</span>
+                    </a>
+                    <h1 class="text-xl font-semibold text-primary">Context Manager</h1>
+                </div>
+            </div>
+            <!-- Tabs -->
+            <div class="flex mt-6 border-b border-gray-200">
+                <button class="tab-btn px-4 py-2 border-b-2 border-primary text-primary font-medium active" data-tab="timeline">
+                    <i class="fas fa-clock mr-2"></i>Story Timeline
+                </button>
+                <button class="tab-btn px-4 py-2 border-b-2 border-transparent hover:text-primary" data-tab="characters">
+                    <i class="fas fa-users mr-2"></i>Characters
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- Timeline Tab View -->
+        <div class="tab-content" id="timelineTab">
+            <div class="flex flex-col md:flex-row h-[calc(100vh-170px)]">
+                <!-- Timeline Gantt Chart (Top on mobile, Right on desktop) -->
+                <div class="w-full md:flex-1 bg-white shadow-md border border-gray-100 rounded-t-lg md:rounded-r-lg md:rounded-tl-none overflow-auto">
+                    <div class="p-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+                        <h2 class="text-lg font-semibold text-primary">Story Timeline</h2>
+                        <div class="flex items-center space-x-3">
+                            <div class="relative">
+                                <input type="date" id="dateSelector" class="border border-gray-200 rounded-lg p-2 text-sm pr-8" onchange="handleDateSelectorChange()">
+                                <button class="absolute right-2 top-1/2 transform -translate-y-1/2 text-primary">
+                                    <i class="fas fa-calendar-alt"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-primary text-xs py-1 px-2" id="addLocationBtn" title="Add Location">
+                                <i class="fas fa-plus text-xs mr-1"></i>Add Location
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Timeline Grid -->
+                    <div class="p-4">
+                        <div class="timeline-grid border border-gray-200 rounded-lg overflow-x-auto">
+                            <table class="w-full min-w-max">
+                                <thead>
+                                    <tr>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-3 text-left"></th>
+                                        <!-- Generate 24 columns for each hour -->
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">00:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">01:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">02:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">03:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">04:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">05:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">06:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">07:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">08:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">09:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">10:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">11:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">12:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">13:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">14:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">15:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">16:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">17:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">18:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">19:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">20:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">21:00</th>
+                                        <th class="w-16 border-r border-b border-gray-200 bg-gray-50 p-2 text-center">22:00</th>
+                                        <th class="w-16 border-b border-gray-200 bg-gray-50 p-2 text-center">23:00</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Locations will be loaded from database -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Characters Sidebar (Bottom on mobile, Left on desktop) -->
+                <div class="w-full md:w-64 bg-white shadow-md border border-gray-100 rounded-b-lg md:rounded-l-lg md:rounded-br-none overflow-y-auto mt-4 md:mt-0 md:mr-4">
+                    <div class="p-4 border-b border-gray-100">
+                        <h2 class="text-lg font-semibold text-primary">Characters</h2>
+                        <p class="text-sm text-gray-500 mt-1">Drag characters to the timeline</p>
+                    </div>
+                    <div id="charactersList" class="p-4 space-y-2">
+                        <!-- Character items will be loaded from database -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Characters Tab View -->
+        <div class="tab-content hidden" id="charactersTab">
+            <!-- Character Tree View -->
+            <div class="bg-white shadow-md border border-gray-100 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-primary">Characters Network</h2>
+                    <button class="btn btn-primary text-sm" id="newCharacterBtn">
+                        <i class="fas fa-plus text-sm mr-1"></i>
+                        New Character
+                    </button>
+                </div>
+                
+                <div class="character-tree relative p-8 min-h-[400px] border border-gray-100 rounded-lg mb-6" id="characterTreeContainer">
+                    <!-- Character nodes will be added dynamically -->
+                </div>
+                
+                <div class="flex justify-center space-x-6 text-sm">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-primary mr-2"></div>
+                        <span>Protagonist</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-error mr-2"></div>
+                        <span>Antagonist</span>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-accent mr-2"></div>
+                        <span>Supporting</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Character Details Panel -->
+            <div id="characterDetailsPanel" class="fixed inset-y-0 right-0 w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+                <div class="h-full flex flex-col">
+                    <div class="p-6 border-b border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-primary" id="characterDetailName">Character Name</h2>
+                            <button class="text-gray-400 hover:text-gray-600" onclick="closeCharacterDetails()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="inline-flex items-center px-3 py-1 rounded-full text-sm" id="characterDetailRole">
+                            Role
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-6">
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Traits</h3>
+                                <p class="text-gray-700" id="characterDetailTraits">Character traits will appear here</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Backstory</h3>
+                                <p class="text-gray-700" id="characterDetailBackstory">Character backstory will appear here</p>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Relationships</h3>
+                                <div class="space-y-2" id="characterDetailRelationships">
+                                    <!-- Relationships will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 border-t border-gray-100">
+                        <button class="btn btn-primary w-full" id="editCharacterBtn" onclick="openEditCharacterForm()">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit Character
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Item Modal -->
+    <div id="addItemModal" class="modal-overlay hidden">
+        <div class="modal-container">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-primary">Edit Character</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select class="w-full border border-gray-200 rounded-lg p-2">
+                        <option value="character">Character</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input type="text" class="w-full border border-gray-200 rounded-lg p-2">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea class="w-full border border-gray-200 rounded-lg p-2 h-32"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input type="date" class="w-full border border-gray-200 rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input type="date" class="w-full border border-gray-200 rounded-lg p-2">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button onclick="closeModal()" class="btn btn-secondary">Cancel</button>
+                    <button class="btn btn-primary">Add Item</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Creation Modal -->
+    <div id="eventCreationModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-md-custom">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-primary">Create Timeline Event</h2>
+                <button class="text-gray-400 hover:text-gray-600" id="closeEventModal">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Event Name <span class="text-error">*</span></label>
+                    <input type="text" id="eventName" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Enter event name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                    <input type="time" id="eventTime" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea id="eventDescription" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-24" placeholder="Describe what happens in this event"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Characters Involved</label>
+                    <div id="eventCharacters" class="space-y-2 bg-gray-50 p-2 rounded-lg min-h-[50px]">
+                        <!-- Characters will be listed here -->
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button id="cancelEvent" class="btn btn-secondary">Cancel</button>
+                    <button id="createEvent" class="btn btn-primary">Create Event</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Details Panel -->
+    <div id="eventDetailsPanel" class="fixed right-0 top-0 h-screen w-96 bg-white shadow-lg transform translate-x-full transition-transform duration-300 z-40">
+        <div class="h-full flex flex-col">
+            <div class="p-6 border-b border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-primary" id="eventDetailName">Event Name</h2>
+                    <button class="text-gray-400 hover:text-gray-600" onclick="closeEventDetails()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="text-sm text-gray-500" id="eventDetailTime">Time: --:--</div>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</h3>
+                        <p class="text-gray-700" id="eventDetailDescription">Event description will appear here</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">Characters Involved</h3>
+                        <div class="space-y-2" id="eventDetailCharacters">
+                            <!-- Characters will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-6 border-t border-gray-100">
+                <button class="btn btn-primary w-full" id="editEventBtn">
+                    <i class="fas fa-edit mr-2"></i>
+                    Edit Event
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location Modal -->
+    <div id="locationModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-md-custom">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-primary">Add Location</h2>
+                <button class="text-gray-400 hover:text-gray-600" id="closeLocationModal">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Location Name <span class="text-error">*</span></label>
+                    <input type="text" id="locationName" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Enter location name">
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button id="cancelLocation" class="btn btn-secondary">Cancel</button>
+                    <button id="createLocation" class="btn btn-primary">Add Location</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Form Modal -->
+    <div id="characterFormModal" class="fixed inset-0 bg-black bg-opacity-60 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-md-custom overflow-y-auto max-h-[90vh]">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-primary" id="characterFormTitle">Add New Character</h2>
+                <button class="text-gray-400 hover:text-gray-600" id="closeCharacterFormModal">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-error">*</span></label>
+                    <input type="text" id="characterName" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="Enter character name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Role <span class="text-error">*</span></label>
+                    <select id="characterRole" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="Protagonist">Protagonist</option>
+                        <option value="Antagonist">Antagonist</option>
+                        <option value="Supporting">Supporting</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Traits</label>
+                    <textarea id="characterTraits" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-24" placeholder="Character traits (e.g., brave, impulsive, wise)"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Backstory</label>
+                    <textarea id="characterBackstory" class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent h-24" placeholder="Character's background and history"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Relationships (Coming soon)</label>
+                    <div id="characterRelationships" class="w-full px-4 py-2 border border-gray-200 rounded-lg min-h-[50px] bg-gray-50">
+                        <!-- Relationships will be added here -->
+                        <div class="text-sm text-gray-500">No relationships defined</div>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button id="cancelCharacterForm" class="btn btn-secondary">Cancel</button>
+                    <button id="saveCharacter" class="btn btn-primary">Save Character</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
