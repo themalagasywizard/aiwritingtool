@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && npm run postbuild",
-    "postbuild": "xcopy auth out\\auth\\ /E /I /Y",
+    "postbuild": "cp -r auth out/auth",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
