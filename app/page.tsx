@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -27,11 +27,6 @@ import {
 import { useTheme } from 'next-themes'
 import type { User, Project, Chapter, Character, AIMessage } from '@/types'
 
-// Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
 // Authentication Component
 const AuthComponent: React.FC = () => {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -39,7 +34,16 @@ const AuthComponent: React.FC = () => {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
   const { toast } = useToast()
+
+  // Debug environment variables
+  const debugInfo = {
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    supabaseKeyExists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    nodeEnv: process.env.NODE_ENV,
+    allEnvKeys: Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_'))
+  }
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,6 +86,7 @@ const AuthComponent: React.FC = () => {
         })
       }
     } catch (error: any) {
+      console.error('Auth error:', error)
       toast({
         title: "Error",
         description: error.message || "Authentication failed",
@@ -103,6 +108,20 @@ const AuthComponent: React.FC = () => {
           <h1 className="text-3xl font-bold text-foreground">Kalligram</h1>
           <p className="text-muted-foreground mt-2">AI-powered writing companion</p>
         </div>
+
+        {/* Debug Info */}
+        {showDebug && (
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-sm">Debug Info</CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs">
+              <pre className="whitespace-pre-wrap">
+                {JSON.stringify(debugInfo, null, 2)}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Auth Form */}
         <Card>
@@ -151,7 +170,7 @@ const AuthComponent: React.FC = () => {
               </Button>
             </form>
             
-            <div className="mt-4 text-center">
+            <div className="mt-4 text-center space-y-2">
               <Button
                 variant="link"
                 onClick={() => setIsSignUp(!isSignUp)}
@@ -162,6 +181,16 @@ const AuthComponent: React.FC = () => {
                   : "Don't have an account? Sign up"
                 }
               </Button>
+              <div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowDebug(!showDebug)}
+                  className="text-xs"
+                >
+                  {showDebug ? 'Hide' : 'Show'} Debug Info
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -253,42 +282,78 @@ const KalligramApp: React.FC = () => {
 
   const handleUserSignIn = async (authUser: any) => {
     try {
-      // Check if profile exists
+      console.log('Handling user sign in for:', authUser.id)
+      
+      // Check if profile exists using user_id field
       let { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', authUser.id)
+        .eq('user_id', authUser.id)
         .single()
+
+      console.log('Profile query result:', { profile, error })
 
       // If profile doesn't exist, create one
       if (error && error.code === 'PGRST116') {
+        console.log('Creating new profile for user:', authUser.id)
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert([{
-            id: authUser.id,
-            email: authUser.email,
+            user_id: authUser.id,
             first_name: authUser.user_metadata?.first_name || '',
             last_name: authUser.user_metadata?.last_name || '',
-            profile_picture_url: authUser.user_metadata?.avatar_url || null
+            bio: '',
+            location: authUser.email || '',
+            profile_picture_url: authUser.user_metadata?.avatar_url || null,
+            preferences: {},
+            subscription_plan: 'starter',
+            subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
           }])
           .select()
           .single()
 
         if (createError) {
           console.error('Error creating profile:', createError)
+          toast({
+            title: "Error",
+            description: "Failed to create user profile. Please try again.",
+            variant: "destructive",
+          })
           return
         }
         profile = newProfile
+        console.log('Created new profile:', profile)
       } else if (error) {
         console.error('Error fetching profile:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load user profile. Please try again.",
+          variant: "destructive",
+        })
         return
       }
 
       if (profile) {
-        setUser(profile)
+        // Convert profile to match User type (using user_id as id)
+        const user: User = {
+          id: profile.user_id,
+          email: authUser.email,
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          profile_picture_url: profile.profile_picture_url,
+          created_at: profile.created_at,
+          updated_at: profile.updated_at
+        }
+        console.log('Setting user:', user)
+        setUser(user)
       }
     } catch (error) {
       console.error('Error handling user sign in:', error)
+      toast({
+        title: "Error",
+        description: "Authentication failed. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
