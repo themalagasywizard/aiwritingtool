@@ -21,7 +21,8 @@ import {
   Edit,
   Trash,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Feather
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import type { User, Project, Chapter, Character, AIMessage } from '@/types'
@@ -30,6 +31,144 @@ import type { User, Project, Chapter, Character, AIMessage } from '@/types'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// Authentication Component
+const AuthComponent: React.FC = () => {
+  const [isSignUp, setIsSignUp] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    try {
+      if (isSignUp) {
+        if (password !== confirmPassword) {
+          toast({
+            title: "Error",
+            description: "Passwords do not match",
+            variant: "destructive",
+          })
+          return
+        }
+
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        })
+
+        if (error) throw error
+
+        toast({
+          title: "Success",
+          description: "Account created! Please check your email for verification.",
+        })
+        setIsSignUp(false)
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (error) throw error
+
+        toast({
+          title: "Success",
+          description: "Successfully signed in!",
+        })
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Authentication failed",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo and Title */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
+            <Feather className="h-8 w-8" />
+          </div>
+          <h1 className="text-3xl font-bold text-foreground">Kalligram</h1>
+          <p className="text-muted-foreground mt-2">AI-powered writing companion</p>
+        </div>
+
+        {/* Auth Form */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{isSignUp ? 'Create Account' : 'Sign In'}</CardTitle>
+            <CardDescription>
+              {isSignUp 
+                ? 'Create your account to start writing' 
+                : 'Sign in to continue writing'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAuth} className="space-y-4">
+              <div>
+                <Input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              {isSignUp && (
+                <div>
+                  <Input
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+              </Button>
+            </form>
+            
+            <div className="mt-4 text-center">
+              <Button
+                variant="link"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-sm"
+              >
+                {isSignUp 
+                  ? 'Already have an account? Sign in' 
+                  : "Don't have an account? Sign up"
+                }
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
 
 // Theme Toggle Component
 const ThemeToggle: React.FC = () => {
@@ -93,7 +232,81 @@ const KalligramApp: React.FC = () => {
 
   useEffect(() => {
     checkAuth()
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        await handleUserSignIn(session.user)
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setProjects([])
+        setCurrentProject(null)
+        setChapters([])
+        setCurrentChapter(null)
+        setCharacters([])
+        setChapterContent('')
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
+
+  const handleUserSignIn = async (authUser: any) => {
+    try {
+      // Check if profile exists
+      let { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+
+      // If profile doesn't exist, create one
+      if (error && error.code === 'PGRST116') {
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: authUser.id,
+            email: authUser.email,
+            first_name: authUser.user_metadata?.first_name || '',
+            last_name: authUser.user_metadata?.last_name || '',
+            profile_picture_url: authUser.user_metadata?.avatar_url || null
+          }])
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Error creating profile:', createError)
+          return
+        }
+        profile = newProfile
+      } else if (error) {
+        console.error('Error fetching profile:', error)
+        return
+      }
+
+      if (profile) {
+        setUser(profile)
+      }
+    } catch (error) {
+      console.error('Error handling user sign in:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const checkAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        await handleUserSignIn(session.user)
+      } else {
+        setIsLoading(false)
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error)
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     if (user) {
@@ -113,27 +326,6 @@ const KalligramApp: React.FC = () => {
       debouncedSave(currentChapter.id, chapterContent)
     }
   }, [chapterContent, currentChapter, debouncedSave])
-
-  const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        
-        if (profile) {
-          setUser(profile)
-        }
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const signOut = async () => {
     try {
@@ -387,24 +579,7 @@ const KalligramApp: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">Welcome to Kalligram</CardTitle>
-            <CardDescription>
-              An AI-powered writing tool for storytellers
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Please sign in to continue to your writing projects.
-            </p>
-            <Button className="w-full" onClick={() => window.location.href = '/auth'}>
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthComponent />
     )
   }
 
