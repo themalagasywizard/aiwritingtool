@@ -1,0 +1,59 @@
+<!-- lib/shared-head.html -->
+<!-- Common meta tags -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Supabase Configuration -->
+<meta name="supabase-url" content="<%= process.env.SUPABASE_URL %>">
+<meta name="supabase-anon-key" content="<%= process.env.SUPABASE_ANON_KEY %>">
+
+<!-- Environment Variables Script -->
+<script>
+    window.ENV = {
+        SUPABASE_URL: '<%= process.env.SUPABASE_URL %>',
+        SUPABASE_ANON_KEY: '<%= process.env.SUPABASE_ANON_KEY %>'
+    };
+</script>
+
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- Font Awesome Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Dark Mode CSS -->
+<link rel="stylesheet" href="/lib/dark-mode.css">
+
+<!-- Shared Configuration -->
+<script src="/lib/shared-config.js"></script>
+
+<!-- Theme Controller (must load before other scripts) -->
+<script src="/lib/theme-controller.js"></script>
+
+<!-- Theme Toggle Component -->
+<script src="/lib/theme-toggle.js"></script>
+
+<!-- Tailwind Config Inline -->
+<script>
+    tailwind.config = window.SHARED_TAILWIND_CONFIG || {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#4B5EAA',
+                    primaryLight: '#E6E9F0',
+                    secondary: '#6B7280',
+                    accent: '#F472B6',
+                    background: '#F9FAFB',
+                    textPrimary: '#1F2937',
+                    textSecondary: '#9CA3AF',
+                    success: '#34D399',
+                    error: '#EF4444',
+                    warning: '#FBBF24'
+                }
+            }
+        }
+    };
+</script> 

@@ -1,0 +1,77 @@
+[build]
+  functions = "./functions"
+  publish = "out"
+  command = "npm install && npm run build"
+  node_version = "18"
+
+[dev]
+  framework = "next"
+  targetPort = 3000
+  port = 8888
+  functionsPort = 9999
+  functionsSiteTimeout = 120
+  
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+  included_files = ["functions/config.js", "lib/supabase.js"]
+  external_node_modules = ["node-fetch", "@supabase/supabase-js"]
+
+[functions.generate-text]
+  included_files = ["functions/config.js"]
+  memory = 1024
+  # Set timeout to 120 seconds for production deployment
+  timeout = 120
+
+# Handle API redirects to Netlify functions
+[[redirects]]
+  from = "/api/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Handle authentication redirects to static auth files
+[[redirects]]
+  from = "/auth/callback"
+  to = "/auth/callback.html"
+  status = 200
+
+[[redirects]]
+  from = "/auth"
+  to = "/auth/auth.html"
+  status = 200
+
+# Serve static auth files
+[[redirects]]
+  from = "/auth/*"
+  to = "/auth/:splat"
+  status = 200
+
+# Next.js app - catch all other routes and serve the main app
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Add CORS headers
+[[headers]]
+  for = "/*"
+    [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Environment variable validation
+[context.production]
+  environment = { NODE_VERSION = "18", SITE_URL = "https://aiwritingtool.netlify.app" }
+  # Add your environment variables in the Netlify dashboard
+  # SUPABASE_URL, SUPABASE_ANON_KEY, OPENROUTER_API_KEY
+
+[context.deploy-preview]
+  environment = { NODE_VERSION = "18", SITE_URL = "https://deploy-preview-aiwritingtool.netlify.app" }
+  # Add your environment variables in the Netlify dashboard
+  # SUPABASE_URL, SUPABASE_ANON_KEY, OPENROUTER_API_KEY 
