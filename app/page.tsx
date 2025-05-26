@@ -32,7 +32,13 @@ import {
   List,
   ListOrdered,
   Quote,
-  Type
+  Type,
+  ChevronLeft,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import type { User, Project, Chapter, Character, AIMessage } from '@/types'
@@ -460,6 +466,8 @@ const KalligramApp: React.FC = () => {
   const [newChapterTitle, setNewChapterTitle] = useState('')
   const [showNewProjectForm, setShowNewProjectForm] = useState(false)
   const [showNewChapterForm, setShowNewChapterForm] = useState(false)
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false)
+  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false)
   
   const { toast } = useToast()
 
@@ -629,6 +637,27 @@ const KalligramApp: React.FC = () => {
       debouncedSave(currentChapter.id, chapterContent)
     }
   }, [chapterContent, currentChapter, debouncedSave])
+
+  // Keyboard shortcuts for sidebar collapse
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        switch (event.key) {
+          case '[':
+            event.preventDefault()
+            setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)
+            break
+          case ']':
+            event.preventDefault()
+            setIsRightSidebarCollapsed(!isRightSidebarCollapsed)
+            break
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isLeftSidebarCollapsed, isRightSidebarCollapsed])
 
   const signOut = async () => {
     try {
@@ -940,14 +969,25 @@ const KalligramApp: React.FC = () => {
       </header>
 
       <div className="flex h-[calc(100vh-73px)]">
-        {/* Sidebar */}
-        <div className="w-80 border-r bg-card">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="projects">Projects</TabsTrigger>
-              <TabsTrigger value="chapters">Chapters</TabsTrigger>
-              <TabsTrigger value="characters">Characters</TabsTrigger>
-            </TabsList>
+        {/* Left Sidebar */}
+        <div className={`${isLeftSidebarCollapsed ? 'w-12' : 'w-80'} border-r bg-card transition-all duration-300 ease-in-out`}>
+          {!isLeftSidebarCollapsed ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+              <div className="flex items-center justify-between p-2">
+                <TabsList className="grid flex-1 grid-cols-3">
+                  <TabsTrigger value="projects">Projects</TabsTrigger>
+                  <TabsTrigger value="chapters">Chapters</TabsTrigger>
+                  <TabsTrigger value="characters">Characters</TabsTrigger>
+                </TabsList>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsLeftSidebarCollapsed(true)}
+                  className="ml-2 h-8 w-8"
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </Button>
+              </div>
             
             <TabsContent value="projects" className="p-4 space-y-4">
               <div className="flex items-center justify-between">
@@ -972,7 +1012,7 @@ const KalligramApp: React.FC = () => {
                     <Textarea
                       placeholder="Project description (optional)"
                       value={newProjectDescription}
-                      onChange={(e) => setNewProjectDescription(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewProjectDescription(e.target.value)}
                       rows={3}
                     />
                     <div className="flex space-x-2">
@@ -1141,6 +1181,20 @@ const KalligramApp: React.FC = () => {
               )}
             </TabsContent>
           </Tabs>
+          ) : (
+            <div className="flex flex-col h-full">
+              <div className="p-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsLeftSidebarCollapsed(false)}
+                  className="w-8 h-8"
+                >
+                  <PanelLeftOpen className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Main Content */}
@@ -1181,13 +1235,23 @@ const KalligramApp: React.FC = () => {
           </div>
 
           {/* AI Assistant */}
-          <div className="w-80 border-l bg-card flex flex-col">
-            <div className="border-b px-4 py-4">
-              <h3 className="font-semibold flex items-center">
-                <Sparkles className="h-5 w-5 mr-2" />
-                AI Assistant
-              </h3>
-            </div>
+          <div className={`${isRightSidebarCollapsed ? 'w-12' : 'w-80'} border-l bg-card flex flex-col transition-all duration-300 ease-in-out`}>
+            {!isRightSidebarCollapsed ? (
+              <>
+                <div className="border-b px-4 py-4 flex items-center justify-between">
+                  <h3 className="font-semibold flex items-center">
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    AI Assistant
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsRightSidebarCollapsed(true)}
+                    className="h-8 w-8"
+                  >
+                    <PanelRightClose className="h-4 w-4" />
+                  </Button>
+                </div>
             
             <div className="flex-1 p-4 space-y-4 overflow-y-auto">
               {aiMessages.length === 0 ? (
@@ -1247,7 +1311,22 @@ const KalligramApp: React.FC = () => {
                   )}
                 </Button>
               </div>
-            </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col h-full">
+                <div className="p-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsRightSidebarCollapsed(false)}
+                    className="w-8 h-8"
+                  >
+                    <PanelRightOpen className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
