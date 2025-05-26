@@ -22,7 +22,17 @@ import {
   Trash,
   Sparkles,
   ArrowRight,
-  Feather
+  Feather,
+  Bold,
+  Italic,
+  Underline,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  List,
+  ListOrdered,
+  Quote,
+  Type
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import type { User, Project, Chapter, Character, AIMessage } from '@/types'
@@ -227,6 +237,210 @@ const ThemeToggle: React.FC = () => {
   )
 }
 
+// Rich Text Editor Component
+const RichTextEditor: React.FC<{
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+}> = ({ value, onChange, placeholder }) => {
+  const editorRef = useRef<HTMLDivElement>(null)
+  const [selectedText, setSelectedText] = useState('')
+
+  // Convert HTML content to plain text for word counting
+  const getPlainText = (html: string) => {
+    const div = document.createElement('div')
+    div.innerHTML = html
+    return div.textContent || div.innerText || ''
+  }
+
+  // Handle content changes
+  const handleContentChange = () => {
+    if (editorRef.current) {
+      const content = editorRef.current.innerHTML
+      onChange(content)
+    }
+  }
+
+  // Format text commands
+  const formatText = (command: string, value?: string) => {
+    document.execCommand(command, false, value)
+    editorRef.current?.focus()
+    handleContentChange()
+  }
+
+  // Handle paste to clean up formatting
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const text = e.clipboardData.getData('text/plain')
+    document.execCommand('insertText', false, text)
+    handleContentChange()
+  }
+
+  // Set initial content
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = value
+    }
+  }, [value])
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Formatting Toolbar */}
+      <div className="border-b bg-card px-4 py-2 flex items-center space-x-1 flex-wrap gap-1">
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('bold')}
+            className="h-8 w-8 p-0"
+            title="Bold"
+          >
+            <Bold className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('italic')}
+            className="h-8 w-8 p-0"
+            title="Italic"
+          >
+            <Italic className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('underline')}
+            className="h-8 w-8 p-0"
+            title="Underline"
+          >
+            <Underline className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('justifyLeft')}
+            className="h-8 w-8 p-0"
+            title="Align Left"
+          >
+            <AlignLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('justifyCenter')}
+            className="h-8 w-8 p-0"
+            title="Align Center"
+          >
+            <AlignCenter className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('justifyRight')}
+            className="h-8 w-8 p-0"
+            title="Align Right"
+          >
+            <AlignRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('insertUnorderedList')}
+            className="h-8 w-8 p-0"
+            title="Bullet List"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('insertOrderedList')}
+            className="h-8 w-8 p-0"
+            title="Numbered List"
+          >
+            <ListOrdered className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => formatText('formatBlock', 'blockquote')}
+            className="h-8 w-8 p-0"
+            title="Quote"
+          >
+            <Quote className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <Separator orientation="vertical" className="h-6" />
+
+        <select
+          className="text-sm bg-background border border-border rounded px-2 py-1"
+          onChange={(e) => formatText('fontSize', e.target.value)}
+          defaultValue="3"
+        >
+          <option value="1">Small</option>
+          <option value="3">Normal</option>
+          <option value="5">Large</option>
+          <option value="7">Extra Large</option>
+        </select>
+
+        <select
+          className="text-sm bg-background border border-border rounded px-2 py-1"
+          onChange={(e) => formatText('fontName', e.target.value)}
+          defaultValue="Arial"
+        >
+          <option value="Arial">Arial</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Times New Roman">Times New Roman</option>
+          <option value="Courier New">Courier New</option>
+          <option value="Helvetica">Helvetica</option>
+        </select>
+      </div>
+
+      {/* Editor Content */}
+      <div className="flex-1 p-6 overflow-y-auto relative">
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleContentChange}
+          onPaste={handlePaste}
+          className="w-full h-full min-h-[400px] outline-none text-base leading-relaxed prose prose-slate dark:prose-invert max-w-none focus:outline-none"
+          style={{
+            fontFamily: 'Georgia, serif',
+            lineHeight: '1.8',
+            fontSize: '16px'
+          }}
+          data-placeholder={placeholder}
+          suppressContentEditableWarning={true}
+        />
+        {/* Placeholder when empty */}
+        {(!value || value.trim() === '') && (
+          <div 
+            className="absolute top-6 left-6 text-muted-foreground pointer-events-none"
+            style={{
+              fontFamily: 'Georgia, serif',
+              fontSize: '16px',
+              lineHeight: '1.8'
+            }}
+          >
+            {placeholder}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Main App Component
 const KalligramApp: React.FC = () => {
   const [user, setUser] = useState<User | null>(null)
@@ -283,6 +497,7 @@ const KalligramApp: React.FC = () => {
   const handleUserSignIn = async (authUser: any) => {
     try {
       console.log('Handling user sign in for:', authUser.id)
+      setIsLoading(true) // Ensure loading state is set
       
       // Check if profile exists using user_id field
       let { data: profile, error } = await supabase
@@ -319,6 +534,7 @@ const KalligramApp: React.FC = () => {
             description: "Failed to create user profile. Please try again.",
             variant: "destructive",
           })
+          setIsLoading(false)
           return
         }
         profile = newProfile
@@ -326,10 +542,11 @@ const KalligramApp: React.FC = () => {
       } else if (error) {
         console.error('Error fetching profile:', error)
         toast({
-          title: "Error",
-          description: "Failed to load user profile. Please try again.",
+          title: "Error", 
+          description: `Failed to load user profile: ${error.message}`,
           variant: "destructive",
         })
+        setIsLoading(false)
         return
       }
 
@@ -346,6 +563,14 @@ const KalligramApp: React.FC = () => {
         }
         console.log('Setting user:', user)
         setUser(user)
+        console.log('User set successfully, setting loading to false')
+      } else {
+        console.error('No profile found and no error - this should not happen')
+        toast({
+          title: "Error",
+          description: "Profile not found. Please try signing in again.",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error('Error handling user sign in:', error)
@@ -355,16 +580,29 @@ const KalligramApp: React.FC = () => {
         variant: "destructive",
       })
     } finally {
+      console.log('Setting isLoading to false in finally block')
       setIsLoading(false)
     }
   }
 
   const checkAuth = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      console.log('Checking authentication...')
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('Error getting session:', error)
+        setIsLoading(false)
+        return
+      }
+      
+      console.log('Session check result:', { hasSession: !!session, hasUser: !!session?.user })
+      
       if (session?.user) {
+        console.log('User found in session, calling handleUserSignIn')
         await handleUserSignIn(session.user)
       } else {
+        console.log('No user in session, setting loading to false')
         setIsLoading(false)
       }
     } catch (error) {
@@ -482,8 +720,9 @@ const KalligramApp: React.FC = () => {
       setChapters(data || [])
       
       if (data && data.length > 0) {
+        const cleanedContent = cleanupContent(data[0].content || '')
         setCurrentChapter(data[0])
-        setChapterContent(data[0].content || '')
+        setChapterContent(cleanedContent)
       } else {
         setCurrentChapter(null)
         setChapterContent('')
@@ -537,7 +776,7 @@ const KalligramApp: React.FC = () => {
 
   const saveChapter = async (chapterId: string, content: string) => {
     try {
-      const wordCount = countWords(content)
+      const wordCount = countWordsFromHTML(content)
       
       const { error } = await supabase
         .from('chapters')
@@ -627,8 +866,30 @@ const KalligramApp: React.FC = () => {
     setChapterContent(prev => prev + '\n\n' + content)
   }
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setChapterContent(e.target.value)
+  const handleContentChange = (content: string) => {
+    setChapterContent(content)
+  }
+
+  // Helper function to count words from HTML content
+  const countWordsFromHTML = (html: string) => {
+    const div = document.createElement('div')
+    div.innerHTML = html
+    const text = div.textContent || div.innerText || ''
+    return countWords(text)
+  }
+
+  // Helper function to clean up malformed HTML content
+  const cleanupContent = (content: string) => {
+    if (!content) return ''
+    
+    // If content contains style attributes or CSS, extract just the text
+    if (content.includes('style=') || content.includes('class=')) {
+      const div = document.createElement('div')
+      div.innerHTML = content
+      return div.textContent || div.innerText || ''
+    }
+    
+    return content
   }
 
   if (isLoading) {
@@ -823,7 +1084,7 @@ const KalligramApp: React.FC = () => {
                         }`}
                         onClick={() => {
                           setCurrentChapter(chapter)
-                          setChapterContent(chapter.content || '')
+                          setChapterContent(cleanupContent(chapter.content || ''))
                         }}
                       >
                         <CardContent className="p-4">
@@ -892,19 +1153,16 @@ const KalligramApp: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <h2 className="text-xl font-semibold">{currentChapter.title}</h2>
                     <div className="text-sm text-muted-foreground">
-                      {countWords(chapterContent)} words
+                      {countWordsFromHTML(chapterContent)} words
                     </div>
                   </div>
                 </div>
                 
-                <div className="flex-1 p-6">
-                  <Textarea
-                    value={chapterContent}
-                    onChange={handleContentChange}
-                    placeholder="Start writing your story..."
-                    className="w-full h-full resize-none border-none focus:ring-0 text-base leading-relaxed editor-content"
-                  />
-                </div>
+                <RichTextEditor
+                  value={chapterContent}
+                  onChange={handleContentChange}
+                  placeholder="Start writing your story..."
+                />
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
