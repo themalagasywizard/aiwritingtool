@@ -499,31 +499,52 @@ const KalligramApp: React.FC = () => {
     const testSupabaseConnection = async () => {
       try {
         console.log('Testing Supabase connection...')
-        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set')
-        console.log('Supabase Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not set')
+        console.log('Environment variables:', {
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set',
+          supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not set',
+          nodeEnv: process.env.NODE_ENV
+        })
         
+        console.log('Testing basic database connection...')
+        const startTime = Date.now()
         const { data, error } = await supabase.from('profiles').select('count').limit(1)
+        const endTime = Date.now()
+        
         if (error) {
-          console.error('Supabase connection test failed:', error)
+          console.error('Supabase connection test failed:', {
+            error: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            duration: endTime - startTime
+          })
         } else {
-          console.log('Supabase connection test successful')
+          console.log('Supabase connection test successful:', {
+            duration: endTime - startTime,
+            hasData: !!data
+          })
         }
       } catch (error) {
         console.error('Supabase connection error:', error)
       }
     }
     
+    // Warning timeout
+    const warningTimeout = setTimeout(() => {
+      console.warn('WARNING: Authentication taking longer than expected (15s)')
+    }, 15000)
+    
     // Emergency timeout to prevent endless loading
     const emergencyTimeout = setTimeout(() => {
-      console.error('EMERGENCY: Authentication process took too long, forcing app to load')
+      console.error('EMERGENCY: Authentication process took too long (20s), forcing app to load')
       setIsLoading(false)
       setIsSigningIn(false)
       toast({
         title: "Loading timeout",
-        description: "Authentication took too long. Please refresh if you experience issues.",
+        description: "Authentication took too long. Please try refreshing the page.",
         variant: "destructive",
       })
-    }, 30000) // 30 second emergency timeout
+    }, 20000) // 20 second emergency timeout
     
     testSupabaseConnection()
     checkAuth()
@@ -540,6 +561,7 @@ const KalligramApp: React.FC = () => {
           console.log('Auth state change: SIGNED_IN detected but user already exists or sign-in in progress, skipping')
         } else if (event === 'SIGNED_OUT') {
           console.log('Auth state change: SIGNED_OUT detected')
+          clearTimeout(warningTimeout)
           clearTimeout(emergencyTimeout)
           setUser(null)
           setProjects([])
@@ -566,6 +588,7 @@ const KalligramApp: React.FC = () => {
 
     return () => {
       subscription.unsubscribe()
+      clearTimeout(warningTimeout)
       clearTimeout(emergencyTimeout)
     }
   }, [])
@@ -579,9 +602,11 @@ const KalligramApp: React.FC = () => {
 
     try {
       console.log('Handling user sign in for:', authUser.id)
+      console.log('Setting isSigningIn to true and isLoading to true')
       setIsSigningIn(true)
       setIsLoading(true) // Ensure loading state is set
       
+      console.log('Starting profile query...')
       // Check if profile exists using user_id field
       let { data: profile, error } = await supabase
         .from('profiles')
@@ -589,11 +614,18 @@ const KalligramApp: React.FC = () => {
         .eq('user_id', authUser.id)
         .single()
 
-      console.log('Profile query result:', { profile, error })
+      console.log('Profile query completed. Result:', { 
+        hasProfile: !!profile, 
+        errorCode: error?.code, 
+        errorMessage: error?.message,
+        userId: authUser.id 
+      })
 
       // If profile doesn't exist, create one
       if (error && error.code === 'PGRST116') {
-        console.log('Creating new profile for user:', authUser.id)
+        console.log('Profile not found (PGRST116), creating new profile for user:', authUser.id)
+        console.log('Starting profile creation...')
+        
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
           .insert([{
@@ -610,6 +642,12 @@ const KalligramApp: React.FC = () => {
           .select()
           .single()
 
+        console.log('Profile creation completed. Result:', { 
+          hasNewProfile: !!newProfile, 
+          createErrorCode: createError?.code,
+          createErrorMessage: createError?.message
+        })
+
         if (createError) {
           console.error('Error creating profile:', createError)
           toast({
@@ -622,7 +660,7 @@ const KalligramApp: React.FC = () => {
           return
         }
         profile = newProfile
-        console.log('Created new profile:', profile)
+        console.log('Successfully created new profile for user:', authUser.id)
       } else if (error) {
         console.error('Error fetching profile:', error)
         toast({
@@ -636,6 +674,7 @@ const KalligramApp: React.FC = () => {
       }
 
       if (profile) {
+        console.log('Profile exists, creating user object...')
         // Convert profile to match User type (using user_id as id)
         const user: User = {
           id: profile.user_id,
@@ -646,11 +685,12 @@ const KalligramApp: React.FC = () => {
           created_at: profile.created_at,
           updated_at: profile.updated_at
         }
-        console.log('Setting user:', user)
+        console.log('User object created, setting user state...')
         setUser(user)
-        console.log('User set successfully, setting loading to false')
+        console.log('User state set successfully, cleaning up loading states...')
         setIsLoading(false)
         setIsSigningIn(false)
+        console.log('Authentication completed successfully for user:', authUser.id)
       } else {
         console.error('No profile found and no error - this should not happen')
         toast({
@@ -676,18 +716,16 @@ const KalligramApp: React.FC = () => {
   const checkAuth = async () => {
     try {
       console.log('Checking authentication...')
-      
-      // Add timeout for auth check
-      const authTimeout = setTimeout(() => {
-        console.warn('Auth check timeout - forcing loading state to false')
-        setIsLoading(false)
-      }, 10000) // 10 second timeout for initial auth check
+      console.log('Supabase client status:', { 
+        url: !!process.env.NEXT_PUBLIC_SUPABASE_URL, 
+        key: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        initialized: !!supabase
+      })
       
       const { data: { session }, error } = await supabase.auth.getSession()
       
       if (error) {
         console.error('Error getting session:', error)
-        clearTimeout(authTimeout)
         setIsLoading(false)
         return
       }
@@ -696,11 +734,9 @@ const KalligramApp: React.FC = () => {
       
       if (session?.user) {
         console.log('User found in session, calling handleUserSignIn')
-        clearTimeout(authTimeout) // Clear timeout since we're proceeding with handleUserSignIn
         await handleUserSignIn(session.user)
       } else {
         console.log('No user in session, setting loading to false')
-        clearTimeout(authTimeout)
         setIsLoading(false)
       }
     } catch (error) {
