@@ -505,20 +505,7 @@ const KalligramApp: React.FC = () => {
     }
     
     testSupabaseConnection()
-    
-    // Add timeout to prevent infinite loading
-    const authTimeout = setTimeout(() => {
-      console.log('Auth check timeout - setting loading to false')
-      setIsLoading(false)
-    }, 5000) // 5 second timeout
-    
-    checkAuth().finally(() => {
-      clearTimeout(authTimeout)
-      // Ensure loading is always set to false after auth check completes
-      setTimeout(() => {
-        setIsLoading(false)
-      }, 100)
-    })
+    checkAuth()
     
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -541,8 +528,7 @@ const KalligramApp: React.FC = () => {
   const handleUserSignIn = async (authUser: any) => {
     try {
       console.log('Handling user sign in for:', authUser.id)
-      // Don't set loading to true here as it might cause stuck loading screens
-      // setIsLoading(true) // Ensure loading state is set
+      setIsLoading(true) // Ensure loading state is set
       
       // Check if profile exists using user_id field
       let { data: profile, error } = await supabase
@@ -616,7 +602,6 @@ const KalligramApp: React.FC = () => {
           description: "Profile not found. Please try signing in again.",
           variant: "destructive",
         })
-        setIsLoading(false) // Ensure loading is set to false even on error
       }
     } catch (error) {
       console.error('Error handling user sign in:', error)
@@ -1022,19 +1007,37 @@ const KalligramApp: React.FC = () => {
     return countWords(text)
   }
 
-  // Helper function to clean up malformed HTML content
+  // Helper function to clean up malformed HTML content while preserving formatting
   const cleanupContent = (content: string) => {
     if (!content) return ''
     
-    // Only clean up if there are problematic style attributes, but preserve basic formatting
-    if (content.includes('style="') && (content.includes('font-size') || content.includes('color') || content.includes('background'))) {
-      // Remove only problematic style attributes while preserving basic HTML formatting
-      return content
-        .replace(/style="[^"]*"/g, '') // Remove style attributes
-        .replace(/class="[^"]*"/g, '') // Remove class attributes
-        .replace(/<span[^>]*>/g, '') // Remove span tags
-        .replace(/<\/span>/g, '') // Remove closing span tags
-        .trim()
+    // Only clean up if there are problematic inline styles or complex CSS
+    // Preserve basic HTML formatting tags like <b>, <i>, <u>, <div>, <p>, etc.
+    if (content.includes('font-family:') || content.includes('font-size:') || content.includes('color:')) {
+      const div = document.createElement('div')
+      div.innerHTML = content
+      
+      // Remove only problematic style attributes while keeping structure
+      const elements = div.querySelectorAll('*')
+      elements.forEach(el => {
+        // Remove style attributes that might cause issues
+        if (el.hasAttribute('style')) {
+          const style = el.getAttribute('style') || ''
+          // Keep text alignment styles but remove font/color styles
+          const alignmentMatch = style.match(/text-align:\s*[^;]+/i)
+          if (alignmentMatch) {
+            el.setAttribute('style', alignmentMatch[0])
+          } else {
+            el.removeAttribute('style')
+          }
+        }
+        // Remove problematic class attributes
+        if (el.hasAttribute('class')) {
+          el.removeAttribute('class')
+        }
+      })
+      
+      return div.innerHTML
     }
     
     return content
