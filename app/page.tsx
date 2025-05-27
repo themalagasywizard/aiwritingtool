@@ -482,7 +482,7 @@ const KalligramApp: React.FC = () => {
         await saveChapter(chapterId, content)
       }
     }, 1000),
-    []
+    [] // Keep empty dependency array but fix saveChapter to get current user
   )
 
   useEffect(() => {
@@ -830,7 +830,18 @@ const KalligramApp: React.FC = () => {
     try {
       console.log('Attempting to save chapter:', chapterId)
       console.log('Content length:', content.length)
-      console.log('User ID:', user?.id)
+      
+      // Get current user from Supabase auth session
+      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+      
+      console.log('Current auth user:', currentUser)
+      console.log('User object from state:', user)
+      console.log('User ID from state:', user?.id)
+      console.log('Current chapter:', currentChapter)
+      
+      if (authError || !currentUser) {
+        throw new Error('User not authenticated')
+      }
       
       const wordCount = countWordsFromHTML(content)
       
