@@ -480,6 +480,7 @@ const KalligramApp: React.FC = () => {
   const [aiLength, setAiLength] = useState('500')
   const [aiTone, setAiTone] = useState('')
   const [authRetryCount, setAuthRetryCount] = useState(0)
+  const [isSigningIn, setIsSigningIn] = useState(false)
   
   const { toast } = useToast()
 
@@ -516,6 +517,7 @@ const KalligramApp: React.FC = () => {
     const emergencyTimeout = setTimeout(() => {
       console.error('EMERGENCY: Authentication process took too long, forcing app to load')
       setIsLoading(false)
+      setIsSigningIn(false)
       toast({
         title: "Loading timeout",
         description: "Authentication took too long. Please refresh if you experience issues.",
@@ -531,9 +533,11 @@ const KalligramApp: React.FC = () => {
       console.log('Auth state change:', { event, hasUser: !!session?.user, timestamp: new Date().toISOString() })
       
       try {
-        if (event === 'SIGNED_IN' && session?.user) {
+        if (event === 'SIGNED_IN' && session?.user && !user && !isSigningIn) {
           console.log('Auth state change: SIGNED_IN detected, calling handleUserSignIn')
           await handleUserSignIn(session.user)
+        } else if (event === 'SIGNED_IN' && (user || isSigningIn)) {
+          console.log('Auth state change: SIGNED_IN detected but user already exists or sign-in in progress, skipping')
         } else if (event === 'SIGNED_OUT') {
           console.log('Auth state change: SIGNED_OUT detected')
           clearTimeout(emergencyTimeout)
@@ -545,6 +549,7 @@ const KalligramApp: React.FC = () => {
           setCharacters([])
           setChapterContent('')
           setIsLoading(false)
+          setIsSigningIn(false)
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('Auth state change: TOKEN_REFRESHED')
         } else if (event === 'USER_UPDATED') {
@@ -555,6 +560,7 @@ const KalligramApp: React.FC = () => {
       } catch (error) {
         console.error('Error in auth state change handler:', error)
         setIsLoading(false)
+        setIsSigningIn(false)
       }
     })
 
@@ -565,15 +571,16 @@ const KalligramApp: React.FC = () => {
   }, [])
 
   const handleUserSignIn = async (authUser: any) => {
+    // Prevent duplicate calls
+    if (isSigningIn) {
+      console.log('Sign-in already in progress, skipping duplicate call')
+      return
+    }
+
     try {
       console.log('Handling user sign in for:', authUser.id)
+      setIsSigningIn(true)
       setIsLoading(true) // Ensure loading state is set
-      
-      // Add a safety timeout to prevent endless loading
-      const timeoutId = setTimeout(() => {
-        console.warn('Authentication timeout - forcing loading state to false')
-        setIsLoading(false)
-      }, 15000) // 15 second timeout
       
       // Check if profile exists using user_id field
       let { data: profile, error } = await supabase
@@ -605,26 +612,26 @@ const KalligramApp: React.FC = () => {
 
         if (createError) {
           console.error('Error creating profile:', createError)
-          clearTimeout(timeoutId)
           toast({
             title: "Error",
             description: "Failed to create user profile. Please try again.",
             variant: "destructive",
           })
           setIsLoading(false)
+          setIsSigningIn(false)
           return
         }
         profile = newProfile
         console.log('Created new profile:', profile)
       } else if (error) {
         console.error('Error fetching profile:', error)
-        clearTimeout(timeoutId)
         toast({
           title: "Error", 
           description: `Failed to load user profile: ${error.message}`,
           variant: "destructive",
         })
         setIsLoading(false)
+        setIsSigningIn(false)
         return
       }
 
@@ -641,18 +648,18 @@ const KalligramApp: React.FC = () => {
         }
         console.log('Setting user:', user)
         setUser(user)
-        console.log('User set successfully, clearing timeout and setting loading to false')
-        clearTimeout(timeoutId)
+        console.log('User set successfully, setting loading to false')
         setIsLoading(false)
+        setIsSigningIn(false)
       } else {
         console.error('No profile found and no error - this should not happen')
-        clearTimeout(timeoutId)
         toast({
           title: "Error",
           description: "Profile not found. Please try signing in again.",
           variant: "destructive",
         })
         setIsLoading(false)
+        setIsSigningIn(false)
       }
     } catch (error) {
       console.error('Error handling user sign in:', error)
@@ -662,6 +669,7 @@ const KalligramApp: React.FC = () => {
         variant: "destructive",
       })
       setIsLoading(false)
+      setIsSigningIn(false)
     }
   }
 
@@ -751,6 +759,8 @@ const KalligramApp: React.FC = () => {
       setCurrentChapter(null)
       setCharacters([])
       setChapterContent('')
+      setIsLoading(false)
+      setIsSigningIn(false)
       toast({
         title: "Signed out successfully",
         description: "You have been signed out of your account.",
@@ -1181,6 +1191,7 @@ const KalligramApp: React.FC = () => {
               onClick={() => {
                 console.log('Manual loading state reset triggered')
                 setIsLoading(false)
+                setIsSigningIn(false)
                 setUser(null)
                 toast({
                   title: "Loading interrupted",
