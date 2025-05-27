@@ -874,7 +874,6 @@ const KalligramApp: React.FC = () => {
         .from('chapters')
         .update({
           content,
-          word_count: wordCount,
           updated_at: new Date().toISOString()
         })
         .eq('id', chapterId)
@@ -896,12 +895,12 @@ const KalligramApp: React.FC = () => {
       // Update local state
       setChapters(prev => prev.map(chapter => 
         chapter.id === chapterId 
-          ? { ...chapter, content, word_count: wordCount }
+          ? { ...chapter, content }
           : chapter
       ))
       
       if (currentChapter?.id === chapterId) {
-        setCurrentChapter(prev => prev ? { ...prev, content, word_count: wordCount } : null)
+        setCurrentChapter(prev => prev ? { ...prev, content } : null)
       }
       
       // Show success toast
@@ -1231,7 +1230,7 @@ const KalligramApp: React.FC = () => {
                         <CardContent className="p-4">
                           <h4 className="font-medium">{chapter.title}</h4>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {chapter.word_count || 0} words
+                            {countWordsFromHTML(chapter.content || '')} words
                           </p>
                         </CardContent>
                       </Card>
