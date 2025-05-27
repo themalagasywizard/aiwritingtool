@@ -725,7 +725,9 @@ exports.handler = async (event) => {
         // Validate API keys before making request
         try {
             validateApiKeys(modelName);
+            console.log('API key validation passed for model:', modelName);
         } catch (error) {
+            console.error('API key validation failed:', error.message);
             return {
                 statusCode: 401,
                 headers,
@@ -742,28 +744,22 @@ exports.handler = async (event) => {
         let previousChapters = '';
         
         try {
-            // Get authenticated user data if Supabase is available
+            // Get user data if Supabase is available
             if (supabase) {
-                // Get user from auth
-                const { data: authData, error: authError } = await supabase.auth.getUser();
+                // Try to get user's name from profiles table using the provided user_id
+                const { data: userData, error: userError } = await supabase
+                    .from('profiles')
+                    .select('first_name, last_name')
+                    .eq('user_id', user_id)
+                    .single();
                 
-                if (!authError && authData && authData.user) {
-                    // Try to get user's name from auth.users table
-                    const { data: userData, error: userError } = await supabase
-                        .from('profiles')  // Assuming a profiles table exists with user names
-                        .select('name')
-                        .eq('id', authData.user.id)
-                        .single();
-                    
-                    if (!userError && userData && userData.name) {
-                        userName = userData.name;
-                    } else {
-                        console.log('User profile not found, using email or default name');
-                        // Fallback to email address if available
-                        userName = authData.user.email?.split('@')[0] || 'User';
-                    }
+                if (!userError && userData) {
+                    const firstName = userData.first_name || '';
+                    const lastName = userData.last_name || '';
+                    userName = `${firstName} ${lastName}`.trim() || 'User';
                 } else {
-                    console.log('Auth user not found, using default name');
+                    console.log('User profile not found, using default name');
+                    userName = 'User';
                 }
                 
                 // Fetch project context
@@ -775,6 +771,8 @@ exports.handler = async (event) => {
                 // Log the context being fed to the AI
                 console.log('========== CONTEXT BEING FED TO AI ==========');
                 console.log('Mode:', mode);
+                console.log('User ID:', user_id);
+                console.log('Project ID:', project_id);
                 console.log('Context String:', contextString);
                 console.log('----------------------------------------');
                 console.log('Previous Chapters:', previousChapters);
@@ -862,24 +860,28 @@ exports.handler = async (event) => {
             : 'https://openrouter.ai/api/v1/chat/completions';
 
         // Prepare headers based on the API being used
-        const headers = {
+        const apiHeaders = {
             'Content-Type': 'application/json'
         };
 
         if (isDeepSeekModel) {
-            headers['Authorization'] = `Bearer ${process.env.DEEPSEEK_API_KEY}`;
+            apiHeaders['Authorization'] = `Bearer ${process.env.DEEPSEEK_API_KEY}`;
         } else {
-            headers['Authorization'] = `Bearer ${process.env.OPENROUTER_API_KEY}`;
+            apiHeaders['Authorization'] = `Bearer ${process.env.OPENROUTER_API_KEY}`;
             // Required OpenRouter headers
-            headers['HTTP-Referer'] = process.env.SITE_URL || 'https://github.com/themalagasywizard/aiwritingtool';
-            headers['X-Title'] = 'AIStoryCraft';
+            apiHeaders['HTTP-Referer'] = process.env.SITE_URL || 'https://github.com/themalagasywizard/aiwritingtool';
+            apiHeaders['X-Title'] = 'AIStoryCraft';
         }
 
+        console.log('Making API request to:', apiUrl);
+        console.log('Request body size:', JSON.stringify(requestBody).length, 'characters');
+        console.log('Timeout set to:', timeout, 'ms');
+        
         const response = await fetchWithTimeout(
             apiUrl,
             {
                 method: 'POST',
-                headers: headers,
+                headers: apiHeaders,
                 body: JSON.stringify(requestBody)
             },
             timeout
