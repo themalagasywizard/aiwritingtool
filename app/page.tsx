@@ -39,7 +39,11 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
-  PanelRightOpen
+  PanelRightOpen,
+  MessageCircle,
+  PenTool,
+  Send,
+  Loader2
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import type { User, Project, Chapter, Character, AIMessage } from '@/types'
@@ -472,6 +476,9 @@ const KalligramApp: React.FC = () => {
   const [showNewChapterForm, setShowNewChapterForm] = useState(false)
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false)
   const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false)
+  const [aiMode, setAiMode] = useState<'chat' | 'generate'>('chat')
+  const [aiLength, setAiLength] = useState('500')
+  const [aiTone, setAiTone] = useState('')
   
   const { toast } = useToast()
 
@@ -953,7 +960,7 @@ const KalligramApp: React.FC = () => {
   }
 
   const generateAIContent = async () => {
-    if (!aiInput.trim() || isGenerating) return
+    if (!aiInput.trim() || isGenerating || !user || !currentProject) return
     
     setIsGenerating(true)
     
@@ -965,24 +972,68 @@ const KalligramApp: React.FC = () => {
     }
     
     setAiMessages(prev => [...prev, userMessage])
+    const currentInput = aiInput
     setAiInput('')
     
     try {
-      // Simulate AI response (replace with actual AI API call)
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      // Call the generate-text function
+      const response = await fetch('/.netlify/functions/generate-text', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: currentInput,
+          mode: aiMode,
+          tone: aiTone || undefined,
+          length: aiLength,
+          user_id: user.id,
+          project_id: currentProject.id,
+          context: [] // For now, we'll send empty context. This can be enhanced later
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+      }
+
+      const result = await response.json()
       
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate content')
+      }
+
       const aiResponse: AIMessage = {
         id: (Date.now() + 1).toString(),
-        content: `Here's a creative response to: "${userMessage.content}"\n\nThis is a simulated AI response. In a real implementation, this would connect to an AI service like OpenAI's GPT API to generate contextual writing assistance based on your project, characters, and current chapter content.`,
+        content: result.text,
         isUser: false,
         timestamp: new Date()
       }
       
       setAiMessages(prev => [...prev, aiResponse])
-    } catch (error) {
+      
+      // Show success toast with some stats
+      toast({
+        title: "AI Response Generated",
+        description: `Generated ${result.actualWords || 'unknown'} words using ${result.model || 'AI model'}`,
+      })
+    } catch (error: any) {
+      console.error('AI generation error:', error)
+      
+      // Add error message to chat
+      const errorMessage: AIMessage = {
+        id: (Date.now() + 1).toString(),
+        content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+        isUser: false,
+        timestamp: new Date()
+      }
+      
+      setAiMessages(prev => [...prev, errorMessage])
+      
       toast({
         title: "Error",
-        description: "Failed to generate AI content. Please try again.",
+        description: error.message || "Failed to generate AI content. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -991,8 +1042,29 @@ const KalligramApp: React.FC = () => {
   }
 
   const insertAIContent = (content: string) => {
-    // Simply append the AI content to the current chapter content
-    setChapterContent(prev => prev + '\n\n' + content)
+    if (aiMode === 'generate') {
+      // For generate mode, append the content to the current chapter
+      setChapterContent(prev => prev + '\n\n' + content)
+      toast({
+        title: "Content Inserted",
+        description: "AI-generated content has been added to your chapter.",
+      })
+    } else {
+      // For chat mode, just copy to clipboard since it's usually advice/suggestions
+      navigator.clipboard.writeText(content).then(() => {
+        toast({
+          title: "Copied to Clipboard",
+          description: "AI response has been copied to your clipboard.",
+        })
+      }).catch(() => {
+        // Fallback: still insert if clipboard fails
+        setChapterContent(prev => prev + '\n\n' + content)
+        toast({
+          title: "Content Inserted",
+          description: "AI response has been added to your chapter.",
+        })
+      })
+    }
   }
 
   const handleContentChange = (content: string) => {
@@ -1360,28 +1432,101 @@ const KalligramApp: React.FC = () => {
           <div className={`${isRightSidebarCollapsed ? 'w-12' : 'w-80'} border-l bg-card flex flex-col transition-all duration-300 ease-in-out`}>
             {!isRightSidebarCollapsed ? (
               <>
-                <div className="border-b px-4 py-4 flex items-center justify-between">
-                  <h3 className="font-semibold flex items-center">
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    AI Assistant
-                  </h3>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsRightSidebarCollapsed(true)}
-                    className="h-8 w-8"
-                  >
-                    <PanelRightClose className="h-4 w-4" />
-                  </Button>
+                <div className="border-b px-4 py-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold flex items-center">
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      AI Assistant
+                    </h3>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsRightSidebarCollapsed(true)}
+                      className="h-8 w-8"
+                    >
+                      <PanelRightClose className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {/* Mode Selection */}
+                  <div className="flex space-x-1 mb-3">
+                    <Button
+                      variant={aiMode === 'chat' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAiMode('chat')}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Chat
+                    </Button>
+                    <Button
+                      variant={aiMode === 'generate' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setAiMode('generate')}
+                      className="flex-1"
+                    >
+                      <PenTool className="h-4 w-4 mr-1" />
+                      Generate
+                    </Button>
+                  </div>
+                  
+                  {/* Generate Mode Controls */}
+                  {aiMode === 'generate' && (
+                    <div className="space-y-2">
+                      <div className="flex space-x-2">
+                        <div className="flex-1">
+                          <label className="text-xs text-muted-foreground">Words</label>
+                          <select
+                            value={aiLength}
+                            onChange={(e) => setAiLength(e.target.value)}
+                            className="w-full text-sm bg-background border border-border rounded px-2 py-1"
+                          >
+                            <option value="100">100</option>
+                            <option value="250">250</option>
+                            <option value="500">500</option>
+                            <option value="1000">1000</option>
+                            <option value="1500">1500</option>
+                          </select>
+                        </div>
+                        <div className="flex-1">
+                          <label className="text-xs text-muted-foreground">Tone</label>
+                          <select
+                            value={aiTone}
+                            onChange={(e) => setAiTone(e.target.value)}
+                            className="w-full text-sm bg-background border border-border rounded px-2 py-1"
+                          >
+                            <option value="">Default</option>
+                            <option value="dramatic">Dramatic</option>
+                            <option value="humorous">Humorous</option>
+                            <option value="mysterious">Mysterious</option>
+                            <option value="romantic">Romantic</option>
+                            <option value="action-packed">Action</option>
+                            <option value="melancholic">Melancholic</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
             
             <div className="flex-1 p-4 space-y-4 overflow-y-auto">
               {aiMessages.length === 0 ? (
                 <div className="text-center text-muted-foreground">
-                  <Sparkles className="h-8 w-8 mx-auto mb-2" />
-                  <p className="text-sm">
-                    Ask me anything about your story, characters, or need help with writing!
-                  </p>
+                  {aiMode === 'chat' ? (
+                    <>
+                      <MessageCircle className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">
+                        Ask me anything about your story, characters, or need help with writing!
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <PenTool className="h-8 w-8 mx-auto mb-2" />
+                      <p className="text-sm">
+                        Generate story content based on your prompt. I'll continue from where your chapter left off!
+                      </p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -1403,7 +1548,7 @@ const KalligramApp: React.FC = () => {
                           onClick={() => insertAIContent(message.content)}
                         >
                           <ArrowRight className="h-3 w-3 mr-1" />
-                          Insert
+                          {aiMode === 'generate' ? 'Insert' : 'Copy'}
                         </Button>
                       )}
                     </div>
@@ -1417,22 +1562,33 @@ const KalligramApp: React.FC = () => {
                 <Input
                   value={aiInput}
                   onChange={(e) => setAiInput(e.target.value)}
-                  placeholder="Ask AI for help..."
-                  onKeyPress={(e) => e.key === 'Enter' && generateAIContent()}
-                  disabled={isGenerating}
+                  placeholder={
+                    aiMode === 'chat' 
+                      ? "Ask AI for help..." 
+                      : "Describe what should happen next..."
+                  }
+                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && generateAIContent()}
+                  disabled={isGenerating || !user || !currentProject}
                 />
                 <Button
                   onClick={generateAIContent}
-                  disabled={!aiInput.trim() || isGenerating}
+                  disabled={!aiInput.trim() || isGenerating || !user || !currentProject}
                   size="icon"
                 >
                   {isGenerating ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <ArrowRight className="h-4 w-4" />
+                    <Send className="h-4 w-4" />
                   )}
                 </Button>
               </div>
+              
+              {/* Show warning if no project selected */}
+              {(!user || !currentProject) && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Select a project to use AI assistance
+                </p>
+              )}
                 </div>
               </>
             ) : (
