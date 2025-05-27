@@ -1,116 +1,77 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/lib/use-toast'
-import { formatDate, countWords, debounce } from '@/lib/utils'
-import { SupabaseDebug } from '@/components/SupabaseDebug'
-import { 
-  Plus, 
-  BookOpen, 
-  User as UserIcon, 
-  Settings,
-  Moon,
-  Sun,
-  Edit,
-  Trash,
-  Sparkles,
-  ArrowRight,
-  Feather,
-  Bold,
-  Italic,
-  Underline,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  List,
-  ListOrdered,
-  Quote,
-  Type,
-  ChevronLeft,
-  ChevronRight,
-  PanelLeftClose,
-  PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
-  MessageCircle,
-  PenTool,
-  Send,
-  Loader2
-} from 'lucide-react'
+import { Feather, Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import type { User, Project, Chapter, Character, AIMessage } from '@/types'
 
-// Authentication Component
-const AuthComponent: React.FC = () => {
+interface User {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  profile_picture_url?: string
+  created_at: string
+  updated_at: string
+}
+
+// Simple Auth Component
+const AuthForm: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(false)
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [showDebug, setShowDebug] = useState(false)
   const { toast } = useToast()
-
-  // Debug environment variables
-  const debugInfo = {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    supabaseKeyExists: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    nodeEnv: process.env.NODE_ENV,
-    allEnvKeys: Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_'))
-  }
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (isSignUp && password !== confirmPassword) {
+      toast({
+        title: "Passwords don't match",
+        description: "Please make sure your passwords match.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
       if (isSignUp) {
-        if (password !== confirmPassword) {
-          toast({
-            title: "Error",
-            description: "Passwords do not match",
-            variant: "destructive",
-          })
-          return
-        }
-
         const { error } = await supabase.auth.signUp({
           email,
           password,
         })
-
+        
         if (error) throw error
-
+        
         toast({
-          title: "Success",
-          description: "Account created! Please check your email for verification.",
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
         })
-        setIsSignUp(false)
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         })
-
+        
         if (error) throw error
-
+        
         toast({
-          title: "Success",
-          description: "Successfully signed in!",
+          title: "Welcome back!",
+          description: "You have been signed in successfully.",
         })
       }
     } catch (error: any) {
-      console.error('Auth error:', error)
       toast({
-        title: "Error",
-        description: error.message || "Authentication failed",
+        title: "Authentication failed",
+        description: error.message,
         variant: "destructive",
       })
     } finally {
@@ -121,31 +82,14 @@ const AuthComponent: React.FC = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo and Title */}
+        {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-2xl mx-auto mb-4">
             <Feather className="h-8 w-8" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Kalligram</h1>
+          <h1 className="text-3xl font-bold">Kalligram</h1>
           <p className="text-muted-foreground mt-2">AI-powered writing companion</p>
         </div>
-
-        {/* Debug Info */}
-        {showDebug && (
-          <>
-            <SupabaseDebug />
-            <Card className="mb-4">
-              <CardHeader>
-                <CardTitle className="text-sm">Debug Info</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs">
-                <pre className="whitespace-pre-wrap">
-                  {JSON.stringify(debugInfo, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
-          </>
-        )}
 
         {/* Auth Form */}
         <Card>
@@ -154,71 +98,109 @@ const AuthComponent: React.FC = () => {
             <CardDescription>
               {isSignUp 
                 ? 'Create your account to start writing' 
-                : 'Sign in to continue writing'
+                : 'Welcome back to your writing workspace'
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAuth} className="space-y-4">
-              <div>
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+              
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={isLoading}
+              />
+              
+              {isSignUp && (
                 <Input
                   type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
-              </div>
-              {isSignUp && (
-                <div>
-                  <Input
-                    type="password"
-                    placeholder="Confirm Password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
               )}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
+              
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {isSignUp ? 'Creating account...' : 'Signing in...'}
+                  </>
+                ) : (
+                  isSignUp ? 'Create Account' : 'Sign In'
+                )}
               </Button>
             </form>
             
-            <div className="mt-4 text-center space-y-2">
+            <div className="mt-4 text-center">
               <Button
                 variant="link"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="text-sm"
+                disabled={isLoading}
               >
                 {isSignUp 
                   ? 'Already have an account? Sign in' 
-                  : "Don't have an account? Sign up"
+                  : "Don't have an account? Create one"
                 }
               </Button>
-              <div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowDebug(!showDebug)}
-                  className="text-xs"
-                >
-                  {showDebug ? 'Hide' : 'Show'} Debug Info
-                </Button>
-              </div>
             </div>
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+// Simple App Component for authenticated users
+const WritingApp: React.FC<{ user: User; onSignOut: () => void }> = ({ user, onSignOut }) => {
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b bg-card p-4">
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          <div className="flex items-center space-x-4">
+            <Feather className="h-6 w-6 text-primary" />
+            <h1 className="text-xl font-bold">Kalligram</h1>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-muted-foreground">
+              Welcome, {user.first_name || user.email}
+            </span>
+            <Button variant="outline" onClick={onSignOut}>
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </header>
+      
+      <main className="max-w-7xl mx-auto p-4">
+        <div className="text-center py-20">
+          <h2 className="text-2xl font-bold mb-4">Welcome to Kalligram!</h2>
+          <p className="text-muted-foreground mb-8">Your AI-powered writing workspace is ready.</p>
+          <div className="bg-card p-8 rounded-lg border">
+            <p className="text-sm text-muted-foreground">
+              Authentication successful! Your writing tools will be loaded here.
+            </p>
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
@@ -232,413 +214,110 @@ const ThemeToggle: React.FC = () => {
     setMounted(true)
   }, [])
 
-  if (!mounted) {
-    return null
-  }
+  if (!mounted) return null
 
   return (
     <Button
       variant="ghost"
       size="icon"
       onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      className="fixed top-4 right-4"
     >
-      {theme === 'dark' ? (
-        <Sun className="h-5 w-5" />
-      ) : (
-        <Moon className="h-5 w-5" />
-      )}
+      {theme === 'dark' ? '🌞' : '🌙'}
     </Button>
   )
 }
 
-// Rich Text Editor Component
-const RichTextEditor: React.FC<{
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-}> = ({ value, onChange, placeholder }) => {
-  const editorRef = useRef<HTMLDivElement>(null)
-  const [selectedText, setSelectedText] = useState('')
-
-  // Convert HTML content to plain text for word counting
-  const getPlainText = (html: string) => {
-    const div = document.createElement('div')
-    div.innerHTML = html
-    return div.textContent || div.innerText || ''
-  }
-
-  // Handle content changes
-  const handleContentChange = () => {
-    if (editorRef.current) {
-      const content = editorRef.current.innerHTML
-      onChange(content)
-    }
-  }
-
-  // Format text commands
-  const formatText = (command: string, value?: string) => {
-    document.execCommand(command, false, value)
-    editorRef.current?.focus()
-    handleContentChange()
-  }
-
-  // Handle paste to clean up formatting
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault()
-    const text = e.clipboardData.getData('text/plain')
-    document.execCommand('insertText', false, text)
-    handleContentChange()
-  }
-
-  // Set initial content
-  useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value
-    }
-  }, [value])
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Formatting Toolbar */}
-      <div className="border-b bg-card px-4 py-2 flex items-center space-x-1 flex-wrap gap-1">
-        <div className="flex items-center space-x-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('bold')}
-            className="h-8 w-8 p-0"
-            title="Bold"
-          >
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('italic')}
-            className="h-8 w-8 p-0"
-            title="Italic"
-          >
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('underline')}
-            className="h-8 w-8 p-0"
-            title="Underline"
-          >
-            <Underline className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        <div className="flex items-center space-x-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('justifyLeft')}
-            className="h-8 w-8 p-0"
-            title="Align Left"
-          >
-            <AlignLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('justifyCenter')}
-            className="h-8 w-8 p-0"
-            title="Align Center"
-          >
-            <AlignCenter className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('justifyRight')}
-            className="h-8 w-8 p-0"
-            title="Align Right"
-          >
-            <AlignRight className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        <div className="flex items-center space-x-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('insertUnorderedList')}
-            className="h-8 w-8 p-0"
-            title="Bullet List"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('insertOrderedList')}
-            className="h-8 w-8 p-0"
-            title="Numbered List"
-          >
-            <ListOrdered className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => formatText('formatBlock', 'blockquote')}
-            className="h-8 w-8 p-0"
-            title="Quote"
-          >
-            <Quote className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <Separator orientation="vertical" className="h-6" />
-
-        <select
-          className="text-sm bg-background border border-border rounded px-2 py-1"
-          onChange={(e) => formatText('fontSize', e.target.value)}
-          defaultValue="3"
-        >
-          <option value="1">Small</option>
-          <option value="3">Normal</option>
-          <option value="5">Large</option>
-          <option value="7">Extra Large</option>
-        </select>
-
-        <select
-          className="text-sm bg-background border border-border rounded px-2 py-1"
-          onChange={(e) => formatText('fontName', e.target.value)}
-          defaultValue="Arial"
-        >
-          <option value="Arial">Arial</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Courier New">Courier New</option>
-          <option value="Helvetica">Helvetica</option>
-        </select>
-      </div>
-
-      {/* Editor Content */}
-      <div className="flex-1 p-6 overflow-y-auto relative">
-        <div
-          ref={editorRef}
-          contentEditable
-          onInput={handleContentChange}
-          onPaste={handlePaste}
-          className="w-full h-full min-h-[400px] outline-none text-base leading-relaxed prose prose-slate dark:prose-invert max-w-none focus:outline-none"
-          style={{
-            fontFamily: 'Georgia, serif',
-            lineHeight: '1.8',
-            fontSize: '16px'
-          }}
-          data-placeholder={placeholder}
-          suppressContentEditableWarning={true}
-        />
-        {/* Placeholder when empty */}
-        {(!value || value.trim() === '') && (
-          <div 
-            className="absolute top-6 left-6 text-muted-foreground pointer-events-none"
-            style={{
-              fontFamily: 'Georgia, serif',
-              fontSize: '16px',
-              lineHeight: '1.8'
-            }}
-          >
-            {placeholder}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // Main App Component
-const KalligramApp: React.FC = () => {
+export default function Page() {
   const [user, setUser] = useState<User | null>(null)
-  const [projects, setProjects] = useState<Project[]>([])
-  const [currentProject, setCurrentProject] = useState<Project | null>(null)
-  const [chapters, setChapters] = useState<Chapter[]>([])
-  const [currentChapter, setCurrentChapter] = useState<Chapter | null>(null)
-  const [characters, setCharacters] = useState<Character[]>([])
-  const [chapterContent, setChapterContent] = useState('')
-  const [aiMessages, setAiMessages] = useState<AIMessage[]>([])
-  const [aiInput, setAiInput] = useState('')
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [activeTab, setActiveTab] = useState('projects')
-  const [isLoading, setIsLoading] = useState(true)
-  const [newProjectTitle, setNewProjectTitle] = useState('')
-  const [newProjectDescription, setNewProjectDescription] = useState('')
-  const [newChapterTitle, setNewChapterTitle] = useState('')
-  const [showNewProjectForm, setShowNewProjectForm] = useState(false)
-  const [showNewChapterForm, setShowNewChapterForm] = useState(false)
-  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false)
-  const [isRightSidebarCollapsed, setIsRightSidebarCollapsed] = useState(false)
-  const [aiMode, setAiMode] = useState<'chat' | 'generate'>('chat')
-  const [aiLength, setAiLength] = useState('500')
-  const [aiTone, setAiTone] = useState('')
-  const [authRetryCount, setAuthRetryCount] = useState(0)
-  const [isSigningIn, setIsSigningIn] = useState(false)
-  
+  const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
-  // Debounced save function
-  const debouncedSave = useCallback(
-    debounce(async (chapterId: string, content: string) => {
-      if (chapterId && content !== undefined) {
-        await saveChapter(chapterId, content)
-      }
-    }, 1000),
-    [] // Keep empty dependency array but fix saveChapter to get current user
-  )
-
   useEffect(() => {
-    // Test Supabase connection
-    const testSupabaseConnection = async () => {
+    let mounted = true
+
+    // Check current session
+    const checkSession = async () => {
       try {
-        console.log('🔧 Testing Supabase connection...')
-        console.log('Environment check:', {
-          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing',
-          supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing',
-          nodeEnv: process.env.NODE_ENV
-        })
+        console.log('🔍 Checking current session...')
         
-        console.log('🔍 Testing database connection...')
-        const startTime = Date.now()
-        
-        // Simple query to test connection
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id')
-          .limit(1)
-        
-        const duration = Date.now() - startTime
+        const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.error('❌ Database connection failed:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint,
-            duration: `${duration}ms`
-          })
+          console.error('❌ Session check failed:', error)
+          return
+        }
+
+        if (session?.user && mounted) {
+          console.log('✅ Found existing session')
+          await loadUserProfile(session.user.id)
         } else {
-          console.log('✅ Database connection successful:', {
-            duration: `${duration}ms`,
-            canQuery: true
+          console.log('ℹ️ No existing session')
+        }
+      } catch (error) {
+        console.error('💥 Session check crashed:', error)
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
+    // Load user profile from database
+    const loadUserProfile = async (userId: string) => {
+      try {
+        console.log('👤 Loading user profile for:', userId)
+        
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single()
+
+        if (error && error.code === 'PGRST116') {
+          // Profile doesn't exist, create it
+          console.log('➕ Creating new profile...')
+          await createUserProfile(userId)
+        } else if (error) {
+          throw error
+        } else if (profile && mounted) {
+          console.log('✅ Profile loaded successfully')
+          setUser({
+            id: profile.user_id,
+            email: profile.email || '',
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
+            profile_picture_url: profile.profile_picture_url,
+            created_at: profile.created_at,
+            updated_at: profile.updated_at
           })
         }
       } catch (error: any) {
-        console.error('💥 Connection test crashed:', error.message)
+        console.error('❌ Failed to load profile:', error)
+        toast({
+          title: "Profile Error",
+          description: "Failed to load your profile. Please try signing in again.",
+          variant: "destructive",
+        })
       }
     }
-    
-    // Warning timeout
-    const warningTimeout = setTimeout(() => {
-      console.warn('WARNING: Authentication taking longer than expected (15s)')
-    }, 15000)
-    
-    // Emergency timeout to prevent endless loading
-    const emergencyTimeout = setTimeout(() => {
-      console.error('EMERGENCY: Authentication process took too long (20s), forcing app to load')
-      setIsLoading(false)
-      setIsSigningIn(false)
-      toast({
-        title: "Loading timeout",
-        description: "Authentication took too long. Please try refreshing the page.",
-        variant: "destructive",
-      })
-    }, 20000) // 20 second emergency timeout
-    
-    testSupabaseConnection()
-    checkAuth()
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', { event, hasUser: !!session?.user, timestamp: new Date().toISOString() })
-      
+
+    // Create new user profile
+    const createUserProfile = async (userId: string) => {
       try {
-        if (event === 'SIGNED_IN' && session?.user && !user && !isSigningIn) {
-          console.log('Auth state change: SIGNED_IN detected, calling handleUserSignIn')
-          await handleUserSignIn(session.user)
-        } else if (event === 'SIGNED_IN' && (user || isSigningIn)) {
-          console.log('Auth state change: SIGNED_IN detected but user already exists or sign-in in progress, skipping')
-        } else if (event === 'SIGNED_OUT') {
-          console.log('Auth state change: SIGNED_OUT detected')
-          clearTimeout(warningTimeout)
-          clearTimeout(emergencyTimeout)
-          setUser(null)
-          setProjects([])
-          setCurrentProject(null)
-          setChapters([])
-          setCurrentChapter(null)
-          setCharacters([])
-          setChapterContent('')
-          setIsLoading(false)
-          setIsSigningIn(false)
-        } else if (event === 'TOKEN_REFRESHED') {
-          console.log('Auth state change: TOKEN_REFRESHED')
-        } else if (event === 'USER_UPDATED') {
-          console.log('Auth state change: USER_UPDATED')
-        } else {
-          console.log('Auth state change: Other event -', event)
-        }
-      } catch (error) {
-        console.error('Error in auth state change handler:', error)
-        setIsLoading(false)
-        setIsSigningIn(false)
-      }
-    })
-
-    return () => {
-      subscription.unsubscribe()
-      clearTimeout(warningTimeout)
-      clearTimeout(emergencyTimeout)
-    }
-  }, [])
-
-  const handleUserSignIn = async (authUser: any) => {
-    // Prevent duplicate calls
-    if (isSigningIn) {
-      console.log('Sign-in already in progress, skipping duplicate call')
-      return
-    }
-
-    try {
-      console.log('🔵 Starting authentication process for user:', authUser.id)
-      setIsSigningIn(true)
-      setIsLoading(true)
-      
-      console.log('🔍 Querying user profile...')
-      
-      // Simple profile query with better error handling
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', authUser.id)
-        .single()
-
-      console.log('📊 Profile query result:', { 
-        hasProfile: !!profile, 
-        errorCode: error?.code, 
-        errorMessage: error?.message
-      })
-
-      // If profile doesn't exist, create one
-      if (error && error.code === 'PGRST116') {
-        console.log('➕ Creating new profile...')
+        const { data: { user: authUser } } = await supabase.auth.getUser()
         
-        const { data: newProfile, error: createError } = await supabase
+        if (!authUser) throw new Error('No authenticated user found')
+
+        const { data: newProfile, error } = await supabase
           .from('profiles')
           .insert([{
-            user_id: authUser.id,
+            user_id: userId,
+            email: authUser.email || '',
             first_name: authUser.user_metadata?.first_name || '',
             last_name: authUser.user_metadata?.last_name || '',
             bio: '',
-            location: authUser.email || '',
-            profile_picture_url: authUser.user_metadata?.avatar_url || null,
             preferences: {},
             subscription_plan: 'starter',
             subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
@@ -646,154 +325,61 @@ const KalligramApp: React.FC = () => {
           .select()
           .single()
 
-        console.log('✅ Profile creation result:', { 
-          success: !!newProfile, 
-          errorCode: createError?.code,
-          errorMessage: createError?.message
+        if (error) throw error
+
+        if (newProfile && mounted) {
+          console.log('✅ New profile created successfully')
+          setUser({
+            id: newProfile.user_id,
+            email: newProfile.email || '',
+            first_name: newProfile.first_name || '',
+            last_name: newProfile.last_name || '',
+            profile_picture_url: newProfile.profile_picture_url,
+            created_at: newProfile.created_at,
+            updated_at: newProfile.updated_at
+          })
+        }
+      } catch (error: any) {
+        console.error('❌ Failed to create profile:', error)
+        toast({
+          title: "Setup Error",
+          description: "Failed to set up your profile. Please try again.",
+          variant: "destructive",
         })
-
-        if (createError) {
-          throw new Error(`Failed to create profile: ${createError.message}`)
-        }
-        
-        console.log('🚀 Setting user state with new profile...')
-        const newUser: User = {
-          id: newProfile.user_id,
-          email: authUser.email,
-          first_name: newProfile.first_name,
-          last_name: newProfile.last_name,
-          profile_picture_url: newProfile.profile_picture_url,
-          created_at: newProfile.created_at,
-          updated_at: newProfile.updated_at
-        }
-        setUser(newUser)
-        
-      } else if (error) {
-        throw new Error(`Profile query failed: ${error.message}`)
-      } else if (profile) {
-        console.log('🚀 Setting user state with existing profile...')
-        const existingUser: User = {
-          id: profile.user_id,
-          email: authUser.email,
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          profile_picture_url: profile.profile_picture_url,
-          created_at: profile.created_at,
-          updated_at: profile.updated_at
-        }
-        setUser(existingUser)
-      } else {
-        throw new Error('No profile found and no error returned')
       }
-
-      console.log('🎉 Authentication completed successfully!')
-      setIsLoading(false)
-      setIsSigningIn(false)
-
-    } catch (error: any) {
-      console.error('❌ Authentication failed:', error.message)
-      
-      // Show user-friendly error message
-      toast({
-        title: "Authentication Error",
-        description: "Failed to load your profile. Please try again.",
-        variant: "destructive",
-      })
-      
-      setIsLoading(false)
-      setIsSigningIn(false)
     }
-  }
 
-  const checkAuth = async () => {
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event)
+      
+      if (event === 'SIGNED_IN' && session?.user && mounted) {
+        await loadUserProfile(session.user.id)
+      } else if (event === 'SIGNED_OUT' && mounted) {
+        setUser(null)
+        console.log('👋 User signed out')
+      }
+    })
+
+    checkSession()
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [toast])
+
+  const handleSignOut = async () => {
     try {
-      console.log('Checking authentication...')
-      console.log('Supabase client status:', { 
-        url: !!process.env.NEXT_PUBLIC_SUPABASE_URL, 
-        key: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        initialized: !!supabase
-      })
-      
-      const { data: { session }, error } = await supabase.auth.getSession()
-      
-      if (error) {
-        console.error('Error getting session:', error)
-        setIsLoading(false)
-        return
-      }
-      
-      console.log('Session check result:', { hasSession: !!session, hasUser: !!session?.user })
-      
-      if (session?.user) {
-        console.log('User found in session, calling handleUserSignIn')
-        await handleUserSignIn(session.user)
-      } else {
-        console.log('No user in session, setting loading to false')
-        setIsLoading(false)
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error)
-      setIsLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    if (user) {
-      loadProjects()
-    }
-  }, [user])
-
-  useEffect(() => {
-    if (currentProject) {
-      loadChapters(currentProject.id)
-      loadCharacters(currentProject.id)
-    }
-  }, [currentProject])
-
-  useEffect(() => {
-    if (currentChapter && chapterContent !== currentChapter.content) {
-      debouncedSave(currentChapter.id, chapterContent)
-    }
-  }, [chapterContent, currentChapter, debouncedSave])
-
-  // Keyboard shortcuts for sidebar collapse
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey) {
-        switch (event.key) {
-          case '[':
-            event.preventDefault()
-            setIsLeftSidebarCollapsed(!isLeftSidebarCollapsed)
-            break
-          case ']':
-            event.preventDefault()
-            setIsRightSidebarCollapsed(!isRightSidebarCollapsed)
-            break
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isLeftSidebarCollapsed, isRightSidebarCollapsed])
-
-  const signOut = async () => {
-    try {
+      console.log('👋 Signing out...')
       await supabase.auth.signOut()
       setUser(null)
-      setProjects([])
-      setCurrentProject(null)
-      setChapters([])
-      setCurrentChapter(null)
-      setCharacters([])
-      setChapterContent('')
-      setIsLoading(false)
-      setIsSigningIn(false)
       toast({
-        title: "Signed out successfully",
-        description: "You have been signed out of your account.",
+        title: "Signed out",
+        description: "You have been signed out successfully.",
       })
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Sign out failed:', error)
       toast({
         title: "Error",
         description: "Failed to sign out. Please try again.",
@@ -802,924 +388,25 @@ const KalligramApp: React.FC = () => {
     }
   }
 
-  const loadProjects = async () => {
-    if (!user) return
-    
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-      
-      if (error) throw error
-      setProjects(data || [])
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load projects. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const createProject = async (title: string, description: string) => {
-    if (!user || !title.trim()) return
-    
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert([{
-          title: title.trim(),
-          description: description.trim() || null,
-          user_id: user.id
-        }])
-        .select()
-        .single()
-      
-      if (error) throw error
-      
-      setProjects(prev => [data, ...prev])
-      setNewProjectTitle('')
-      setNewProjectDescription('')
-      setShowNewProjectForm(false)
-      
-      toast({
-        title: "Project created",
-        description: `"${title}" has been created successfully.`,
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create project. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const loadChapters = async (projectId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('chapters')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('order_index', { ascending: true })
-      
-      if (error) throw error
-      setChapters(data || [])
-      
-      if (data && data.length > 0) {
-        const cleanedContent = cleanupContent(data[0].content || '')
-        setCurrentChapter(data[0])
-        setChapterContent(cleanedContent)
-      } else {
-        setCurrentChapter(null)
-        setChapterContent('')
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load chapters. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const createChapter = async (title: string) => {
-    if (!currentProject || !title.trim()) return
-    
-    try {
-      const maxOrder = Math.max(...chapters.map(c => c.order_index), 0)
-      
-      const { data, error } = await supabase
-        .from('chapters')
-        .insert([{
-          title: title.trim(),
-          content: '',
-          project_id: currentProject.id,
-          order_index: maxOrder + 1
-        }])
-        .select()
-        .single()
-      
-      if (error) throw error
-      
-      setChapters(prev => [...prev, data])
-      setCurrentChapter(data)
-      setChapterContent('')
-      setNewChapterTitle('')
-      setShowNewChapterForm(false)
-      
-      toast({
-        title: "Chapter created",
-        description: `"${title}" has been created successfully.`,
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to create chapter. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const saveChapter = async (chapterId: string, content: string) => {
-    try {
-      console.log('Attempting to save chapter:', chapterId)
-      console.log('Content length:', content.length)
-      
-      // Get current user from Supabase auth session
-      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
-      
-      console.log('Current auth user:', currentUser)
-      console.log('User object from state:', user)
-      console.log('User ID from state:', user?.id)
-      console.log('Current chapter:', currentChapter)
-      
-      if (authError || !currentUser) {
-        throw new Error('User not authenticated')
-      }
-      
-      // First, verify the chapter exists and get its project info
-      const { data: chapterData, error: chapterError } = await supabase
-        .from('chapters')
-        .select(`
-          id,
-          project_id,
-          projects!inner(user_id)
-        `)
-        .eq('id', chapterId)
-        .single()
-      
-      if (chapterError) {
-        console.error('Error fetching chapter:', chapterError)
-        throw new Error(`Chapter not found: ${chapterError.message}`)
-      }
-      
-      console.log('Chapter data:', chapterData)
-      console.log('Chapter project user_id:', (chapterData as any).projects?.user_id)
-      console.log('Current user ID:', currentUser.id)
-      
-      // Verify the chapter belongs to a project owned by the current user
-      if ((chapterData as any).projects?.user_id !== currentUser.id) {
-        throw new Error('You do not have permission to edit this chapter')
-      }
-      
-      const wordCount = countWordsFromHTML(content)
-      
-      const { data, error } = await supabase
-        .from('chapters')
-        .update({
-          content,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', chapterId)
-        .select()
-      
-      if (error) {
-        console.error('Supabase error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          fullError: error
-        })
-        throw error
-      }
-      
-      console.log('Save successful:', data)
-      
-      // Update local state
-      setChapters(prev => prev.map(chapter => 
-        chapter.id === chapterId 
-          ? { ...chapter, content }
-          : chapter
-      ))
-      
-      if (currentChapter?.id === chapterId) {
-        setCurrentChapter(prev => prev ? { ...prev, content } : null)
-      }
-      
-      // Show success toast
-      toast({
-        title: "Chapter saved",
-        description: "Your changes have been saved successfully.",
-      })
-    } catch (error: any) {
-      console.error('Save chapter error details:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code,
-        stack: error.stack,
-        fullError: error
-      })
-      
-      let errorMessage = 'Unknown error'
-      if (error.message) {
-        errorMessage = error.message
-      }
-      if (error.details) {
-        errorMessage += ` (${error.details})`
-      }
-      if (error.hint) {
-        errorMessage += ` Hint: ${error.hint}`
-      }
-      
-      toast({
-        title: "Error",
-        description: `Failed to save chapter: ${errorMessage}`,
-        variant: "destructive",
-      })
-    }
-  }
-
-  const loadCharacters = async (projectId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('characters')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('created_at', { ascending: true })
-      
-      if (error) throw error
-      setCharacters(data || [])
-    } catch (error) {
-      console.error('Failed to load characters:', error)
-    }
-  }
-
-  const generateAIContent = async () => {
-    if (!aiInput.trim() || isGenerating || !user || !currentProject) return
-    
-    setIsGenerating(true)
-    
-    const userMessage: AIMessage = {
-      id: Date.now().toString(),
-      content: aiInput,
-      isUser: true,
-      timestamp: new Date()
-    }
-    
-    setAiMessages(prev => [...prev, userMessage])
-    const currentInput = aiInput
-    setAiInput('')
-    
-    try {
-      // Call the generate-text function (using simple version for testing)
-      const response = await fetch('/.netlify/functions/generate-text-simple', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: currentInput,
-          mode: aiMode,
-          tone: aiTone || undefined,
-          length: aiLength,
-          user_id: user.id,
-          project_id: currentProject.id,
-          context: [] // For now, we'll send empty context. This can be enhanced later
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to generate content')
-      }
-
-      const aiResponse: AIMessage = {
-        id: (Date.now() + 1).toString(),
-        content: result.text,
-        isUser: false,
-        timestamp: new Date()
-      }
-      
-      setAiMessages(prev => [...prev, aiResponse])
-      
-      // Show success toast with some stats
-      toast({
-        title: "AI Response Generated",
-        description: `Generated ${result.actualWords || 'unknown'} words using ${result.model || 'AI model'}`,
-      })
-    } catch (error: any) {
-      console.error('AI generation error:', error)
-      
-      // Add error message to chat
-      const errorMessage: AIMessage = {
-        id: (Date.now() + 1).toString(),
-        content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
-        isUser: false,
-        timestamp: new Date()
-      }
-      
-      setAiMessages(prev => [...prev, errorMessage])
-      
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate AI content. Please try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const insertAIContent = (content: string) => {
-    if (aiMode === 'generate') {
-      // For generate mode, append the content to the current chapter
-      setChapterContent(prev => prev + '\n\n' + content)
-      toast({
-        title: "Content Inserted",
-        description: "AI-generated content has been added to your chapter.",
-      })
-    } else {
-      // For chat mode, just copy to clipboard since it's usually advice/suggestions
-      navigator.clipboard.writeText(content).then(() => {
-        toast({
-          title: "Copied to Clipboard",
-          description: "AI response has been copied to your clipboard.",
-        })
-      }).catch(() => {
-        // Fallback: still insert if clipboard fails
-        setChapterContent(prev => prev + '\n\n' + content)
-        toast({
-          title: "Content Inserted",
-          description: "AI response has been added to your chapter.",
-        })
-      })
-    }
-  }
-
-  const handleContentChange = (content: string) => {
-    setChapterContent(content)
-  }
-
-  // Helper function to count words from HTML content
-  const countWordsFromHTML = (html: string) => {
-    const div = document.createElement('div')
-    div.innerHTML = html
-    const text = div.textContent || div.innerText || ''
-    return countWords(text)
-  }
-
-  // Helper function to clean up malformed HTML content while preserving formatting
-  const cleanupContent = (content: string) => {
-    if (!content) return ''
-    
-    // Only clean up if there are problematic inline styles or complex CSS
-    // Preserve basic HTML formatting tags like <b>, <i>, <u>, <div>, <p>, etc.
-    if (content.includes('font-family:') || content.includes('font-size:') || content.includes('color:')) {
-      const div = document.createElement('div')
-      div.innerHTML = content
-      
-      // Remove only problematic style attributes while keeping structure
-      const elements = div.querySelectorAll('*')
-      elements.forEach(el => {
-        // Remove style attributes that might cause issues
-        if (el.hasAttribute('style')) {
-          const style = el.getAttribute('style') || ''
-          // Keep text alignment styles but remove font/color styles
-          const alignmentMatch = style.match(/text-align:\s*[^;]+/i)
-          if (alignmentMatch) {
-            el.setAttribute('style', alignmentMatch[0])
-          } else {
-            el.removeAttribute('style')
-          }
-        }
-        // Remove problematic class attributes
-        if (el.hasAttribute('class')) {
-          el.removeAttribute('class')
-        }
-      })
-      
-      return div.innerHTML
-    }
-    
-    return content
-  }
-
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground mb-4">Loading Kalligram...</p>
-          
-          {/* Emergency exit button after 10 seconds */}
-          <div className="mt-8">
-            <Button
-              variant="outline"
-              onClick={() => {
-                console.log('Manual loading state reset triggered')
-                setIsLoading(false)
-                setIsSigningIn(false)
-                setUser(null)
-                toast({
-                  title: "Loading interrupted",
-                  description: "You can now try signing in again.",
-                })
-              }}
-              className="text-sm"
-            >
-              Taking too long? Click here to continue
-            </Button>
-          </div>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading Kalligram...</p>
         </div>
       </div>
-    )
-  }
-
-  if (!user) {
-    return (
-      <AuthComponent />
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-primary">Kalligram</h1>
-            {currentProject && (
-              <>
-                <Separator orientation="vertical" className="h-6" />
-                <span className="text-lg font-medium">{currentProject.title}</span>
-              </>
-            )}
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <ThemeToggle />
-            <Avatar>
-              <AvatarImage src={user.profile_picture_url} />
-              <AvatarFallback>
-                {user.first_name?.[0] || user.email[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <Button variant="ghost" onClick={signOut}>
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex h-[calc(100vh-73px)]">
-        {/* Left Sidebar */}
-        <div className={`${isLeftSidebarCollapsed ? 'w-12' : 'w-80'} border-r bg-card transition-all duration-300 ease-in-out`}>
-          {!isLeftSidebarCollapsed ? (
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-              <div className="flex items-center justify-between p-2">
-                <TabsList className="grid flex-1 grid-cols-3">
-                  <TabsTrigger value="projects">Projects</TabsTrigger>
-                  <TabsTrigger value="chapters">Chapters</TabsTrigger>
-                  <TabsTrigger value="characters">Characters</TabsTrigger>
-                </TabsList>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsLeftSidebarCollapsed(true)}
-                  className="ml-2 h-8 w-8"
-                >
-                  <PanelLeftClose className="h-4 w-4" />
-                </Button>
-              </div>
-            
-            <TabsContent value="projects" className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Your Projects</h3>
-                <Button
-                  size="sm"
-                  onClick={() => setShowNewProjectForm(true)}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  New
-                </Button>
-              </div>
-              
-              {showNewProjectForm && (
-                <Card>
-                  <CardContent className="p-4 space-y-3">
-                    <Input
-                      placeholder="Project title"
-                      value={newProjectTitle}
-                      onChange={(e) => setNewProjectTitle(e.target.value)}
-                    />
-                    <Textarea
-                      placeholder="Project description (optional)"
-                      value={newProjectDescription}
-                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewProjectDescription(e.target.value)}
-                      rows={3}
-                    />
-                    <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        onClick={() => createProject(newProjectTitle, newProjectDescription)}
-                        disabled={!newProjectTitle.trim()}
-                      >
-                        Create
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setShowNewProjectForm(false)
-                          setNewProjectTitle('')
-                          setNewProjectDescription('')
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              <div className="space-y-2">
-                {projects.map((project) => (
-                  <Card
-                    key={project.id}
-                    className={`cursor-pointer transition-colors ${
-                      currentProject?.id === project.id ? 'ring-2 ring-primary' : ''
-                    }`}
-                    onClick={() => setCurrentProject(project)}
-                  >
-                    <CardContent className="p-4">
-                      <h4 className="font-medium">{project.title}</h4>
-                      {project.description && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {project.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Updated {formatDate(project.updated_at)}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="chapters" className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Chapters</h3>
-                {currentProject && (
-                  <Button
-                    size="sm"
-                    onClick={() => setShowNewChapterForm(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    New
-                  </Button>
-                )}
-              </div>
-              
-              {!currentProject ? (
-                <p className="text-sm text-muted-foreground">
-                  Select a project to view chapters
-                </p>
-              ) : (
-                <>
-                  {showNewChapterForm && (
-                    <Card>
-                      <CardContent className="p-4 space-y-3">
-                        <Input
-                          placeholder="Chapter title"
-                          value={newChapterTitle}
-                          onChange={(e) => setNewChapterTitle(e.target.value)}
-                        />
-                        <div className="flex space-x-2">
-                          <Button
-                            size="sm"
-                            onClick={() => createChapter(newChapterTitle)}
-                            disabled={!newChapterTitle.trim()}
-                          >
-                            Create
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setShowNewChapterForm(false)
-                              setNewChapterTitle('')
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                  
-                  <div className="space-y-2">
-                    {chapters.map((chapter) => (
-                      <Card
-                        key={chapter.id}
-                        className={`cursor-pointer transition-colors ${
-                          currentChapter?.id === chapter.id ? 'ring-2 ring-primary' : ''
-                        }`}
-                        onClick={() => {
-                          setCurrentChapter(chapter)
-                          setChapterContent(cleanupContent(chapter.content || ''))
-                        }}
-                      >
-                        <CardContent className="p-4">
-                          <h4 className="font-medium">{chapter.title}</h4>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {countWordsFromHTML(chapter.content || '')} words
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="characters" className="p-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Characters</h3>
-                {currentProject && (
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-1" />
-                    New
-                  </Button>
-                )}
-              </div>
-              
-              {!currentProject ? (
-                <p className="text-sm text-muted-foreground">
-                  Select a project to view characters
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {characters.map((character) => (
-                    <Card key={character.id}>
-                      <CardContent className="p-4">
-                        <h4 className="font-medium">{character.name}</h4>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {character.role}
-                        </p>
-                        {character.description && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {character.description}
-                          </p>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                  {characters.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      No characters yet. Create your first character!
-                    </p>
-                  )}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-          ) : (
-            <div className="flex flex-col h-full">
-              <div className="p-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsLeftSidebarCollapsed(false)}
-                  className="w-8 h-8"
-                >
-                  <PanelLeftOpen className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 flex">
-          {/* Editor */}
-          <div className="flex-1 flex flex-col">
-            {currentChapter ? (
-              <>
-                <div className="border-b bg-card px-6 py-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold">{currentChapter.title}</h2>
-                    <div className="text-sm text-muted-foreground">
-                      {countWordsFromHTML(chapterContent)} words
-                    </div>
-                  </div>
-                </div>
-                
-                <RichTextEditor
-                  value={chapterContent}
-                  onChange={handleContentChange}
-                  placeholder="Start writing your story..."
-                />
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No chapter selected</h3>
-                  <p className="text-muted-foreground">
-                    {currentProject 
-                      ? 'Select a chapter from the sidebar to start writing'
-                      : 'Select a project and chapter to begin writing'
-                    }
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* AI Assistant */}
-          <div className={`${isRightSidebarCollapsed ? 'w-12' : 'w-80'} border-l bg-card flex flex-col transition-all duration-300 ease-in-out`}>
-            {!isRightSidebarCollapsed ? (
-              <>
-                <div className="border-b px-4 py-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold flex items-center">
-                      <Sparkles className="h-5 w-5 mr-2" />
-                      AI Assistant
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsRightSidebarCollapsed(true)}
-                      className="h-8 w-8"
-                    >
-                      <PanelRightClose className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  {/* Mode Selection */}
-                  <div className="flex space-x-1 mb-3">
-                    <Button
-                      variant={aiMode === 'chat' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setAiMode('chat')}
-                      className="flex-1"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      Chat
-                    </Button>
-                    <Button
-                      variant={aiMode === 'generate' ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setAiMode('generate')}
-                      className="flex-1"
-                    >
-                      <PenTool className="h-4 w-4 mr-1" />
-                      Generate
-                    </Button>
-                  </div>
-                  
-                  {/* Generate Mode Controls */}
-                  {aiMode === 'generate' && (
-                    <div className="space-y-2">
-                      <div className="flex space-x-2">
-                        <div className="flex-1">
-                          <label className="text-xs text-muted-foreground">Words</label>
-                          <select
-                            value={aiLength}
-                            onChange={(e) => setAiLength(e.target.value)}
-                            className="w-full text-sm bg-background border border-border rounded px-2 py-1"
-                          >
-                            <option value="100">100</option>
-                            <option value="250">250</option>
-                            <option value="500">500</option>
-                            <option value="1000">1000</option>
-                            <option value="1500">1500</option>
-                          </select>
-                        </div>
-                        <div className="flex-1">
-                          <label className="text-xs text-muted-foreground">Tone</label>
-                          <select
-                            value={aiTone}
-                            onChange={(e) => setAiTone(e.target.value)}
-                            className="w-full text-sm bg-background border border-border rounded px-2 py-1"
-                          >
-                            <option value="">Default</option>
-                            <option value="dramatic">Dramatic</option>
-                            <option value="humorous">Humorous</option>
-                            <option value="mysterious">Mysterious</option>
-                            <option value="romantic">Romantic</option>
-                            <option value="action-packed">Action</option>
-                            <option value="melancholic">Melancholic</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-            
-            <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-              {aiMessages.length === 0 ? (
-                <div className="text-center text-muted-foreground">
-                  {aiMode === 'chat' ? (
-                    <>
-                      <MessageCircle className="h-8 w-8 mx-auto mb-2" />
-                      <p className="text-sm">
-                        Ask me anything about your story, characters, or need help with writing!
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <PenTool className="h-8 w-8 mx-auto mb-2" />
-                      <p className="text-sm">
-                        Generate story content based on your prompt. I'll continue from where your chapter left off!
-                      </p>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {aiMessages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`p-3 rounded-lg ${
-                        message.isUser
-                          ? 'bg-primary text-primary-foreground ml-4'
-                          : 'bg-muted mr-4'
-                      }`}
-                    >
-                      <p className="text-sm">{message.content}</p>
-                      {!message.isUser && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="mt-2 h-6 px-2 text-xs"
-                          onClick={() => insertAIContent(message.content)}
-                        >
-                          <ArrowRight className="h-3 w-3 mr-1" />
-                          {aiMode === 'generate' ? 'Insert' : 'Copy'}
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            <div className="border-t p-4">
-              <div className="flex space-x-2">
-                <Input
-                  value={aiInput}
-                  onChange={(e) => setAiInput(e.target.value)}
-                  placeholder={
-                    aiMode === 'chat' 
-                      ? "Ask AI for help..." 
-                      : "Describe what should happen next..."
-                  }
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && generateAIContent()}
-                  disabled={isGenerating || !user || !currentProject}
-                />
-                <Button
-                  onClick={generateAIContent}
-                  disabled={!aiInput.trim() || isGenerating || !user || !currentProject}
-                  size="icon"
-                >
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-              
-              {/* Show warning if no project selected */}
-              {(!user || !currentProject) && (
-                <p className="text-xs text-muted-foreground mt-2">
-                  Select a project to use AI assistance
-                </p>
-              )}
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-col h-full">
-                <div className="p-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsRightSidebarCollapsed(false)}
-                    className="w-8 h-8"
-                  >
-                    <PanelRightOpen className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+    <>
+      <ThemeToggle />
+      {user ? (
+        <WritingApp user={user} onSignOut={handleSignOut} />
+      ) : (
+        <AuthForm />
+      )}
+    </>
   )
-}
-
-export default KalligramApp 
+} 
