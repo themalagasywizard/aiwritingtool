@@ -976,8 +976,8 @@ const KalligramApp: React.FC = () => {
     setAiInput('')
     
     try {
-      // Call the generate-text function
-      const response = await fetch('/.netlify/functions/generate-text', {
+      // Call the generate-text function (using simple version for testing)
+      const response = await fetch('/.netlify/functions/generate-text-simple', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

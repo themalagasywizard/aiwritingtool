@@ -4,35 +4,24 @@ const config = require('./config');
 const { createClient } = require('@supabase/supabase-js');
 
 // Initialize the Supabase client with error handling
-let supabase;
+let supabase = null;
 try {
   // Check if Supabase environment variables are set
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-    throw new Error('Supabase credentials missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
-  }
-
-  // Initialize Supabase client with explicit error handling
-  supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY,
-    {
-      auth: {
-        persistSession: false // Since this is a serverless function
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+    // Initialize Supabase client with explicit error handling
+    supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY,
+      {
+        auth: {
+          persistSession: false // Since this is a serverless function
+        }
       }
-    }
-  );
-
-  // Test the connection
-  console.log('Testing Supabase connection...');
-  supabase.from('projects').select('count').limit(1)
-    .then(() => {
-      console.log('Supabase connection successful');
-    })
-    .catch(error => {
-      console.error('Supabase connection test failed:', error);
-      throw error;
-    });
-
+    );
+    console.log('Supabase client initialized successfully');
+  } else {
+    console.warn('Supabase credentials not found. Context fetching will be disabled.');
+  }
 } catch (error) {
   console.error('Error initializing Supabase client:', error);
   supabase = null;
@@ -41,7 +30,8 @@ try {
 // Add a helper function to check Supabase connection
 const ensureSupabaseConnection = async () => {
   if (!supabase) {
-    throw new Error('Supabase client not initialized. Please check your environment variables.');
+    console.warn('Supabase client not available. Skipping database operations.');
+    return false;
   }
   
   try {
@@ -50,7 +40,7 @@ const ensureSupabaseConnection = async () => {
     return true;
   } catch (error) {
     console.error('Supabase connection test failed:', error);
-    throw new Error('Failed to connect to Supabase. Please check your configuration.');
+    return false;
   }
 };
 
@@ -73,7 +63,11 @@ const summarizeText = (text) => {
 const fetchProjectContext = async (projectId, userId, selectedContext = null) => {
   try {
     // Ensure Supabase connection is working
-    await ensureSupabaseConnection();
+    const isConnected = await ensureSupabaseConnection();
+    if (!isConnected) {
+      console.log('Supabase not available, returning empty context');
+      return 'No project context available (database connection unavailable).';
+    }
     
     console.log(`Fetching context for project_id: ${projectId}, user_id: ${userId}`);
     console.log('Selected context:', selectedContext);
@@ -291,7 +285,11 @@ const fetchProjectContext = async (projectId, userId, selectedContext = null) =>
 const fetchPreviousChapters = async (projectId, userId, prompt = '') => {
   try {
     // Ensure Supabase connection is working
-    await ensureSupabaseConnection();
+    const isConnected = await ensureSupabaseConnection();
+    if (!isConnected) {
+      console.log('Supabase not available, returning empty chapters');
+      return 'No previous chapters available (database connection unavailable).';
+    }
     
     console.log(`Fetching previous chapters for project_id: ${projectId}`);
     
