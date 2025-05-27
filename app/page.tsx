@@ -498,34 +498,40 @@ const KalligramApp: React.FC = () => {
     // Test Supabase connection
     const testSupabaseConnection = async () => {
       try {
-        console.log('Testing Supabase connection...')
-        console.log('Environment variables:', {
-          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set',
-          supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not set',
+        console.log('🔧 Testing Supabase connection...')
+        console.log('Environment check:', {
+          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing',
+          supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing',
           nodeEnv: process.env.NODE_ENV
         })
         
-        console.log('Testing basic database connection...')
+        console.log('🔍 Testing database connection...')
         const startTime = Date.now()
-        const { data, error } = await supabase.from('profiles').select('count').limit(1)
-        const endTime = Date.now()
+        
+        // Simple query to test connection
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id')
+          .limit(1)
+        
+        const duration = Date.now() - startTime
         
         if (error) {
-          console.error('Supabase connection test failed:', {
-            error: error.message,
+          console.error('❌ Database connection failed:', {
+            message: error.message,
             code: error.code,
             details: error.details,
             hint: error.hint,
-            duration: endTime - startTime
+            duration: `${duration}ms`
           })
         } else {
-          console.log('Supabase connection test successful:', {
-            duration: endTime - startTime,
-            hasData: !!data
+          console.log('✅ Database connection successful:', {
+            duration: `${duration}ms`,
+            canQuery: true
           })
         }
-      } catch (error) {
-        console.error('Supabase connection error:', error)
+      } catch (error: any) {
+        console.error('💥 Connection test crashed:', error.message)
       }
     }
     
@@ -601,30 +607,28 @@ const KalligramApp: React.FC = () => {
     }
 
     try {
-      console.log('Handling user sign in for:', authUser.id)
-      console.log('Setting isSigningIn to true and isLoading to true')
+      console.log('🔵 Starting authentication process for user:', authUser.id)
       setIsSigningIn(true)
-      setIsLoading(true) // Ensure loading state is set
+      setIsLoading(true)
       
-      console.log('Starting profile query...')
-      // Check if profile exists using user_id field
-      let { data: profile, error } = await supabase
+      console.log('🔍 Querying user profile...')
+      
+      // Simple profile query with better error handling
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', authUser.id)
         .single()
 
-      console.log('Profile query completed. Result:', { 
+      console.log('📊 Profile query result:', { 
         hasProfile: !!profile, 
         errorCode: error?.code, 
-        errorMessage: error?.message,
-        userId: authUser.id 
+        errorMessage: error?.message
       })
 
       // If profile doesn't exist, create one
       if (error && error.code === 'PGRST116') {
-        console.log('Profile not found (PGRST116), creating new profile for user:', authUser.id)
-        console.log('Starting profile creation...')
+        console.log('➕ Creating new profile...')
         
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
@@ -637,46 +641,38 @@ const KalligramApp: React.FC = () => {
             profile_picture_url: authUser.user_metadata?.avatar_url || null,
             preferences: {},
             subscription_plan: 'starter',
-            subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() // 1 year from now
+            subscription_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
           }])
           .select()
           .single()
 
-        console.log('Profile creation completed. Result:', { 
-          hasNewProfile: !!newProfile, 
-          createErrorCode: createError?.code,
-          createErrorMessage: createError?.message
+        console.log('✅ Profile creation result:', { 
+          success: !!newProfile, 
+          errorCode: createError?.code,
+          errorMessage: createError?.message
         })
 
         if (createError) {
-          console.error('Error creating profile:', createError)
-          toast({
-            title: "Error",
-            description: "Failed to create user profile. Please try again.",
-            variant: "destructive",
-          })
-          setIsLoading(false)
-          setIsSigningIn(false)
-          return
+          throw new Error(`Failed to create profile: ${createError.message}`)
         }
-        profile = newProfile
-        console.log('Successfully created new profile for user:', authUser.id)
+        
+        console.log('🚀 Setting user state with new profile...')
+        const newUser: User = {
+          id: newProfile.user_id,
+          email: authUser.email,
+          first_name: newProfile.first_name,
+          last_name: newProfile.last_name,
+          profile_picture_url: newProfile.profile_picture_url,
+          created_at: newProfile.created_at,
+          updated_at: newProfile.updated_at
+        }
+        setUser(newUser)
+        
       } else if (error) {
-        console.error('Error fetching profile:', error)
-        toast({
-          title: "Error", 
-          description: `Failed to load user profile: ${error.message}`,
-          variant: "destructive",
-        })
-        setIsLoading(false)
-        setIsSigningIn(false)
-        return
-      }
-
-      if (profile) {
-        console.log('Profile exists, creating user object...')
-        // Convert profile to match User type (using user_id as id)
-        const user: User = {
+        throw new Error(`Profile query failed: ${error.message}`)
+      } else if (profile) {
+        console.log('🚀 Setting user state with existing profile...')
+        const existingUser: User = {
           id: profile.user_id,
           email: authUser.email,
           first_name: profile.first_name,
@@ -685,29 +681,25 @@ const KalligramApp: React.FC = () => {
           created_at: profile.created_at,
           updated_at: profile.updated_at
         }
-        console.log('User object created, setting user state...')
-        setUser(user)
-        console.log('User state set successfully, cleaning up loading states...')
-        setIsLoading(false)
-        setIsSigningIn(false)
-        console.log('Authentication completed successfully for user:', authUser.id)
+        setUser(existingUser)
       } else {
-        console.error('No profile found and no error - this should not happen')
-        toast({
-          title: "Error",
-          description: "Profile not found. Please try signing in again.",
-          variant: "destructive",
-        })
-        setIsLoading(false)
-        setIsSigningIn(false)
+        throw new Error('No profile found and no error returned')
       }
-    } catch (error) {
-      console.error('Error handling user sign in:', error)
+
+      console.log('🎉 Authentication completed successfully!')
+      setIsLoading(false)
+      setIsSigningIn(false)
+
+    } catch (error: any) {
+      console.error('❌ Authentication failed:', error.message)
+      
+      // Show user-friendly error message
       toast({
-        title: "Error",
-        description: "Authentication failed. Please try again.",
+        title: "Authentication Error",
+        description: "Failed to load your profile. Please try again.",
         variant: "destructive",
       })
+      
       setIsLoading(false)
       setIsSigningIn(false)
     }
