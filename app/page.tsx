@@ -843,6 +843,31 @@ const KalligramApp: React.FC = () => {
         throw new Error('User not authenticated')
       }
       
+      // First, verify the chapter exists and get its project info
+      const { data: chapterData, error: chapterError } = await supabase
+        .from('chapters')
+        .select(`
+          id,
+          project_id,
+          projects!inner(user_id)
+        `)
+        .eq('id', chapterId)
+        .single()
+      
+      if (chapterError) {
+        console.error('Error fetching chapter:', chapterError)
+        throw new Error(`Chapter not found: ${chapterError.message}`)
+      }
+      
+      console.log('Chapter data:', chapterData)
+      console.log('Chapter project user_id:', (chapterData as any).projects?.user_id)
+      console.log('Current user ID:', currentUser.id)
+      
+      // Verify the chapter belongs to a project owned by the current user
+      if ((chapterData as any).projects?.user_id !== currentUser.id) {
+        throw new Error('You do not have permission to edit this chapter')
+      }
+      
       const wordCount = countWordsFromHTML(content)
       
       const { data, error } = await supabase
@@ -856,7 +881,13 @@ const KalligramApp: React.FC = () => {
         .select()
       
       if (error) {
-        console.error('Supabase error:', error)
+        console.error('Supabase error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          fullError: error
+        })
         throw error
       }
       
@@ -879,10 +910,29 @@ const KalligramApp: React.FC = () => {
         description: "Your changes have been saved successfully.",
       })
     } catch (error: any) {
-      console.error('Save chapter error:', error)
+      console.error('Save chapter error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        stack: error.stack,
+        fullError: error
+      })
+      
+      let errorMessage = 'Unknown error'
+      if (error.message) {
+        errorMessage = error.message
+      }
+      if (error.details) {
+        errorMessage += ` (${error.details})`
+      }
+      if (error.hint) {
+        errorMessage += ` Hint: ${error.hint}`
+      }
+      
       toast({
         title: "Error",
-        description: `Failed to save chapter: ${error.message || 'Unknown error'}`,
+        description: `Failed to save chapter: ${errorMessage}`,
         variant: "destructive",
       })
     }
