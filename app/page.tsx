@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/lib/use-toast'
 import { formatDate, countWords, debounce } from '@/lib/utils'
+import { SupabaseDebug } from '@/components/SupabaseDebug'
 import { 
   Plus, 
   BookOpen, 
@@ -127,16 +128,19 @@ const AuthComponent: React.FC = () => {
 
         {/* Debug Info */}
         {showDebug && (
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-sm">Debug Info</CardTitle>
-            </CardHeader>
-            <CardContent className="text-xs">
-              <pre className="whitespace-pre-wrap">
-                {JSON.stringify(debugInfo, null, 2)}
-              </pre>
-            </CardContent>
-          </Card>
+          <>
+            <SupabaseDebug />
+            <Card className="mb-4">
+              <CardHeader>
+                <CardTitle className="text-sm">Debug Info</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs">
+                <pre className="whitespace-pre-wrap">
+                  {JSON.stringify(debugInfo, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {/* Auth Form */}
@@ -482,6 +486,25 @@ const KalligramApp: React.FC = () => {
   )
 
   useEffect(() => {
+    // Test Supabase connection
+    const testSupabaseConnection = async () => {
+      try {
+        console.log('Testing Supabase connection...')
+        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Not set')
+        console.log('Supabase Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Not set')
+        
+        const { data, error } = await supabase.from('profiles').select('count').limit(1)
+        if (error) {
+          console.error('Supabase connection test failed:', error)
+        } else {
+          console.log('Supabase connection test successful')
+        }
+      } catch (error) {
+        console.error('Supabase connection error:', error)
+      }
+    }
+    
+    testSupabaseConnection()
     checkAuth()
     
     // Listen for auth state changes
@@ -805,9 +828,13 @@ const KalligramApp: React.FC = () => {
 
   const saveChapter = async (chapterId: string, content: string) => {
     try {
+      console.log('Attempting to save chapter:', chapterId)
+      console.log('Content length:', content.length)
+      console.log('User ID:', user?.id)
+      
       const wordCount = countWordsFromHTML(content)
       
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('chapters')
         .update({
           content,
@@ -815,8 +842,14 @@ const KalligramApp: React.FC = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', chapterId)
+        .select()
       
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
+      console.log('Save successful:', data)
       
       // Update local state
       setChapters(prev => prev.map(chapter => 
@@ -828,10 +861,17 @@ const KalligramApp: React.FC = () => {
       if (currentChapter?.id === chapterId) {
         setCurrentChapter(prev => prev ? { ...prev, content, word_count: wordCount } : null)
       }
-    } catch (error) {
+      
+      // Show success toast
+      toast({
+        title: "Chapter saved",
+        description: "Your changes have been saved successfully.",
+      })
+    } catch (error: any) {
+      console.error('Save chapter error:', error)
       toast({
         title: "Error",
-        description: "Failed to save chapter. Please try again.",
+        description: `Failed to save chapter: ${error.message || 'Unknown error'}`,
         variant: "destructive",
       })
     }
